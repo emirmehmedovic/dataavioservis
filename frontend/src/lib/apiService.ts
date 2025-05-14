@@ -1,6 +1,6 @@
 import {
   User,
-  LoginResponse,
+  LoginResponse as ImportedLoginResponse,
   Vehicle,
   Company,
   Location,
@@ -13,6 +13,9 @@ import {
   CreateUserPayload,    // Added CreateUserPayload
   UpdateUserPayload     // Added UpdateUserPayload
 } from '@/types';
+
+// Re-export the LoginResponse type
+export type LoginResponse = ImportedLoginResponse;
 
 // Type for login credentials, can also be moved to @/types if used elsewhere
 interface LoginCredentials {
