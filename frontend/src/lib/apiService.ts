@@ -1,5 +1,5 @@
 import {
-  User,
+  User as ImportedUser,
   LoginResponse as ImportedLoginResponse,
   Vehicle,
   Company,
@@ -14,8 +14,9 @@ import {
   UpdateUserPayload     // Added UpdateUserPayload
 } from '@/types';
 
-// Re-export the LoginResponse type
+// Re-export the types needed by other components
 export type LoginResponse = ImportedLoginResponse;
+export type User = ImportedUser;
 
 // Type for login credentials, can also be moved to @/types if used elsewhere
 interface LoginCredentials {
