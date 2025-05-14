@@ -79,7 +79,7 @@ FAZA 0: Osnovna Postavka i Dizajn Baze
     - [x] Kreiranje novog Next.js projekta (create-next-app).
     - [x] Dodavanje TypeScript-a u projekat.
     - [x] Instalacija i konfiguracija Tailwind CSS-a.
-    - [ ] Postavljanje osnovne strukture direktorijuma (components, pages, lib, styles, itd.).
+    - [x] Postavljanje osnovne strukture direktorijuma (components, pages, lib, styles, itd.).
     - [x] Inicijalizacija Git repozitorijuma.
 - [ ] Zadatak 0.2: Inicijalizacija Node.js/Express.js Projekta (Backend)
     - [x] Kreiranje package.json (npm init).
@@ -87,36 +87,36 @@ FAZA 0: Osnovna Postavka i Dizajn Baze
     - [x] Konfiguracija tsconfig.json za backend.
     - [x] Postavljanje osnovne strukture direktorijuma (src, routes, controllers, services, middlewares, config, itd.).
     - [x] Kreiranje osnovnog Express servera (app.ts ili index.ts).
-    - [ ] Inicijalizacija Git repozitorijuma (ili dodavanje u postojeći monorepo).
+    - [x] Inicijalizacija Git repozitorijuma (ili dodavanje u postojeći monorepo).
 - [ ] Zadatak 0.3: Postavka PostgreSQL Baze Podataka
-    - [ ] Instalacija PostgreSQL servera (lokalno ili na razvojnom serveru).
-    - [ ] Kreiranje nove baze podataka za projekat.
-    - [ ] Kreiranje korisnika baze podataka sa odgovarajućim dozvolama.
+    - [x] Instalacija PostgreSQL servera (lokalno ili na razvojnom serveru).
+    - [x] Kreiranje nove baze podataka za projekat.
+    - [x] Kreiranje korisnika baze podataka sa odgovarajućim dozvolama.
 - [ ] Zadatak 0.4: Integracija Prisma ORM-a u Backend Projekat
-    - [ ] Instalacija Prisma CLI i Prisma Client (npm install prisma --save-dev, npm install @prisma/client).
-    - [ ] Inicijalizacija Prisma u projektu (npx prisma init --datasource-provider postgresql).
-    - [ ] Konfiguracija .env fajla sa konekcionim stringom za bazu.
+    - [x] Instalacija Prisma CLI i Prisma Client (npm install prisma --save-dev, npm install @prisma/client).
+    - [x] Inicijalizacija Prisma u projektu (npx prisma init --datasource-provider postgresql).
+    - [x] Konfiguracija .env fajla sa konekcionim stringom za bazu.
 - [ ] Zadatak 0.5: Dizajn Prisma Šeme (schema.prisma) (MVP Fokus)
-    - [ ] Definisanje User modela (polja: id, username, passwordHash, role (Enum: ADMIN, SERVICER, FUEL_USER), createdAt, updatedAt).
-Definisanje Company modela (polja: id, name, createdAt, updatedAt, relacija ka Vehicle).
-Definisanje Location modela (polja: id, name, address (opciono), createdAt, updatedAt, relacija ka Company (opciono), relacija ka Vehicle).
-Definisanje Vehicle modela:
-Osnovna polja (id, status (Enum), vehicle_name, license_plate (unique), chassis_number (opciono), vessel_plate_no (opciono), notes).
-Polja za filter (filter_installed (Boolean), filter_installation_date (DateTime?), filter_validity_period_months (Int), filter_expiry_date (DateTime - izračunato/uneseno), filter_type_plate_no).
-Polja za inspekciju (last_annual_inspection_date (DateTime), next_annual_inspection_date (DateTime - izračunato)).
-Polja za senzore (sensor_technology (String?)).
-Polja za crijeva (npr. last_hose_hd63_replacement_date, next_hose_hd63_replacement_date, last_hose_hd38_replacement_date, itd., last_hose_leak_test_date, next_hose_leak_test_date).
-Polja za kalibraciju/umjeravanje (last_volumeter_calibration_date, next_volumeter_calibration_date, last_manometer_calibration_date, next_manometer_calibration_date, last_hecpv_ilcpv_test_date, next_hecpv_ilcpv_test_date).
-Polje za 6-mjesečni pregled (last_6_month_check_date, next_6_month_check_date).
-Kontakt (responsible_person_contact (String?)).
-Relacije: companyId -> Company, locationId -> Location.
-Polja za datume (createdAt, updatedAt).
+    - [x] Definisanje User modela (polja: id, username, passwordHash, role (Enum: ADMIN, SERVICER, FUEL_USER), createdAt, updatedAt).
+    - [x] Definisanje Company modela (polja: id, name, createdAt, updatedAt, relacija ka Vehicle).
+    - [x] Definisanje Location modela (polja: id, name, address (opciono), createdAt, updatedAt, relacija ka Company (opciono), relacija ka Vehicle).
+- [x] Definisanje Vehicle modela:
+    - [x] Osnovna polja (id, status (Enum), vehicle_name, license_plate (unique), chassis_number (opciono), vessel_plate_no (opciono), notes).
+    - [x] Polja za filter (filter_installed (Boolean), filter_installation_date (DateTime?), filter_validity_period_months (Int), filter_expiry_date (DateTime - izračunato/uneseno), filter_type_plate_no).
+    - [x] Polja za inspekciju (last_annual_inspection_date (DateTime), next_annual_inspection_date (DateTime - izračunato)).
+    - [x] Polja za senzore (sensor_technology (String?)).
+    - [x] Polja za crijeva (npr. last_hose_hd63_replacement_date, next_hose_hd63_replacement_date, last_hose_hd38_replacement_date, itd., last_hose_leak_test_date, next_hose_leak_test_date).
+    - [x] Polja za kalibraciju/umjeravanje (last_volumeter_calibration_date, next_volumeter_calibration_date, last_manometer_calibration_date, next_manometer_calibration_date, last_hecpv_ilcpv_test_date, next_hecpv_ilcpv_test_date).
+    - [x] Polje za 6-mjesečni pregled (last_6_month_check_date, next_6_month_check_date).
+    - [x] Kontakt (responsible_person_contact (String?)).
+    - [x] Relacije: companyId -> Company, locationId -> Location.
+    - [x] Polja za datume (createdAt, updatedAt).
 Definisanje VehicleImage modela (polja: id, imageUrl (String), vehicleId -> Vehicle, uploadedAt).
 Definisanje ServiceLog modela (polja: id, vehicleId -> Vehicle, service_date (DateTime), description (String), performed_by (String?), status (String?), cost (Decimal?), createdAt, updatedAt).
 Osnovna definicija modela za avio gorivo (placeholderi):
 FuelTank (polja: id, name, location, capacity, current_level).
 FuelTransaction (polja: id, tankId (opciono), vehicleId (cisterna, opciono), transaction_type (Enum: IN, OUT_TO_AIRCRAFT, OUT_TO_VEHICLE), quantity, date, aircraft_registration (opciono), destination_company (opciono)).
-Pokretanje prve migracije (npx prisma migrate dev --name init).
+~~- [x] Pokretanje prve migracije (npx prisma migrate dev --name init).~~
 Zadatak 0.6: Odluka i Implementacija Osnovne Logike za Čuvanje Fotografija
 Odluka: Fajl sistem servera.
 Definisanje strukture direktorijuma za slike na serveru (npr. uploads/vehicle_images/).
@@ -124,22 +124,23 @@ Instalacija multer ili slične biblioteke u backend za rukovanje file upload-om.
 Osnovna konfiguracija multer-a (destinacija, limit veličine fajla, filtriranje tipa fajla).
 FAZA 1: Backend Razvoj - Jezgro (Vozila, Korisnici, Firme, Lokacije)
 
-Zadatak 1.1: API Endpoints za User
-Implementacija POST /auth/register (samo za Admina da kreira nove korisnike) - heširanje lozinke.
-Implementacija POST /auth/login - generisanje JWT tokena.
-Middleware za autentifikaciju (provjera JWT tokena).
-Middleware za autorizaciju (provjera uloge korisnika).
-Implementacija GET /users (samo Admin, lista korisnika).
-Implementacija GET /users/:id (samo Admin, detalji korisnika).
-Implementacija PUT /users/:id (samo Admin, izmjena korisnika).
-Implementacija DELETE /users/:id (samo Admin, brisanje korisnika).
-Implementacija GET /auth/me (dohvatanje podataka o trenutno ulogovanom korisniku).
-Zadatak 1.2: API Endpoints za Company
-Implementacija POST /companies (zaštićeno).
-Implementacija GET /companies (zaštićeno).
-Implementacija GET /companies/:id (zaštićeno).
-Implementacija PUT /companies/:id (zaštićeno).
-Implementacija DELETE /companies/:id (zaštićeno).
+Zadatak 1.1: API Endpoints za User (Refaktorisano u Controller/Service slojeve)
+    - [x] Implementacija POST /auth/register (samo za Admina da kreira nove korisnike) - heširanje lozinke.
+    - [x] Implementacija POST /auth/login - generisanje JWT tokena.
+    - [x] Middleware za autentifikaciju (provjera JWT tokena).
+    - [x] Middleware za autorizaciju (provjera uloge korisnika).
+    - [x] Implementacija GET /users (samo Admin, lista korisnika).
+    - [x] Implementacija GET /users/:id (samo Admin, detalji korisnika).
+    - [x] Implementacija PUT /users/:id (samo Admin, izmjena korisnika).
+    - [x] Implementacija DELETE /users/:id (samo Admin, brisanje korisnika).
+    - [x] Implementacija GET /auth/me (dohvatanje podataka o trenutno ulogovanom korisniku).
+- [x] Zadatak 1.2: API Endpoints za Company (Refaktorisano u Controller/Service slojeve)
+    - [x] Implementacija POST /companies (zaštićeno).
+    - [x] Implementacija GET /companies (zaštićeno).
+    - [x] Implementacija GET /companies/:id (zaštićeno).
+    - [x] Implementacija PUT /companies/:id (zaštićeno).
+    - [x] Implementacija DELETE /companies/:id (zaštićeno).
+    - [x] Refaktorisanje u controller/service slojeve.
 Zadatak 1.3: API Endpoints za Location
 Implementacija POST /locations (zaštićeno).
 Implementacija GET /locations (zaštićeno).
@@ -149,8 +150,8 @@ Implementacija DELETE /locations/:id (zaštićeno).
 Zadatak 1.4: API Endpoints za Vehicle
 Implementacija POST /vehicles (zaštićeno).
 Validacija ulaznih podataka.
-Logika za automatsko izračunavanje filter_expiry_date ako su dati filter_installation_date i filter_validity_period_months.
-Logika za automatsko izračunavanje next_annual_inspection_date (npr. last_annual_inspection_date + 1 godina).
+- [x] Logika za automatsko izračunavanje filter_expiry_date ako su dati filter_installation_date i filter_validity_period_months.
+- [x] Logika za automatsko izračunavanje next_annual_inspection_date (npr. last_annual_inspection_date + 1 godina).
 Slična logika za ostale datume isteka (crijeva, kalibracije) ako su intervali poznati i fiksni, ili ako se unosi datum sledećeg.
 Implementacija GET /vehicles (zaštićeno).
 Mogućnost paginacije.
@@ -171,143 +172,51 @@ Implementacija POST /vehicles/:vehicleId/images (upload jedne ili više slika, k
 Kreiranje zapisa u VehicleImage tabeli sa putanjom do slike.
 Implementacija DELETE /vehicle-images/:imageId (brisanje slike sa servera i iz baze).
 Zadatak 1.6: Middleware za Autorizaciju (proširenje)
-Implementacija funkcije/middleware-a checkRole(roles_array) koja provjerava da li korisnik ima jednu od dozvoljenih uloga za pristup ruti.
-Primjena middleware-a na sve relevantne rute.
+    - [x] Implementacija funkcije/middleware-a checkRole(roles_array) koja provjerava da li korisnik ima jednu od dozvoljenih uloga za pristup ruti.
+    - [x] Primjena middleware-a na sve relevantne rute.
+    - [x] Refaktorisanje u controller/service slojeve.
 FAZA 2: Frontend Razvoj - Admin Portal (Vozila, Korisnici, Firme, Lokacije)
 
 Zadatak 2.1: Osnovni Layout Admin Portala
-Kreiranje Layout komponente (Next.js).
-Implementacija Navbar komponente.
-Implementacija Sidebar komponente (ako je potrebna).
-Kreiranje "zaštićenih ruta" HOC-a ili logike u _app.tsx za provjeru autentifikacije prije prikaza stranice.
-Definisanje globalnog state managementa (npr. Zustand, Redux Toolkit, React Context) za korisničku sesiju i sl.
+- [x] Kreiranje Layout komponente (Next.js).
+- [x] Implementacija Navbar komponente.
+- [x] Implementacija Sidebar komponente (ako je potrebna).
+- [x] Kreiranje "zaštićenih ruta" HOC-a ili logike u _app.tsx za provjeru autentifikacije prije prikaza stranice.
+- [x] Definisanje globalnog state managementa (npr. Zustand, Redux Toolkit, React Context) za korisničku sesiju i sl.
 Zadatak 2.2: Stranica za Login
-Kreiranje forme za login (username, password).
-Poziv API endpointa /auth/login.
-Čuvanje JWT tokena (npr. u localStorage ili httpOnly kolačiću) i podataka o korisniku u globalnom stanju.
-Preusmjeravanje na dashboard nakon uspješnog logina.
-Prikaz grešaka pri neuspješnom loginu.
+- [x] Kreiranje forme za login (username, password).
+- [x] Poziv API endpointa /auth/login.
+- [x] Čuvanje JWT tokena (npr. u localStorage ili httpOnly kolačiću) i podataka o korisniku u globalnom stanju.
+- [x] Preusmjeravanje na dashboard nakon uspješnog logina.
+- [x] Prikaz grešaka pri neuspješnom loginu.
 Zadatak 2.3: Komponenta/Stranica za Upravljanje Korisnicima (samo Admin)
-Zaštita rute samo za Admine.
-Prikaz tabele korisnika (poziv GET /users).
+- [x] Zaštita rute samo za Admine.
+- [x] Prikaz tabele korisnika (poziv GET /users).
 Forma za kreiranje novog korisnika (poziv POST /auth/register).
 Mogućnost izmjene korisnika (modal/stranica sa formom, poziv PUT /users/:id).
 Mogućnost brisanja korisnika (uz potvrdu, poziv DELETE /users/:id).
 Zadatak 2.4: Komponenta/Stranica za Upravljanje Firmama
-Prikaz liste firmi (poziv GET /companies).
-Forma za dodavanje nove firme (poziv POST /companies).
-Mogućnost izmjene firme (poziv PUT /companies/:id).
-Mogućnost brisanja firme (poziv DELETE /companies/:id).
+- [x] Prikaz liste firmi (poziv GET /companies).
+- [x] Forma za dodavanje nove firme (poziv POST /companies).
+- [x] Mogućnost izmjene firme (poziv PUT /companies/:id).
+- [x] Mogućnost brisanja firme (poziv DELETE /companies/:id).
 Zadatak 2.5: Komponenta/Stranica za Upravljanje Lokacijama
-Prikaz liste lokacija (poziv GET /locations).
-Forma za dodavanje nove lokacije (poziv POST /locations).
-Mogućnost izmjene lokacije (poziv PUT /locations/:id).
-Mogućnost brisanja lokacije (poziv DELETE /locations/:id).
-Zadatak 2.6: Prikaz Liste Vozila (/vehicles)
-Kreiranje stranice za prikaz liste vozila.
-Implementacija tabele (npr. koristeći react-table ili custom Tailwind komponente).
-Prikaz ključnih kolona (definisati koje su najvažnije).
-Implementacija klijentskog ili serverskog sortiranja.
-Implementacija klijentskog ili serverskog filtriranja (dropdowni za status, firmu, lokaciju).
-Implementacija polja za pretragu (poziv API-ja sa search parametrom).
-Vizuelno isticanje redova (npr. crvena boja za <7 dana do isteka, žuta za <30 dana).
-Prikaz thumbnaila prve slike vozila (ako postoji).
-Dugme/link za "Detalji" koje vodi na stranicu detalja vozila.
-Dugme za "Dodaj novo vozilo".
-Implementacija paginacije (klijentske ili serverske).
-Zadatak 2.7: Stranica sa Detaljima Vozila (/vehicles/[id])
-Dohvatanje podataka o specifičnom vozilu (poziv GET /vehicles/:id).
-Prikaz svih polja o vozilu u čitljivom formatu.
-Forma za izmjenu podataka o vozilu (poziv PUT /vehicles/:id pri submitu).
-Sva polja iz Excela, mapirana na formu.
-Odabir Firme i Lokacije iz dropdowna (pune se sa GET /companies i GET /locations).
-Sekcija za prikaz slika vozila:
-Prikaz galerije slika (ako ih ima više).
-Mogućnost otvaranja slike u punoj veličini (lightbox).
-Sekcija za upload novih slika (poziv POST /vehicles/:vehicleId/images).
-Mogućnost brisanja postojećih slika (poziv DELETE /vehicle-images/:imageId).
-Sekcija za prikaz istorije servisnih naloga (integracija sa Fazom 3).
-Zadatak 2.8: Forma za Unos Novog Vozila (/vehicles/new)
-Kreiranje stranice sa formom za unos novog vozila.
-Sva relevantna polja iz Excela.
-Dropdowni za odabir Firme i Lokacije.
-Poziv POST /vehicles pri submitu forme.
-Preusmjeravanje na listu vozila ili detalje novokreiranog vozila nakon uspješnog unosa.
-FAZA 3: Servisni Nalozi i Osnovni Izvještaji
-
-Zadatak 3.1 (Backend): API Endpoints za ServiceLog
-Implementacija POST /vehicles/:vehicleId/service-logs (zaštićeno).
-Prilikom kreiranja, ako servisni nalog označava zamjenu filtera, ažurirati vehicle.filter_installation_date i vehicle.filter_expiry_date.
-Slična logika za godišnju inspekciju, zamjenu crijeva, itd.
-Implementacija GET /vehicles/:vehicleId/service-logs (zaštićeno, lista servisa za vozilo).
-Implementacija GET /service-logs/:logId (zaštićeno, detalji jednog servisa).
-Implementacija PUT /service-logs/:logId (zaštićeno).
-Ažurirati relevantna polja na vozilu ako se mijenja tip servisa.
-Implementacija DELETE /service-logs/:logId (zaštićeno).
-Zadatak 3.2 (Frontend): UI za Upravljanje Servisnim Nalozima
-Na stranici detalja vozila (/vehicles/[id]):
-Prikaz tabele/liste servisnih naloga za to vozilo (poziv GET /vehicles/:vehicleId/service-logs).
-Dugme "Dodaj servisni nalog" koje otvara modal/formu.
-Forma za unos/izmjenu servisnog naloga (datum, opis, izvršilac, status, cijena, tip servisa - ovo može biti dropdown koji utiče na ažuriranje vozila).
-Mogućnost izmjene i brisanja postojećih servisnih naloga.
-Zadatak 3.3 (Backend & Frontend): Generisanje Izvještaja
-Backend:
-Endpoint GET /reports/vehicles-status (vraća podatke za listu svih vozila sa statusom).
-Endpoint GET /reports/expiring-filters?days=X (vraća vozila kojima ističe filter u X dana).
-Endpoint GET /reports/expiring-inspections?days=X (vraća vozila kojima ističe inspekcija u X dana).
-Endpoint GET /reports/vehicle-service-history/:vehicleId (vraća sve servisne naloge za vozilo).
-Frontend:
-Stranica/sekcija za izvještaje.
-Dugmad za generisanje svakog tipa izvještaja.
-Korišćenje biblioteka kao jspdf i xlsx (ili sheetjs) za generisanje PDF/Excel fajlova na klijentu na osnovu podataka dobijenih sa backend endpointa.
-Opcija za odabir broja dana (X) za izvještaje o isteku.
-Zadatak 3.4 (Frontend): Osnovne Notifikacije Unutar Sistema
-Na dashboardu ili u headeru, prikaz brojača za kritične stavke (npr. "Filteri za zamjenu: 5", "Inspekcije uskoro: 3").
-Opciono: Lista tih kritičnih stavki sa linkovima ka odgovarajućim vozilima.
-FAZA 4: Evidencija o Avio Gorivu (MVP) (Ovo se može preklapati ili započeti nakon stabilizacije Faza 1-3)
-
-Zadatak 4.1 (Backend): API Endpoints za FuelTank
-POST /fuel-tanks
-GET /fuel-tanks
-GET /fuel-tanks/:id
-PUT /fuel-tanks/:id
-DELETE /fuel-tanks/:id
-Zadatak 4.2 (Backend): API Endpoints za FuelTransaction
-POST /fuel-transactions
-Logika za ažuriranje current_level u FuelTank (ako je transakcija vezana za tank).
-Logika za ažuriranje stanja goriva na cisterni (ako je Vehicle cisterna i ako se prati stanje na njoj).
-GET /fuel-transactions (sa filtrima po datumu, tipu, tanku, vozilu).
-GET /fuel-transactions/:id
-PUT /fuel-transactions/:id (sa logikom re-kalkulacije stanja).
-DELETE /fuel-transactions/:id (sa logikom re-kalkulacije stanja).
-Zadatak 4.3 (Frontend): UI za Upravljanje Tankovima Goriva
-Stranica za prikaz liste tankova, dodavanje, izmjenu, brisanje.
-Zadatak 4.4 (Frontend): UI za Unos i Pregled Transakcija Goriva
-Stranica za prikaz liste transakcija sa filterima.
-Forma za unos nove transakcije (odabir tanka/cisterne, tip transakcije, količina, itd.).
-Zadatak 4.5 (Frontend): Osnovni Prikazi/Izvještaji o Gorivu
-Tabela sa stanjem goriva po tankovima.
-Tabela sa listom transakcija i opcijom za PDF/Excel download.
-Osnovni chartovi (npr. potrošnja po periodu, stanje tankova) koristeći npr. Chart.js ili Recharts.
-Zadatak 4.6: Prilagođavanje FUEL_USER Uloge
-Ograničiti FUEL_USER da vidi samo stranice i podatke vezane za avio gorivo.
-Podesiti navigaciju za FUEL_USER.
-FAZA 5: Testiranje, Optimizacija i Postavljanje (Deployment)
-
-Zadatak 5.1: Detaljno Testiranje Svih Funkcionalnosti
-Testiranje CRUD operacija za sve entitete.
-Testiranje logike autentifikacije i autorizacije.
-Testiranje uloga korisnika.
-Testiranje uploada i prikaza slika.
-Testiranje logike izračunavanja datuma i dana do isteka.
-Testiranje generisanja izvještaja (PDF, Excel).
-Testiranje funkcionalnosti avio goriva.
-Testiranje na različitim pretraživačima (osnovno).
-Testiranje responzivnosti (osnovno).
-Zadatak 5.2: Optimizacija
-Pregled sporih Prisma upita i njihova optimizacija (indeksi, selektivno dohvaćanje).
-Optimizacija performansi frontenda (bundle size, rendering).
-Code review i refaktorisanje.
-Zadatak 5.3: Priprema za Produkcijsko Okruženje
-Definisanje svih potrebnih varijabli okruženja (.env.production).
-Podešavanje logovanja za produkciju.
+- [ ] Prikaz liste lokacija (poziv GET /locations).
+- [ ] Forma za dodavanje nove lokacije (poziv POST /locations).
+- [ ] Mogućnost izmjene lokacije (poziv PUT /locations/:id).
+- [ ] Mogućnost brisanja lokacije (uz potvrdu, poziv DELETE /locations/:id).
+- [ ] Zadatak 2.6: Dashboard Core & Vehicle Management (Initial)
+    - [x] Kreiranje Sidebar komponente (`frontend/src/components/layout/Sidebar.tsx`).
+    - [x] Kreiranje Dashboard Layout komponente (`frontend/src/app/dashboard/layout.tsx`).
+    - [x] Kreiranje osnovnog API servisa (`frontend/src/lib/apiService.ts`) sa funkcijama za vozila, firme, lokacije.
+    - [x] Kreiranje stranice i forme za dodavanje novog vozila (`frontend/src/app/dashboard/vehicles/new/page.tsx`).
+    - [x] Implementacija Logout funkcionalnosti u Sidebar-u.
+    - [x] Povezivanje Login forme sa backendom (`/auth/login`) i čuvanje JWT tokena.
+    - [x] Implementacija globalnog Authentication Context-a/State Managementa (npr. Zustand ili React Context).
+    - [x] Implementacija zaštićenih ruta za dashboard koristeći Auth Context.
+    - [x] Kreiranje stranice za listanje vozila (`/dashboard/vehicles`).
+    - [ ] Implementacija forme za izmjenu vozila.
+    - [ ] Implementacija brisanja vozila.
+- [ ] Zadatak 2.7: Komponenta/Stranica za Upravljanje Vozilima (kompletno)
+    - [ ] Prikaz tabele/liste vozila (poziv GET /vehicles) sa paginacijom, sortiranjem, filtriranjem.
+{{ ... }}

@@ -1,0 +1,190 @@
+// DATA-AVIOSERVIS Prisma Schema
+// Kompletan dizajn prema checklisti
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  username    String   @unique
+  passwordHash String
+  role        Role
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  SERVICER
+  FUEL_USER
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  vehicles  Vehicle[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id         Int      @id @default(autoincrement())
+  name       String
+  address    String?
+  companyTaxId String?
+  vehicles   Vehicle[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Vehicle {
+  id                             Int      @id @default(autoincrement())
+  status                         VehicleStatus
+  vehicle_name                   String
+  license_plate                  String   @unique
+  chassis_number                 String?
+  vessel_plate_no                String?
+  notes                          String?
+  image_url                      String? // Added for primary vehicle image
+  filter_installed               Boolean
+  filter_installation_date       DateTime?
+  filter_validity_period_months  Int?
+  filter_expiry_date             DateTime?
+  filter_type_plate_no           String?
+  last_annual_inspection_date    DateTime?
+  next_annual_inspection_date    DateTime?
+  sensor_technology              String?
+  last_hose_hd63_replacement_date DateTime?
+  next_hose_hd63_replacement_date DateTime?
+  last_hose_hd38_replacement_date DateTime?
+  next_hose_hd38_replacement_date DateTime?
+  last_hose_tw75_replacement_date DateTime?
+  next_hose_tw75_replacement_date DateTime?
+  last_hose_leak_test_date       DateTime?
+  next_hose_leak_test_date       DateTime?
+  last_volumeter_calibration_date DateTime?
+  next_volumeter_calibration_date DateTime?
+  last_manometer_calibration_date DateTime?
+  next_manometer_calibration_date DateTime?
+  last_hecpv_ilcpv_test_date     DateTime?
+  next_hecpv_ilcpv_test_date     DateTime?
+  last_6_month_check_date        DateTime?
+  next_6_month_check_date        DateTime?
+  responsible_person_contact     String?
+  company                       Company  @relation(fields: [companyId], references: [id])
+  companyId                     Int
+  location                      Location @relation(fields: [locationId], references: [id])
+  locationId                    Int
+  images                        VehicleImage[]
+  serviceRecords                ServiceRecord[]
+  fuelTransactions              FuelTransaction[]
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+}
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+model VehicleImage {
+  id         Int      @id @default(autoincrement())
+  imageUrl   String
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId  Int
+  uploadedAt DateTime @default(now())
+}
+
+// Service Record models
+enum ServiceRecordCategory {
+  REGULAR_MAINTENANCE
+  REPAIR
+  TECHNICAL_INSPECTION
+  FILTER_REPLACEMENT
+  HOSE_REPLACEMENT
+  CALIBRATION
+  OTHER
+}
+
+enum ServiceItemType {
+  FILTER
+  HOSE_HD63
+  HOSE_HD38
+  HOSE_TW75
+  HOSE_LEAK_TEST
+  VOLUMETER
+  MANOMETER
+  HECPV_ILCPV
+  SIX_MONTH_CHECK
+  ENGINE
+  BRAKES
+  TRANSMISSION
+  ELECTRICAL
+  TIRES
+  OTHER
+}
+
+model ServiceRecord {
+  id           Int                  @id @default(autoincrement())
+  vehicle      Vehicle               @relation(fields: [vehicleId], references: [id])
+  vehicleId    Int
+  serviceDate  DateTime
+  description  String
+  category     ServiceRecordCategory
+  documentUrl  String?
+  serviceItems ServiceItem[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+}
+
+model ServiceItem {
+  id              Int             @id @default(autoincrement())
+  serviceRecord   ServiceRecord    @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  serviceRecordId Int
+  type            ServiceItemType
+  description     String?
+  replaced        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+// Placeholder modeli za avio gorivo
+model FuelTank {
+  id           Int      @id @default(autoincrement())
+  name         String
+  location     String
+  capacity     Float
+  current_level Float
+  transactions FuelTransaction[]
+}
+
+model FuelTransaction {
+  id           Int      @id @default(autoincrement())
+  tank         FuelTank? @relation(fields: [tankId], references: [id])
+  tankId       Int?
+  vehicle      Vehicle?  @relation(fields: [vehicleId], references: [id])
+  vehicleId    Int?
+  transaction_type TransactionType
+  quantity     Float
+  date         DateTime
+  aircraft_registration String?
+  destination_company   String?
+}
+
+enum TransactionType {
+  IN
+  OUT_TO_AIRCRAFT
+  OUT_TO_VEHICLE
+}
+
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
