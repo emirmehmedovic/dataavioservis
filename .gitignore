@@ -1,0 +1,38 @@
+   # OS generated files #
+   .DS_Store
+   .DS_Store?
+   ._*
+   .Spotlight-V100
+   .Trashes
+   ehthumbs.db
+   Thumbs.db
+
+   # IDE / Editor specific #
+   .idea/
+   .vscode/
+   *.sublime-project
+   *.sublime-workspace
+
+   # Log files #
+   *.log
+   logs/
+
+   # Environment variables #
+   # Obavezno dodajte .env fajlove ovde ako sadrže osetljive podatke
+   # Primer:
+   # .env
+   # .env.local
+   # .env.development.local
+   # .env.test.local
+   # .env.production.local
+   # Ostavite !.env.example ako imate primer .env fajla koji želite da commitujete
+   # !.env.example
+
+   # Compiled files / Output directories (general) #
+   # /dist/  <-- Ako imate dist u root-u
+   # /build/ <-- Ako imate build u root-u
+   # /out/   <-- Ako imate out u root-u
+
+   # Other #
+   *.pem
+   *.key
