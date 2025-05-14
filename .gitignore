@@ -33,6 +33,9 @@
    # /build/ <-- Ako imate build u root-u
    # /out/   <-- Ako imate out u root-u
 
+   # Dependencies
+   node_modules/
+
    # Other #
    *.pem
    *.key
