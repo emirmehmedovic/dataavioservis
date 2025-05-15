@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "nodemon src/app.ts",
     "seed": "ts-node prisma/seed.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/app.js",
-    "prisma": "prisma"
+    "prisma": "prisma",
+    "postinstall": "npm rebuild bcrypt --build-from-source"
   },
   "keywords": [],
   "author": "",
