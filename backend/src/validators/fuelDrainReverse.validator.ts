@@ -18,7 +18,8 @@ const validate = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
-export const validateDrainReverseTransaction = [
+// Create validation rules array
+const validationRules = [
   // Validate dateTime
   body('dateTime')
     .notEmpty().withMessage('Datum i vrijeme povrata su obavezni')
@@ -51,16 +52,36 @@ export const validateDrainReverseTransaction = [
   // Validate notes (optional)
   body('notes')
     .optional()
-    .isString().withMessage('Napomena mora biti tekst'),
-  
-  // Add a log to indicate that the validation chain is being set up
-  (req: Request, res: Response, next: NextFunction) => {
-    console.log('[validateDrainReverseTransaction setup] Validation chain for drain reverse transaction is being applied.');
-    next();
-  },
-  
-  // Use the common validate middleware
-  validate
+    .isString().withMessage('Napomena mora biti tekst')
 ];
+
+// Create a middleware function that applies validation rules and then validates
+export const validateDrainReverseTransaction = (req: Request, res: Response, next: NextFunction) => {
+  console.log('[validateDrainReverseTransaction] Applying validation rules');
+  
+  // Apply all validation rules
+  Promise.all(validationRules.map(validation => validation.run(req)))
+    .then(() => {
+      // Check for validation errors
+      const errors = validationResult(req);
+      if (errors.isEmpty()) {
+        console.log('[validateDrainReverseTransaction] No validation errors, proceeding');
+        return next();
+      }
+      
+      // Handle validation errors
+      const extractedErrors: Record<string, string>[] = [];
+      errors.array().map(err => extractedErrors.push({ [err.type === 'field' ? err.path : 'general']: err.msg }));
+      console.log('[validateDrainReverseTransaction] Validation errors found:', extractedErrors);
+      return res.status(400).json({
+        message: 'Greška prilikom validacije ulaznih podataka.',
+        errors: extractedErrors,
+      });
+    })
+    .catch(error => {
+      console.error('[validateDrainReverseTransaction] Error during validation:', error);
+      return res.status(500).json({ message: 'Interna greška prilikom validacije.' });
+    });
+};
 
 console.log('[fuelDrainReverse.validator.ts] validateDrainReverseTransaction chain defined.');
