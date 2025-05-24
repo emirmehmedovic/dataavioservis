@@ -13,7 +13,7 @@ router.use(authenticateToken);
 // POST /api/fuel/drains - Create a new fuel drain record (formerly /api/fuel/drain)
 // Temporarily removed validateDrainRecord for debugging
 router.post('/', 
-  (req, res, next) => {
+  function logRequestBody(req: express.Request, res: express.Response, next: express.NextFunction): void {
     console.log('[fuelDrain.routes.ts] Inline middleware for POST / reached. Request body:', req.body);
     next();
   },
@@ -29,7 +29,7 @@ router.get('/records/:id', getFuelDrainRecordById);
 
 // POST /api/fuel/drains/reverse - Process a reverse transaction for drained fuel
 router.post('/reverse', 
-  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  function logRequestBody(req: express.Request, res: express.Response, next: express.NextFunction): void {
     console.log('[fuelDrain.routes.ts] Inline middleware for POST /reverse reached. Request body:', req.body);
     next();
   },

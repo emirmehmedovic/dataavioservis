@@ -5,10 +5,10 @@ import { Tab } from '@headlessui/react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import components with no SSR
-const TankManagement = dynamic(() => import('../../../../components/fuel/TankManagement'), { ssr: false });
-const FuelingOperations = dynamic(() => import('../../../../components/fuel/FuelingOperations'), { ssr: false });
-const AirlineManagement = dynamic(() => import('../../../../components/fuel/AirlineManagement'), { ssr: false });
-const FuelReports = dynamic(() => import('../../../../components/fuel/FuelReports'), { ssr: false });
+const TankManagement = dynamic(() => import('@/components/fuel/TankManagement'), { ssr: false });
+const FuelingOperations = dynamic(() => import('@/components/fuel/FuelingOperations'), { ssr: false });
+const AirlineManagement = dynamic(() => import('@/components/fuel/AirlineManagement'), { ssr: false });
+const FuelReports = dynamic(() => import('@/components/fuel/FuelReports'), { ssr: false });
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
