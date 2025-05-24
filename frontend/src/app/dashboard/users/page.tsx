@@ -58,6 +58,12 @@ const UserManagementPage: React.FC = () => {
         return 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white';
       case UserRole.FUEL_OPERATOR:
         return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white';
+      case UserRole.KONTROLA:
+        return 'bg-gradient-to-r from-purple-500 to-violet-500 text-white';
+      case UserRole.CARINA:
+        return 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white';
+      case UserRole.AERODROM:
+        return 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white';
       default:
         return 'bg-gradient-to-r from-gray-500 to-slate-500 text-white';
     }
@@ -173,7 +179,10 @@ const UserManagementPage: React.FC = () => {
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.role)} shadow-sm`}>
                             {user.role === 'ADMIN' ? 'Administrator' : 
                              user.role === 'SERVICER' ? 'Serviser' : 
-                             user.role === 'FUEL_OPERATOR' ? 'Operater Goriva' : user.role}
+                             user.role === 'FUEL_OPERATOR' ? 'Operater Goriva' :
+                             user.role === 'KONTROLA' ? 'Kontrola' :
+                             user.role === 'CARINA' ? 'Carina' :
+                             user.role === 'AERODROM' ? 'Aerodrom' : user.role}
                           </span>
                         </div>
                       </td>

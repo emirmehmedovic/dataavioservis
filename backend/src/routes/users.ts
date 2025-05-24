@@ -15,7 +15,7 @@ router.post('/',
   [
     body('username').isLength({ min: 3 }).trim().escape().withMessage('Korisničko ime mora imati najmanje 3 karaktera.'),
     body('password').isLength({ min: 6 }).withMessage('Lozinka mora imati najmanje 6 karaktera.'),
-    body('role').isIn(['ADMIN', 'SERVICER', 'FUEL_USER']).withMessage('Nevažeća uloga.')
+    body('role').isIn(['ADMIN', 'SERVICER', 'FUEL_OPERATOR', 'KONTROLA', 'CARINA', 'AERODROM']).withMessage('Nevažeća uloga.')
   ],
   createUser
 );
@@ -26,7 +26,7 @@ router.get('/:id', authenticateToken, requireRole('ADMIN'), getUserById);
 // PUT /users/:id (ADMIN only)
 router.put('/:id', authenticateToken, requireRole('ADMIN'), [
   body('username').optional().isLength({ min: 3 }).withMessage('Username mora imati najmanje 3 karaktera.'),
-  body('role').optional().isIn(['ADMIN', 'SERVICER', 'FUEL_USER']).withMessage('Nevažeća uloga.')
+  body('role').optional().isIn(['ADMIN', 'SERVICER', 'FUEL_OPERATOR', 'KONTROLA', 'CARINA', 'AERODROM']).withMessage('Nevažeća uloga.')
 ], updateUser);
 
 // DELETE /users/:id (ADMIN only)

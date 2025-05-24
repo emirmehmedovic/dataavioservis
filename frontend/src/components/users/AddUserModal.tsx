@@ -109,7 +109,10 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onUserAdde
                 <option key={r} value={r}>
                   {r === 'ADMIN' ? 'Administrator' : 
                    r === 'SERVICER' ? 'Serviser' : 
-                   r === 'FUEL_OPERATOR' ? 'Operater Goriva' : r}
+                   r === 'FUEL_OPERATOR' ? 'Operater Goriva' : 
+                   r === 'KONTROLA' ? 'Kontrola' :
+                   r === 'CARINA' ? 'Carina' :
+                   r === 'AERODROM' ? 'Aerodrom' : r}
                 </option>
               ))}
             </select>

@@ -3,6 +3,7 @@
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import withAuth from '@/components/auth/withAuth';
+import RoleBasedAuth from '@/components/auth/RoleBasedAuth';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
@@ -22,22 +23,24 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
-      <div className="flex-1 flex flex-col transition-all duration-300">
-        <DashboardHeader />
-        <motion.main 
-          className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        >
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </motion.main>
+    <RoleBasedAuth>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <Sidebar />
+        <div className="flex-1 flex flex-col transition-all duration-300">
+          <DashboardHeader />
+          <motion.main 
+            className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </motion.main>
+        </div>
       </div>
-    </div>
+    </RoleBasedAuth>
   );
 }
 

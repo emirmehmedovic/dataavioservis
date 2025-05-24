@@ -14,6 +14,8 @@ export enum UserRole {
   SERVICER = 'SERVICER',
   FUEL_OPERATOR = 'FUEL_OPERATOR',
   KONTROLA = 'KONTROLA',
+  CARINA = 'CARINA',      // New role for customs access
+  AERODROM = 'AERODROM'   // New role for airport access
 }
 
 export type CreateUserPayload = Pick<User, 'username' | 'role'> & {

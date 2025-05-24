@@ -22,16 +22,28 @@ import {
   Fuel,
   ClipboardList,
   ShieldCheck, // Added ShieldCheck
+  Plane, // Added Plane for Airport
 } from 'lucide-react';
 
+// Define new user roles for specific access
+enum CustomRole {
+  ADMIN = 'ADMIN',
+  SERVICER = 'SERVICER',
+  FUEL_OPERATOR = 'FUEL_OPERATOR',
+  KONTROLA = 'KONTROLA',
+  CARINA = 'CARINA',      // New role for customs
+  AERODROM = 'AERODROM'   // New role for airport
+}
+
 const baseNavItems = [
-  { name: 'Početna', href: '/dashboard', icon: Home, roles: ['ADMIN', 'SERVICER', 'FUEL_OPERATOR', 'KONTROLA'] },
-  { name: 'Vozila', href: '/dashboard/vehicles', icon: Car, roles: ['ADMIN', 'SERVICER', 'FUEL_OPERATOR', 'KONTROLA'] },
-  { name: 'Gorivo', href: '/dashboard/fuel', icon: Fuel, roles: ['ADMIN', 'SERVICER', 'FUEL_OPERATOR', 'KONTROLA'] },
+  { name: 'Početna', href: '/dashboard', icon: Home, roles: ['ADMIN'] },
+  { name: 'Vozila', href: '/dashboard/vehicles', icon: Car, roles: ['ADMIN'] },
+  { name: 'Gorivo', href: '/dashboard/fuel', icon: Fuel, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Izvještaji', href: '/dashboard/reports', icon: ClipboardList, roles: ['ADMIN', 'KONTROLA'] },
-  { name: 'Carina', href: '/dashboard/customs', icon: ShieldCheck, roles: ['ADMIN', 'KONTROLA'] }, // Added Carina link
-  { name: 'Firme', href: '/dashboard/companies', icon: Building2, roles: ['ADMIN', 'SERVICER'] },
-  { name: 'Lokacije', href: '/dashboard/locations', icon: MapPin, roles: ['ADMIN', 'SERVICER'] },
+  { name: 'Carina', href: '/dashboard/customs', icon: ShieldCheck, roles: ['ADMIN', 'CARINA'] },
+  { name: 'Aerodrom', href: '/dashboard/airport', icon: Plane, roles: ['ADMIN', 'AERODROM'] },
+  { name: 'Firme', href: '/dashboard/companies', icon: Building2, roles: ['ADMIN'] },
+  { name: 'Lokacije', href: '/dashboard/locations', icon: MapPin, roles: ['ADMIN'] },
   { name: 'Korisnici', href: '/dashboard/users', icon: Users, roles: ['ADMIN'] },
 ];
 

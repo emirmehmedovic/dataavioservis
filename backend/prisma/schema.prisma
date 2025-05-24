@@ -28,6 +28,8 @@ enum Role {
   SERVICER
   FUEL_OPERATOR
   KONTROLA
+  CARINA
+  AERODROM
 }
 
 model Company {
