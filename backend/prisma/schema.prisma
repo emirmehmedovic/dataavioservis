@@ -1,0 +1,522 @@
+// DATA-AVIOSERVIS Prisma Schema
+// Kompletan dizajn prema checklisti
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  username    String   @unique
+  passwordHash String
+  role        Role
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fuelReceipts FuelReceipt[]
+  fuelTransfersToTanker FuelTransferToTanker[]
+  fuelDrainRecords FuelDrainRecord[]
+}
+
+enum Role {
+  ADMIN
+  SERVICER
+  FUEL_OPERATOR
+  KONTROLA
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  taxId     String?  // PDV broj
+  city      String?  // Mjesto
+  address   String?  // Adresa firme
+  contactPersonName  String? // Kontakt osoba
+  contactPersonPhone String? // Broj telefona kontakt osobe
+  vehicles  Vehicle[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id         Int      @id @default(autoincrement())
+  name       String
+  address    String?
+  companyTaxId String?
+  vehicles   Vehicle[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Vehicle {
+  id                             Int      @id @default(autoincrement())
+  status                         VehicleStatus
+  vehicle_name                   String
+  license_plate                  String   @unique
+  chassis_number                 String?
+  vessel_plate_no                String?
+  notes                          String?
+  image_url                      String? // Added for primary vehicle image
+  filter_installed               Boolean
+  filter_installation_date       DateTime?
+  filter_validity_period_months  Int?
+  filter_expiry_date             DateTime?
+  filter_type_plate_no           String?
+  last_annual_inspection_date    DateTime?
+  next_annual_inspection_date    DateTime?
+  sensor_technology              String?
+  last_hose_hd63_replacement_date DateTime?
+  next_hose_hd63_replacement_date DateTime?
+  last_hose_hd38_replacement_date DateTime?
+  next_hose_hd38_replacement_date DateTime?
+  last_hose_tw75_replacement_date DateTime?
+  next_hose_tw75_replacement_date DateTime?
+  last_hose_leak_test_date       DateTime?
+  next_hose_leak_test_date       DateTime?
+  last_volumeter_calibration_date DateTime?
+  next_volumeter_calibration_date DateTime?
+  last_manometer_calibration_date DateTime?
+  next_manometer_calibration_date DateTime?
+  last_hecpv_ilcpv_test_date     DateTime?
+  next_hecpv_ilcpv_test_date     DateTime?
+  last_6_month_check_date        DateTime?
+  next_6_month_check_date        DateTime?
+
+  chassis_manufacturer           String?   // Added for Proizvođač šasije
+  chassis_type                   String?   // Added for Tip šasije
+
+  // Tehnička polja koja nedostaju
+  body_manufacturer              String?   // Proizvođač nadogradnje
+  body_type                      String?   // Tip nadogradnje
+  axle_count                     Int?      // Broj osovina
+  carrying_capacity_kg           Float?    // Nosivost (kg)
+  engine_power_kw                Float?    // Snaga motora (kW)
+  engine_displacement_ccm        Int?      // Zapremina motora (ccm)
+  seat_count                     Int?      // Broj sjedišta
+  fuel_type                      String?   // Vrsta goriva
+  year_of_manufacture            Int?      // Godina proizvodnje
+
+  // Polja za tanker koja nedostaju
+  tanker_type                    String?   // Tip Tankera
+  tanker_compartments            Int?      // Broj Komora
+  tanker_material                String?   // Materijal Tankera
+
+  // Datumi za testiranje protivpožarne zaštite
+  tanker_last_fire_safety_test_date    DateTime?
+  tanker_next_fire_safety_test_date    DateTime?
+
+  // Datumi za kalibraciju tahografa
+  tahograf_zadnja_kalibracija          DateTime?
+  tahograf_naredna_kalibracija         DateTime?
+
+  // Datumi za generalnu kalibraciju cisterne
+  cisterna_zadnja_kalibracija          DateTime?
+  cisterna_naredna_kalibracija         DateTime?
+
+  // New fields for tanker specifics and additional validity dates
+  tanker_last_pressure_test_date    DateTime?
+  tanker_next_pressure_test_date    DateTime?
+  kapacitet_cisterne             Float?
+  tip_filtera                    String?       // General filter type (e.g., cartridge, sock)
+  crijeva_za_tocenje             String?       // Hose type (e.g., "PODKRILNO", "NADKRILNO")
+  registrovano_do                DateTime?     // Vehicle registration valid until
+  adr_vazi_do                    DateTime?     // ADR certificate valid until
+  periodicni_pregled_vazi_do     DateTime?     @map("periodicni_pregled_vazi_do")
+
+  // Enhanced Filter Information
+  filter_vessel_number                String?    @map("filter_vessel_number")
+  filter_annual_inspection_date       DateTime?  @map("filter_annual_inspection_date")
+  filter_next_annual_inspection_date  DateTime?  @map("filter_next_annual_inspection_date")
+  filter_ew_sensor_inspection_date    DateTime?  @map("filter_ew_sensor_inspection_date")
+
+  // Hose HD63 Details
+  broj_crijeva_hd63                 String?    // Broj crijeva HD63
+  godina_proizvodnje_crijeva_hd63   Int?       // Godina proizvodnje crijeva HD63
+  datum_testiranja_pritiska_crijeva_hd63 DateTime? // Datum testiranja pritiska crijeva HD63
+
+  // Hose HD38 Details
+  broj_crijeva_hd38                 String?    // Broj crijeva HD38
+  godina_proizvodnje_crijeva_hd38   Int?       // Godina proizvodnje crijeva HD38
+  datum_testiranja_pritiska_crijeva_hd38 DateTime? // Datum testiranja pritiska crijeva HD38
+
+  // Hose TW75 Details
+  broj_crijeva_tw75                 String?    // Broj crijeva TW75
+  godina_proizvodnje_crijeva_tw75   Int?       // Godina proizvodnje crijeva TW75
+  datum_testiranja_pritiska_crijeva_tw75 DateTime? // Datum testiranja pritiska crijeva TW75
+
+  // Calibration Dates
+  datum_kalibracije_moment_kljuca             DateTime? // Datum kalibracije moment ključa
+  datum_kalibracije_termometra                DateTime? // Datum kalibracije termometra
+  datum_kalibracije_hidrometra                DateTime? // Datum kalibracije hidrometra
+  datum_kalibracije_uredjaja_elektricne_provodljivosti DateTime? // Datum kalibracije uređaja električne provodljivosti
+
+  // Other Expiry Dates
+  datum_isteka_cwd                    DateTime? // Datum isteka CWD (Certificate of Water Draining / Provjera ispravnosti sistema za odvod vode)
+
+  responsible_person_contact     String?
+  company                       Company  @relation(fields: [companyId], references: [id])
+  companyId                     Int
+  location                      Location @relation(fields: [locationId], references: [id])
+  locationId                    Int
+  images                        VehicleImage[]
+  serviceRecords                ServiceRecord[]
+  fuelingOperations             FuelingOperation[]
+  mobileTankRefills             MobileTankRefills[] @relation("TargetMobileTankForRefill") // Relation to MobileTankRefills
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+}
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+model VehicleImage {
+  id         Int      @id @default(autoincrement())
+  imageUrl   String
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId  Int
+  uploadedAt DateTime @default(now())
+}
+
+enum FixedTankStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+model FixedStorageTanks {
+  id                   Int      @id @default(autoincrement())
+  tank_name            String   @unique
+  tank_identifier      String?  @unique
+  capacity_liters      Float
+  current_quantity_liters Float   @default(0)
+  fuel_type            String   // e.g., JET_A1, AVGAS_100LL
+  location_description String?
+  status               FixedTankStatus @default(ACTIVE)
+  identificationDocumentUrl String? // URL to the identification document
+  last_checked_date    DateTime? // Datum zadnje provjere stanja
+  last_cleaned_date    DateTime? // Datum zadnjeg čišćenja
+  manufacturer         String?
+  year_of_manufacture  Int?
+  serial_number        String?
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  affectedTankTransactions FixedTankTransfers[]    @relation("AffectedTankTransactions") // Transactions where this tank is primary
+  counterpartyTransfers    FixedTankTransfers[]    @relation("CounterpartyTankForTransfer") // Transactions where this tank is counterparty
+  mobileTankRefills     MobileTankRefills[]     @relation("SourceFixedTankForMobileRefill") // Relation to MobileTankRefills
+
+  fuelReceipts           FuelReceipt[]
+  fuelTransfersFromTank  FuelTransferToTanker[] // Pretakanja IZ ovog tanka
+  drainRecords           FuelDrainRecord[]     // Istakanja iz ovog tanka
+
+  @@index([fuel_type])
+}
+
+model FuelIntakeRecords {
+  id                        Int      @id @default(autoincrement())
+  delivery_vehicle_plate    String
+  delivery_vehicle_driver_name String?
+  intake_datetime           DateTime
+  quantity_liters_received  Float
+  quantity_kg_received      Float
+  specific_gravity          Float    // npr. kg/l
+  fuel_type                 String
+  supplier_name             String?
+  delivery_note_number      String?
+  customs_declaration_number String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  documents             FuelIntakeDocuments[] // Relation to FuelIntakeDocuments
+  fixedTankTransfers    FixedTankTransfers[]    // Relation to FixedTankTransfers
+
+  @@index([intake_datetime])
+  @@index([fuel_type])
+}
+
+model FuelIntakeDocuments {
+  id                  Int      @id @default(autoincrement())
+  fuel_intake_record_id Int
+  document_name       String   // originalno ime fajla
+  document_path       String   // putanja na serveru ili cloud storage URL
+  document_type       String   // npr. "Carinska Deklaracija", "Dostavnica", "Analiza Kvaliteta"
+  file_size_bytes     Int
+  mime_type           String
+  uploaded_at         DateTime @default(now())
+
+  fuelIntakeRecord    FuelIntakeRecords @relation(fields: [fuel_intake_record_id], references: [id], onDelete: Cascade)
+
+  @@index([fuel_intake_record_id])
+}
+
+enum FixedTankActivityType {
+  INTAKE
+  INTERNAL_TRANSFER_OUT
+  INTERNAL_TRANSFER_IN
+  FUEL_DRAIN
+}
+
+model FixedTankTransfers {
+  id                          Int      @id @default(autoincrement())
+  activity_type               FixedTankActivityType
+  fuel_intake_record_id       Int? // Optional: not all activities are intakes
+  affected_fixed_tank_id      Int      // The tank primarily affected by this record
+  counterparty_fixed_tank_id  Int?     // The other tank in an internal transfer
+  internal_transfer_pair_id String?  @db.Uuid // To link OUT and IN records of a transfer
+
+  quantity_liters_transferred Float
+  transfer_datetime           DateTime @default(now())
+  notes                       String?
+
+  fuelIntakeRecord FuelIntakeRecords? @relation(fields: [fuel_intake_record_id], references: [id], onDelete: Cascade)
+  affectedFixedTank FixedStorageTanks @relation("AffectedTankTransactions", fields: [affected_fixed_tank_id], references: [id])
+  counterpartyFixedTank FixedStorageTanks? @relation("CounterpartyTankForTransfer", fields: [counterparty_fixed_tank_id], references: [id])
+
+  @@index([fuel_intake_record_id])
+  @@index([affected_fixed_tank_id])
+  @@index([counterparty_fixed_tank_id])
+  @@index([internal_transfer_pair_id])
+}
+
+model MobileTankRefills {
+  id                      Int      @id @default(autoincrement())
+  source_fixed_tank_id    Int
+  target_mobile_tank_id   Int      // Ovo će biti ID iz Vehicle modela
+  quantity_liters         Float
+  transfer_datetime       DateTime @default(now())
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  sourceFixedTank FixedStorageTanks @relation("SourceFixedTankForMobileRefill", fields: [source_fixed_tank_id], references: [id])
+  targetMobileTank Vehicle          @relation("TargetMobileTankForRefill", fields: [target_mobile_tank_id], references: [id])
+
+  @@index([source_fixed_tank_id])
+  @@index([target_mobile_tank_id])
+  @@index([transfer_datetime])
+}
+
+// Service Record models
+enum ServiceRecordCategory {
+  REGULAR_MAINTENANCE
+  REPAIR
+  TECHNICAL_INSPECTION
+  FILTER_REPLACEMENT
+  HOSE_REPLACEMENT
+  CALIBRATION
+  OTHER
+}
+
+enum ServiceItemType {
+  FILTER
+  HOSE_HD63
+  HOSE_HD38
+  HOSE_TW75
+  HOSE_LEAK_TEST
+  VOLUMETER
+  MANOMETER
+  HECPV_ILCPV
+  SIX_MONTH_CHECK
+  ENGINE
+  BRAKES
+  TRANSMISSION
+  ELECTRICAL
+  TIRES
+  OTHER
+}
+
+model ServiceRecord {
+  id           Int                  @id @default(autoincrement())
+  vehicle      Vehicle               @relation(fields: [vehicleId], references: [id])
+  vehicleId    Int
+  serviceDate  DateTime
+  description  String
+  category     ServiceRecordCategory
+  documentUrl  String?
+  serviceItems ServiceItem[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+}
+
+model ServiceItem {
+  id              Int             @id @default(autoincrement())
+  serviceRecord   ServiceRecord    @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  serviceRecordId Int
+  type            ServiceItemType
+  description     String?
+  replaced        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+// Fuel Management Models
+model FuelTank {
+  id               Int      @id @default(autoincrement())
+  identifier       String   @unique
+  name             String
+  location         String
+  capacity_liters  Float
+  current_liters   Float    @default(0)
+  fuel_type        String
+  fuelTransfersAsTarget FuelTransferToTanker[] @relation("TransferToFuelTank") // Added explicit relation name
+  refills          FuelTankRefill[]
+  fuelingOperations FuelingOperation[]
+  drainRecords     FuelDrainRecord[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model FuelTankRefill {
+  id                Int      @id @default(autoincrement())
+  tank              FuelTank @relation(fields: [tankId], references: [id])
+  tankId            Int
+  date              DateTime
+  quantity_liters   Float
+  supplier          String
+  invoice_number    String?
+  price_per_liter   Float?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Airline {
+  id                Int       @id @default(autoincrement())
+  name              String    @unique
+  contact_details   String?
+  taxId             String?   // ID/PDV broj
+  address           String?   // Adresa kompanije
+  isForeign         Boolean   @default(false) // Domaća (false) ili Strana (true)
+  operatingDestinations String[]  // Destinacije koje operira
+  fuelingOperations FuelingOperation[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// Model za bilježenje ulaza goriva u fiksne tankove
+model FuelReceipt {
+  id                 Int      @id @default(autoincrement())
+  dateTime           DateTime
+  fixedStorageTankId Int
+  fixedStorageTank   FixedStorageTanks @relation(fields: [fixedStorageTankId], references: [id])
+  supplier           String?
+  quantityLiters     Float
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  documents AttachedDocument[] @relation("FuelReceiptDocuments")
+
+  user      User @relation(fields: [userId], references: [id])
+  userId    Int
+
+  @@index([fixedStorageTankId])
+  @@index([userId])
+}
+
+// Model za bilježenje pretakanja goriva iz fiksnih tankova u cisterne (vozila)
+model FuelTransferToTanker {
+  id                       Int      @id @default(autoincrement())
+  dateTime                 DateTime
+  sourceFixedStorageTankId Int
+  targetFuelTankId         Int      // This now correctly points to a FuelTank
+  quantityLiters           Float
+  notes                    String?
+  userId                   Int
+
+  sourceFixedStorageTank FixedStorageTanks @relation(fields: [sourceFixedStorageTankId], references: [id])
+  targetFuelTank         FuelTank          @relation("TransferToFuelTank", fields: [targetFuelTankId], references: [id]) // Uses explicit relation name
+  user                   User              @relation(fields: [userId], references: [id])
+  // Removed relation to AttachedDocument as B2.4 does not specify documents for this transfer type
+  // documents AttachedDocument[] @relation("FuelTransferToTankerDocuments") 
+
+  @@index([sourceFixedStorageTankId])
+  @@index([targetFuelTankId])
+  @@index([userId])
+}
+
+// Model za bilježenje istakanja goriva iz fiksnih rezervoara i mobilnih aviocisternih
+model FuelDrainRecord {
+  id                    Int       @id @default(autoincrement())
+  dateTime              DateTime
+  sourceType            String    // 'fixed' or 'mobile'
+  sourceFixedTankId     Int?
+  sourceMobileTankId    Int?
+  quantityLiters        Float
+  notes                 String?
+  userId                Int
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  sourceFixedTank       FixedStorageTanks? @relation(fields: [sourceFixedTankId], references: [id])
+  sourceMobileTank      FuelTank? @relation(fields: [sourceMobileTankId], references: [id])
+  user                  User      @relation(fields: [userId], references: [id])
+
+  @@index([sourceFixedTankId])
+  @@index([sourceMobileTankId])
+  @@index([userId])
+}
+
+// Model za priložene dokumente
+model AttachedDocument {
+  id                 Int      @id @default(autoincrement())
+  originalFilename   String
+  mimeType           String   // npr. "application/pdf", "image/jpeg"
+  sizeBytes          Int
+  storagePath        String   // Relativna putanja na serveru gdje je fajl spremljen
+  uploadedAt         DateTime @default(now())
+
+  // Veze prema operacijama - dokument može pripadati jednoj od ovih operacija
+  fuelReceiptId             Int?
+  fuelReceipt               FuelReceipt? @relation("FuelReceiptDocuments", fields: [fuelReceiptId], references: [id], onDelete: Cascade)
+
+  // Relation to a fueling operation - changed to support multiple documents per operation
+  fuelingOperationId      Int?
+  fuelingOperation        FuelingOperation? @relation(fields: [fuelingOperationId], references: [id], onDelete: Cascade)
+
+  @@unique([storagePath])
+  @@index([fuelReceiptId])
+  @@index([fuelingOperationId])
+}
+
+model FuelingOperation {
+  id                  Int       @id @default(autoincrement())
+  dateTime            DateTime
+  aircraft            Vehicle?  @relation(fields: [aircraftId], references: [id])
+  aircraftId          Int?
+  aircraft_registration String? // For non-system aircraft
+  airline             Airline   @relation(fields: [airlineId], references: [id])
+  airlineId           Int
+  destination         String
+  quantity_liters     Float
+  specific_density    Float     @default(0.8) // Default specific density
+  quantity_kg         Float     // Quantity in kilograms
+  price_per_kg        Float?    // Price per kilogram
+  currency            String?   // Currency (BAM, EUR, USD)
+  total_amount        Float?    // Total amount
+  tank                FuelTank  @relation(fields: [tankId], references: [id])
+  tankId              Int
+  flight_number       String?
+  operator_name       String
+  notes               String?
+  tip_saobracaja      String?   // Added field for traffic type
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relation to attached documents - changed to support multiple documents
+  documents           AttachedDocument[] // A fueling operation can have multiple documents
+}
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init

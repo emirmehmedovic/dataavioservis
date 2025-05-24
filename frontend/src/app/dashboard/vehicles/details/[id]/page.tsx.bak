@@ -1,0 +1,818 @@
+'use client';
+
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { getVehicleById, updateVehicle, uploadVehicleImage, getVehicleServiceRecords, createServiceRecordWithDocument, deleteServiceRecord } from '@/lib/apiService'; 
+import { Vehicle, VehicleStatus, VehicleImage as VehicleImageType, ServiceRecord, ServiceRecordCategory, ServiceItemType, ServiceItem } from '@/types';
+// import Modal from '@/components/ui/Modal'; // Assuming Modal path
+// import ServiceRecordForm from '@/components/forms/ServiceRecordForm'; // Assuming ServiceRecordForm path 
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; 
+import {
+  FaCar,
+  FaInfoCircle,
+  FaExclamationTriangle,
+  FaTools,
+  FaCalendarAlt,
+  FaStickyNote, 
+  FaFilter,
+  FaOilCan,
+  FaThermometerHalf,
+  FaTachometerAlt,
+  FaFileContract,
+  FaGasPump, 
+  FaCamera,
+  FaList,
+  FaPlus,
+  FaSave,
+  FaEdit,
+  FaTrash,
+  FaCogs,
+  FaFileMedical,
+  FaFileInvoice, 
+  FaTruck,
+  FaRulerCombined,
+  FaIndustry,
+  FaBoxes,
+  FaUserTie,
+  FaIdCard,
+  FaShieldAlt,
+  FaClipboardList, 
+  FaTimes,
+  FaCheck,
+  FaMapMarkerAlt,
+  FaRegListAlt,
+  FaRegFileAlt,
+  FaRegBuilding,
+  FaHardHat, 
+  FaFireExtinguisher,
+  FaBolt,
+  FaWater,
+  FaWind,
+  FaWeightHanging,
+  FaBalanceScale, 
+  FaCheckSquare,
+  FaCalendarPlus,
+  FaTag,
+  FaClock,
+  FaMicrochip,
+  FaEllipsisH,
+  FaUser,
+  FaPhone,
+  FaStar, // Added FaStar for set main image button
+  FaWrench,
+  FaHistory,
+  FaFileAlt,
+  FaFilePdf,
+  FaDownload,
+  FaCalendarCheck,
+  FaClipboard,
+  FaShippingFast, // Added for crijeva_za_tocenje
+  FaCog,
+  FaHashtag,
+  FaRulerVertical,
+  FaAward,
+  FaExternalLinkAlt
+} from 'react-icons/fa';
+import { FiLoader, FiChevronDown, FiChevronUp, FiArrowLeft } from 'react-icons/fi'; 
+import withAuth from '@/components/auth/withAuth';
+import Image from 'next/image'; // Import Next.js Image component
+
+interface EditableItemProps {
+  label: string;
+  value?: string | number | boolean | Date | null; 
+  icon?: React.ReactNode;
+  vehicleId: number;
+  fieldName: keyof Vehicle; 
+  onUpdate: () => void; 
+  type?: 'text' | 'number' | 'boolean' | 'date' | 'select' | 'textarea';
+  options?: { value: string; label: string }[];
+}
+
+const sections = [
+  { key: 'general', label: 'Opšti podaci', icon: FaCar },
+  { key: 'technical', label: 'Tehnički podaci', icon: FaTools },
+  { key: 'tanker', label: 'Specifikacija cisterne', icon: FaGasPump },
+  { key: 'filter', label: 'Filter podaci', icon: FaFilter },
+  { key: 'hoses', label: 'Crijeva', icon: FaShippingFast }, // Using FaShippingFast as a generic icon for hoses
+  { key: 'calibration', label: 'Kalibracije', icon: FaBalanceScale },
+  { key: 'notes', label: 'Napomene', icon: FaStickyNote },
+  { key: 'service', label: 'Servisni zapisi', icon: FaFileMedical },
+  { key: 'images', label: 'Slike vozila', icon: FaCamera },
+];
+
+const EditableItem: React.FC<EditableItemProps> = ({
+  label,
+  value,
+  icon,
+  vehicleId,
+  fieldName,
+  onUpdate,
+  type = 'text',
+  options,
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Initialize selectedValue, converting null to empty string for text/number inputs to avoid uncontrolled component warnings
+  const [selectedValue, setSelectedValue] = useState(value === null && (type === 'text' || type === 'number' || type === 'textarea') ? '' : value);
+
+  const handleOpenModal = () => {
+    // Reset selectedValue to current prop value when opening modal
+    setSelectedValue(value === null && (type === 'text' || type === 'number' || type === 'textarea') ? '' : value);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleSaveItem = async () => {
+    try {
+      // updateVehicle expects id as number, which vehicleId already is.
+      await updateVehicle(vehicleId, { [fieldName]: selectedValue }); 
+      toast.success(`Polje '${label}' uspješno ažurirano.`);
+      onUpdate(); 
+      handleCloseModal();
+    } catch (error) {
+      console.error('Greška pri ažuriranju polja:', error);
+      toast.error('Greška pri ažuriranju polja.');
+    }
+  };
+
+  const formatDateForDisplay = (date: Date | null | undefined) => {
+    if (!date) return <span className="text-gray-400 italic">Nema podatka</span>;
+    return new Intl.DateTimeFormat('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(date));
+  };
+  
+  const formatDateForInput = (date: Date | null | undefined) => {
+    if (!date) return '';
+    return new Date(date).toISOString().split('T')[0]; 
+  };
+
+  const displayValue = () => {
+    if (type === 'date') return formatDateForDisplay(value as Date | null);
+    if (type === 'boolean') return value ? <span className="text-green-600 font-semibold">Da</span> : <span className="text-red-600 font-semibold">Ne</span>;
+    if (value === null || value === undefined || String(value).trim() === '') return <span className="text-gray-400 italic">Nema podatka</span>;
+    return String(value);
+  };
+
+  return (
+    <div className="group p-3.5 rounded-lg hover:bg-gray-50 transition-colors duration-150 border border-transparent hover:border-gray-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          {icon && <span className="mr-3 text-lg text-indigo-500">{icon}</span>}
+          <span className="text-sm font-medium text-gray-600">{label}:</span>
+        </div>
+        <button 
+          onClick={handleOpenModal} 
+          className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 focus:opacity-100"
+          aria-label={`Uredi ${label}`}
+        >
+          <FaEdit className="w-4 h-4" /> 
+        </button>
+      </div>
+      <div className="mt-1 ml-2 pl-0 md:pl-7 text-md font-semibold text-gray-800 cursor-pointer" onClick={handleOpenModal}>
+        {displayValue()}
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300 ease-out scale-95 group-hover:scale-100">
+            <div className="flex justify-between items-center mb-5">
+              <h4 className="text-xl font-semibold text-gray-800">Uredi: <span className="text-indigo-600">{label}</span></h4>
+              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
+                <FaTimes className="w-5 h-5"/>
+              </button>
+            </div>
+            <div className="mb-5 space-y-3">
+              {type === 'textarea' ? (
+                <textarea 
+                  value={selectedValue as string}
+                  onChange={(e) => setSelectedValue(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow text-sm"
+                  placeholder={`Unesite ${label.toLowerCase()}`}
+                />
+              ) : type === 'select' ? (
+                <select 
+                  value={selectedValue as string} 
+                  onChange={(e) => setSelectedValue(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow text-sm bg-white"
+                >
+                  {options?.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              ) : type === 'boolean' ? (
+                <div className="flex items-center space-x-3">
+                  <button 
+                    onClick={() => setSelectedValue(true)}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${selectedValue === true ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    Da
+                  </button>
+                  <button 
+                    onClick={() => setSelectedValue(false)}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${selectedValue === false ? 'bg-rose-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    Ne
+                  </button>
+                </div>
+              ) : type === 'date' ? (
+                <input 
+                  type="date" 
+                  value={formatDateForInput(selectedValue as Date)}
+                  onChange={(e) => setSelectedValue(e.target.value ? new Date(e.target.value) : null)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow text-sm"
+                />
+              ) : (
+                <input 
+                  type={type === 'number' ? 'number' : 'text'} 
+                  value={selectedValue as string}
+                  onChange={(e) => setSelectedValue(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow text-sm"
+                  placeholder={`Unesite ${label.toLowerCase()}`}
+                />
+              )}
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={handleCloseModal} 
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Odustani
+              </button>
+              <button 
+                onClick={handleSaveItem} 
+                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                Spremi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}; 
+
+interface DatePairItemProps {
+  baseLabel: string;
+  lastDate?: Date | null;
+  nextDate?: Date | null;
+  vehicleId: number;
+  lastDateFieldName: keyof Vehicle;
+  nextDateFieldName: keyof Vehicle;
+  onUpdate: () => void;
+  icon?: React.ReactNode;
+}
+
+const DatePairItem: React.FC<DatePairItemProps> = ({
+  baseLabel,
+  lastDate,
+  nextDate,
+  vehicleId,
+  lastDateFieldName,
+  nextDateFieldName,
+  onUpdate,
+  icon
+}) => {
+  return (
+    <div className="bg-white shadow rounded-lg p-4 mb-4">
+      <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+        {icon && <span className="mr-2 text-indigo-500">{icon}</span>}
+        {baseLabel}
+      </h4>
+      <div className="space-y-3">
+        <EditableItem
+          label={`Datum posljednje (${baseLabel.toLowerCase()})`}
+          value={lastDate}
+          vehicleId={vehicleId}
+          fieldName={lastDateFieldName}
+          onUpdate={onUpdate}
+          type="date"
+        />
+        <EditableItem
+          label={`Datum sljedeće (${baseLabel.toLowerCase()})`}
+          value={nextDate}
+          vehicleId={vehicleId}
+          fieldName={nextDateFieldName}
+          onUpdate={onUpdate}
+          type="date"
+        />
+      </div>
+    </div>
+  );
+};
+
+interface CardProps {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  initiallyExpanded?: boolean;
+}
+
+// Helper functions for formatting service record data
+const formatServiceCategory = (category: ServiceRecordCategory): string => {
+  const categoryMap: Record<ServiceRecordCategory, string> = {
+    [ServiceRecordCategory.REGULAR_MAINTENANCE]: 'Redovno održavanje',
+    [ServiceRecordCategory.REPAIR]: 'Popravka',
+    [ServiceRecordCategory.TECHNICAL_INSPECTION]: 'Tehnički pregled',
+    [ServiceRecordCategory.FILTER_REPLACEMENT]: 'Zamjena filtera',
+    [ServiceRecordCategory.HOSE_REPLACEMENT]: 'Zamjena crijeva',
+    [ServiceRecordCategory.CALIBRATION]: 'Kalibracija',
+    [ServiceRecordCategory.OTHER]: 'Ostalo'
+  };
+  return categoryMap[category] || category;
+};
+
+const formatServiceItemType = (type: ServiceItemType): string => {
+  const typeMap: Record<ServiceItemType, string> = {
+    [ServiceItemType.FILTER]: 'Filter',
+    [ServiceItemType.HOSE_HD63]: 'Crijevo HD63',
+    [ServiceItemType.HOSE_HD38]: 'Crijevo HD38',
+    [ServiceItemType.HOSE_TW75]: 'Crijevo TW75',
+    [ServiceItemType.HOSE_LEAK_TEST]: 'Test curenja crijeva',
+    [ServiceItemType.VOLUMETER]: 'Volumetar',
+    [ServiceItemType.MANOMETER]: 'Manometar',
+    [ServiceItemType.HECPV_ILCPV]: 'HECPV/ILCPV',
+    [ServiceItemType.SIX_MONTH_CHECK]: '6-mjesečna provjera',
+    [ServiceItemType.ENGINE]: 'Motor',
+    [ServiceItemType.BRAKES]: 'Kočnice',
+    [ServiceItemType.TRANSMISSION]: 'Transmisija',
+    [ServiceItemType.ELECTRICAL]: 'Električni sistem',
+    [ServiceItemType.TIRES]: 'Gume',
+    [ServiceItemType.OTHER]: 'Ostalo'
+  };
+  return typeMap[type] || type;
+};
+
+// Service Record Form Component
+
+
+const Card: React.FC<CardProps> = ({ title, icon, children, className, initiallyExpanded = true }) => {
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
+
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  return (
+    <div className={`bg-white shadow-xl rounded-xl overflow-hidden ${className || ''}`}>
+      <button 
+        onClick={handleToggle} 
+        className="w-full flex items-center justify-between p-4 md:p-5 focus:outline-none bg-gray-50 hover:bg-gray-100 transition-colors"
+        aria-expanded={isExpanded}
+      >
+        <div className="flex items-center">
+          {icon && <span className="mr-3 text-xl md:text-2xl text-indigo-600">{icon}</span>}
+          <h3 className="text-lg md:text-xl font-semibold text-gray-800">{title}</h3>
+        </div>
+        {children && (isExpanded ? <FiChevronUp className="text-gray-500" /> : <FiChevronDown className="text-gray-500" />)}
+      </button>
+      {children && isExpanded && (
+        <div className="p-4 md:p-5 border-t border-gray-200 bg-white">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const VehicleDetailsPage: React.FC = () => {
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id;
+
+  // State variables
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string>(sections[0].key);
+  const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
+  const [isLoadingServiceRecords, setIsLoadingServiceRecords] = useState(false);
+  const [deletingRecordId, setDeletingRecordId] = useState<number | null>(null); // Used to track which record is being deleted
+  const [showAddServiceRecordModal, setShowAddServiceRecordModal] = useState(false);
+  const [selectedServiceRecordForModal, setSelectedServiceRecordForModal] = useState<ServiceRecord | null>(null);
+  const [showViewServiceRecordModal, setShowViewServiceRecordModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // For image uploads
+  const [selectedImageForModal, setSelectedImageForModal] = useState<VehicleImageType | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [mainImageChanged, setMainImageChanged] = useState(false); // To trigger re-fetch or UI update
+
+  // Fetch vehicle details
+  const fetchVehicleDetails = useCallback(async () => {
+    if (!id) {
+      setError("ID vozila nije pronađen.");
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await getVehicleById(id as string);
+      setVehicle(data);
+      setError(null);
+    } catch (err) {
+      console.error("Greška pri dohvatanju detalja vozila:", err);
+      setError("Greška pri dohvatanju detalja vozila. Pokušajte ponovo kasnije.");
+      setVehicle(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  // Fetch service records
+  const fetchServiceRecords = useCallback(async () => {
+    if (!id) return;
+    setIsLoadingServiceRecords(true);
+    try {
+      const records = await getVehicleServiceRecords(id as string);
+      setServiceRecords(records);
+    } catch (err) {
+      console.error("Greška pri dohvatanju servisnih zapisa:", err);
+      toast.error("Greška pri dohvatanju servisnih zapisa.");
+    } finally {
+      setIsLoadingServiceRecords(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchVehicleDetails();
+  }, [id]);
+
+  useEffect(() => {
+    if (activeSection === 'service' || vehicle) { 
+      fetchServiceRecords();
+    }
+  }, [id, activeSection, vehicle]);
+
+  // Handle image upload
+  const handleImageUpload = async () => {
+    if (!selectedFile || !vehicle) return;
+    setIsUploading(true);
+    try {
+      await uploadVehicleImage(vehicle.id.toString(), selectedFile);
+      toast.success('Slika uspješno uploadovana!');
+      fetchVehicleDetails(); 
+      setSelectedFile(null); 
+      const fileInput = document.getElementById('imageUploadInput') as HTMLInputElement;
+      if (fileInput) fileInput.value = ''; 
+    } catch (error) {
+      console.error('Greška pri uploadu slike:', error);
+      toast.error('Greška pri uploadu slike.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFile(e.target.files ? e.target.files[0] : null);
+  };
+  
+  const handleDeleteServiceRecord = async (recordId: number) => {
+    console.log(`Attempting to delete service record with ID: ${recordId}`);
+    setDeletingRecordId(recordId);
+    try {
+      if (!vehicle) { toast.error('ID vozila nije dostupan.'); return; }
+      await deleteServiceRecord(vehicle.id, recordId);
+      toast.success('Servisni nalog uspješno obrisan!');
+      fetchServiceRecords(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting service record:', error);
+      toast.error('Greška pri brisanju servisnog naloga.');
+    } finally {
+      setDeletingRecordId(null);
+    }
+  };
+
+  const handleSetMainImage = async (imageId: number) => {
+    if (!vehicle) return;
+    const originalImages = vehicle.images;
+    const updatedImages = vehicle.images?.map(img => ({ ...img, is_main: img.id === imageId })) || [];
+    // Optimistically update the vehicle state with the new images list
+    setVehicle(prev => {
+      if (!prev) return null;
+      return {
+         ...prev, 
+         images: updatedImages, 
+      };
+    });
+
+    try {
+      // The backend should handle setting is_main on the images.
+      // We might need a specific endpoint or logic if updateVehicle doesn't do this.
+      // For now, we assume updating any vehicle field might trigger re-evaluation or that a separate image update mechanism exists.
+      // If `updateVehicle` is expected to set the main image by ID, the API contract needs clarification.
+      // For now, only call updateVehicle if other vehicle details are being changed alongside the main image.
+      // If it's *only* setting the main image, this might be a PUT to an image resource itself.
+      // Let's assume for now that calling updateVehicle here is to ensure `updated_at` changes or similar side-effects.
+      // We will NOT pass mainImageId as it's not part of the Vehicle type for updates.
+      await updateVehicle(vehicle.id, { /* Potentially other updatable fields if needed */ }); 
+      toast.success('Glavna slika uspješno postavljena!');
+      setMainImageChanged(!mainImageChanged); // Trigger re-fetch or UI update if necessary
+    } catch (error) {
+      console.error('Error setting main image:', error);
+      toast.error('Greška pri postavljanju glavne slike. Backend možda ne podržava ovu operaciju direktno na vozilu.');
+      // Revert optimistic update for images
+      setVehicle(prev => {
+        if (!prev) return null;
+        return {
+           ...prev, 
+           images: originalImages,
+        };
+      });
+    }
+  };
+
+  const handleSectionChange = (key: string) => {
+    setActiveSection(key);
+  };
+
+  const getStatusColor = (status: VehicleStatus | undefined) => {
+    if (!status) return 'bg-gray-400';
+    switch (status) {
+      case VehicleStatus.ACTIVE: return 'bg-green-500';
+      case VehicleStatus.INACTIVE: return 'bg-yellow-500';
+      case VehicleStatus.MAINTENANCE: return 'bg-orange-500';
+      case VehicleStatus.OUT_OF_SERVICE: return 'bg-red-500';
+      default: return 'bg-gray-400';
+    }
+  };
+  
+  const openImageModal = (image: VehicleImageType) => {
+    setSelectedImageForModal(image);
+  };
+
+  const closeImageModal = () => {
+    setSelectedImageForModal(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <FiLoader className="animate-spin text-4xl text-indigo-600" />
+        <p className="ml-3 text-lg text-gray-700">Učitavanje podataka o vozilu...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen text-center p-4">
+        <FaExclamationTriangle className="text-5xl text-red-500 mb-4" />
+        <p className="text-xl text-red-700">{error}</p>
+        <button 
+          onClick={() => router.push('/dashboard/vehicles')} 
+          className="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+        >
+          Povratak na listu vozila
+        </button>
+      </div>
+    );
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen text-center p-4">
+        <FaCar className="text-5xl text-gray-400 mb-4" />
+        <p className="text-xl text-gray-600">Vozilo nije pronađeno.</p>
+        <button 
+          onClick={() => router.push('/dashboard/vehicles')} 
+          className="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+        >
+          Povratak na listu vozila
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <div>
+        {activeSection === 'general' && (
+              <Card title="Osnovne Informacije" icon={<FaInfoCircle />} className="mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                  
+                  <EditableItem label="Naziv/Model Vozila" value={vehicle.vehicle_name || ''} icon={<FaTruck />} vehicleId={vehicle.id} fieldName="vehicle_name" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="Registracija" value={vehicle.license_plate} icon={<FaIdCard />} vehicleId={vehicle.id} fieldName="license_plate" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="VIN (Broj Šasije)" value={vehicle.chassis_number || ''} icon={<FaHashtag />} vehicleId={vehicle.id} fieldName="chassis_number" onUpdate={fetchVehicleDetails} />
+                  
+                  <EditableItem label="Status Vozila" value={vehicle.status || ''} icon={<FaCheckSquare />} type="select" options={Object.values(VehicleStatus).map(s => ({ value: s, label: s.replace(/_/g, ' ') }))} vehicleId={vehicle.id} fieldName="status" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="Registracija Ističe" value={vehicle.registrovano_do || undefined} icon={<FaCalendarAlt />} type="date" vehicleId={vehicle.id} fieldName="registrovano_do" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="ADR Važi Do" value={vehicle.adr_vazi_do || undefined} icon={<FaShieldAlt />} type="date" vehicleId={vehicle.id} fieldName="adr_vazi_do" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="Periodični Pregled Važi Do" value={vehicle.periodicni_pregled_vazi_do ? new Date(vehicle.periodicni_pregled_vazi_do) : undefined} icon={<FaClipboardList />} type="date" vehicleId={vehicle.id} fieldName="periodicni_pregled_vazi_do" onUpdate={fetchVehicleDetails} />
+                  
+
+
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                </div>
+              </Card>
+            )}
+          
+
+            {activeSection === 'tanker' && (
+              <Card title="Tanker Specifične Informacije" icon={<FaGasPump />} className="mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                  <EditableItem label="Kapacitet Cisterne (L)" value={vehicle.kapacitet_cisterne || undefined} icon={<FaRulerVertical />} type="number" vehicleId={vehicle.id} fieldName="kapacitet_cisterne" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="Tip Filtera" value={vehicle.tip_filtera || ''} icon={<FaFilter />} vehicleId={vehicle.id} fieldName="tip_filtera" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="Tip Crijeva za Točenje" value={vehicle.crijeva_za_tocenje || ''} icon={<FaShippingFast />} vehicleId={vehicle.id} fieldName="crijeva_za_tocenje" onUpdate={fetchVehicleDetails} />
+                  <EditableItem label="Broj Ploče (Vessel Plate No.)" value={vehicle.vessel_plate_no || ''} icon={<FaClipboard />} vehicleId={vehicle.id} fieldName="vessel_plate_no" onUpdate={fetchVehicleDetails} />
+                   <EditableItem label="Tehnologija Senzora" value={vehicle.sensor_technology || ''} icon={<FaMicrochip />} vehicleId={vehicle.id} fieldName="sensor_technology" onUpdate={fetchVehicleDetails} />
+                </div>
+              </Card>
+            )}
+           
+
+            {activeSection === 'notes' && (
+              <Card title="Napomene i Dodatne Informacije" icon={<FaStickyNote />} className="mb-6">
+                <EditableItem 
+                  label="Napomene"
+                  value={vehicle.notes || ''}
+                  icon={<FaFileAlt />}
+                  vehicleId={vehicle.id}
+                  fieldName="notes"
+                  onUpdate={fetchVehicleDetails}
+                  type="textarea"
+                />
+              </Card>
+            )}
+            
+
+            {activeSection === 'service' && (
+              <Card title="Servisni Nalozi" icon={<FaWrench />} className="mb-6">
+                  <div className="mb-4">
+                    
+                  </div>
+                  {isLoadingServiceRecords ? (
+                    <div className="flex justify-center items-center py-10">
+                      <FiLoader className="animate-spin text-3xl text-indigo-500" />
+                      <p className="ml-3 text-gray-600">Učitavanje servisnih naloga...</p>
+                    </div>
+                  ) : serviceRecords && serviceRecords.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="hidden md:grid md:grid-cols-5 gap-4 px-4 py-2 font-medium text-gray-600 bg-gray-50 rounded-t-lg border-b border-gray-200 text-sm">
+                        <div>Datum</div>
+                        <div>Kategorija</div>
+                        <div className="col-span-2">Opis</div>
+                        <div>Akcije</div>
+                      </div>
+                      {serviceRecords.map(record => (
+                        <div 
+                          key={record.id} 
+                          className="grid grid-cols-1 md:grid-cols-5 gap-4 px-4 py-3 items-center bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-150"
+                        >
+                          <div className="text-sm text-gray-800 md:font-medium">
+                            <span className="md:hidden font-semibold">Datum: </span>
+                            {new Date(record.serviceDate).toLocaleDateString('bs')}
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            <span className="md:hidden font-semibold">Kategorija: </span>
+                            {formatServiceCategory(record.category)}
+                          </div>
+                          <div className="text-sm text-gray-700 col-span-1 md:col-span-2 break-words">
+                            <span className="md:hidden font-semibold">Opis: </span>
+                            {record.description}
+                          </div>
+                          <div className="flex items-center space-x-2 mt-2 md:mt-0">
+                            <button
+                              onClick={() => {
+                          setSelectedServiceRecordForModal(record);
+                          setShowViewServiceRecordModal(true);
+                        }}      className="p-2 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-colors duration-150"
+                              title="Pogledaj Detalje"
+                            >
+                              <FaRegListAlt className="h-5 w-5" />
+                            </button>
+                            {record.documentUrl && (
+                              <a 
+                                href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${record.documentUrl}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors duration-150"
+                                title="Preuzmi Dokument"
+                              >
+                                <FaFilePdf className="h-5 w-5" />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => handleDeleteServiceRecord(record.id)}
+                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors duration-150"
+                              title="Obriši Nalog"
+                              disabled={deletingRecordId === record.id}
+                            >
+                              {deletingRecordId === record.id ? (
+                                <FiLoader className="animate-spin text-lg" />
+                              ) : (
+                                <FaTrash className="text-lg" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>Nema servisnih naloga.</p>
+                  )}
+                </Card>
+              </div>
+            )}
+
+      {/* Modal for viewing service record details - Temporarily Commented Out */}
+      {/* {showViewServiceRecordModal && selectedServiceRecordForModal && (
+        <Modal onClose={() => setShowViewServiceRecordModal(false)} title="Detalji Servisnog Naloga">
+          <div className="p-4">
+            <p><strong>Datum:</strong> {new Date(selectedServiceRecordForModal.serviceDate).toLocaleDateString()}</p>
+            <p><strong>Opis:</strong> {selectedServiceRecordForModal.description}</p>
+            <p><strong>Kategorija:</strong> {formatServiceCategory(selectedServiceRecordForModal.category)}</p>
+            <p><strong>Stavke:</strong></p>
+            <ul>
+              {selectedServiceRecordForModal.serviceItems.map((item, index) => (
+                <li key={index}>{formatServiceItemType(item.type)} {item.replaced ? '(Zamijenjeno)' : ''} {item.description ? `- ${item.description}` : ''}</li>
+              ))}
+            </ul>
+            {selectedServiceRecordForModal.documentUrl && (
+              <p className="mt-4">
+                <strong>Dokument:</strong> 
+                <a href={selectedServiceRecordForModal.documentUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline ml-2">
+                  Pogledaj Dokument <FaExternalLinkAlt className="inline ml-1" />
+                </a>
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end p-4 bg-gray-50 border-t border-gray-200">
+              <button 
+                  onClick={() => setShowViewServiceRecordModal(false)} 
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                  Zatvori
+              </button>
+          </div>
+        </Modal>
+      )} 
+
+      {/* Add Service Record Modal Trigger - Temporarily Commented Out */}
+      {/* {showAddServiceRecordModal && vehicle && (
+        <ServiceRecordForm 
+          vehicleId={vehicle.id.toString()} 
+          onClose={() => setShowAddServiceRecordModal(false)} 
+          onSuccess={() => { 
+            setShowAddServiceRecordModal(false); 
+            fetchServiceRecords(); 
+          }}
+        />
+      )} 
+
+      {/* <div className="mt-8 p-4 md:p-6 bg-white shadow-lg rounded-lg">
+        <button 
+          onClick={() => router.back()}
+          className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors duration-150 ease-in-out text-sm font-medium py-2 px-4 rounded-md border border-indigo-200 hover:bg-indigo-50"
+        >
+          <FiArrowLeft className="mr-2 h-5 w-5" /> Nazad na listu vozila
+        </button>
+      </div> */}
+
+      </div>
+    </div>
+  );
+};
+
+export default withAuth(VehicleDetailsPage);
