@@ -149,48 +149,25 @@ export default function NewFuelIntakeFormWizard() {
   };
 
   useEffect(() => {
-    const { quantity_liters_received, quantity_kg_received, specific_gravity } = formData;
+    const { quantity_liters_received, quantity_kg_received } = formData;
 
     const qL = typeof quantity_liters_received === 'number' && !isNaN(quantity_liters_received) ? quantity_liters_received : null;
     const qKg = typeof quantity_kg_received === 'number' && !isNaN(quantity_kg_received) ? quantity_kg_received : null;
-    const sg = typeof specific_gravity === 'number' && !isNaN(specific_gravity) ? specific_gravity : null;
 
-    const newFormData = { ...formData };
-    let changed = false;
-
-    // Scenario 1: KG and SG are known, calculate Liters
-    if (qKg !== null && sg !== null && sg > 0) {
-      const calculatedLiters = parseFloat((qKg / sg).toFixed(2));
-      if (qL === null || Math.abs(calculatedLiters - qL) > 0.001) {
-        newFormData.quantity_liters_received = calculatedLiters;
-        changed = true;
-      }
-    } 
-    // Scenario 2: Liters and SG are known, calculate KG
-    else if (qL !== null && sg !== null && sg > 0) {
-      const calculatedKg = parseFloat((qL * sg).toFixed(2));
-      if (qKg === null || Math.abs(calculatedKg - qKg) > 0.001) {
-        newFormData.quantity_kg_received = calculatedKg;
-        changed = true;
-      }
-    }
-    // Scenario 3: Liters and KG are known, calculate SG
-    else if (qL !== null && qL > 0 && qKg !== null) {
+    // Only calculate if both values are valid and positive
+    if (qL !== null && qL > 0 && qKg !== null && qKg > 0) {
+      // Calculate specific gravity from liters and kg
       const calculatedSg = parseFloat((qKg / qL).toFixed(3));
-      if (sg === null || Math.abs(calculatedSg - sg) > 0.0001) {
-        newFormData.specific_gravity = calculatedSg;
-        changed = true;
+      
+      // Update only if different from current value
+      if (calculatedSg !== formData.specific_gravity) {
+        setFormData(prev => ({
+          ...prev,
+          specific_gravity: calculatedSg
+        }));
       }
     }
-
-    if (changed) {
-      if (newFormData.quantity_liters_received !== formData.quantity_liters_received ||
-          newFormData.quantity_kg_received !== formData.quantity_kg_received ||
-          newFormData.specific_gravity !== formData.specific_gravity) {
-        setFormData(newFormData);
-      }
-    }
-  }, [formData, setFormData]);
+  }, [formData.quantity_liters_received, formData.quantity_kg_received]);  // Only depend on the two input values
 
   // --- Tank Distribution Handlers ---
   const handleAddTankDistribution = () => {
@@ -268,16 +245,14 @@ export default function NewFuelIntakeFormWizard() {
 
     const qL = formData.quantity_liters_received;
     const qKg = formData.quantity_kg_received;
-    const sg = formData.specific_gravity;
     
-    const definedQuantities = [qL, qKg, sg].filter(v => typeof v === 'number' && !isNaN(v) && v > 0).length;
-
-    if (definedQuantities < 2) {
-        errors.quantity_liters_received = "Unesite barem dvije pozitivne vrijednosti za količine/gustoću.";
+    // Sada zahtijevamo samo litre i kilograme
+    if (!qL || !qKg) {
+      if (!qL) errors.quantity_liters_received = "Količina (L) je obavezna.";
+      if (!qKg) errors.quantity_kg_received = "Količina (KG) je obavezna.";
     } else {
-        if (qL !== undefined && qL <= 0) errors.quantity_liters_received = "Količina (L) mora biti pozitivna.";
-        if (qKg !== undefined && qKg <= 0) errors.quantity_kg_received = "Količina (KG) mora biti pozitivna.";
-        if (sg !== undefined && sg <= 0) errors.specific_gravity = "Specifična gustoća mora biti pozitivna.";
+      if (qL <= 0) errors.quantity_liters_received = "Količina (L) mora biti pozitivna.";
+      if (qKg <= 0) errors.quantity_kg_received = "Količina (KG) mora biti pozitivna.";
     }
 
     setFormErrors(errors);
@@ -291,7 +266,7 @@ export default function NewFuelIntakeFormWizard() {
 
     if (!formData.tank_distributions || formData.tank_distributions.length === 0) {
       if ((formData.quantity_liters_received || 0) > 0) {
-        errors.general_tank_distribution = "Morate raspodijeliti primljenu količinu goriva.";
+        errors.general_tank_distribution = "Morate rasporediti primljenu količinu goriva.";
         isValid = false;
       }
     } else {
@@ -653,20 +628,22 @@ export default function NewFuelIntakeFormWizard() {
                 {formErrors.intake_datetime && <p className="text-xs text-red-500 mt-1">{formErrors.intake_datetime}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="quantity_liters_received">Količina (L)</Label>
                   <Input 
                     id="quantity_liters_received" 
                     name="quantity_liters_received" 
                     type="number" 
-                    value={formData.quantity_liters_received === undefined ? '' : formData.quantity_liters_received} 
-                    onChange={handleInputChange} 
-                    placeholder="npr. 1000.50"
                     step="0.01"
-                    className={`mt-1 ${formErrors.quantity_liters_received ? 'border-red-500' : ''}`}
+                    min="0"
+                    value={formData.quantity_liters_received || ''} 
+                    onChange={handleInputChange}
+                    className={formErrors.quantity_liters_received ? "border-red-500" : ""}
                   />
-                  {formErrors.quantity_liters_received && <p className="text-xs text-red-500 mt-1">{formErrors.quantity_liters_received}</p>}
+                  {formErrors.quantity_liters_received && (
+                    <p className="text-xs text-red-500 mt-1">{formErrors.quantity_liters_received}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="quantity_kg_received">Količina (KG)</Label>
@@ -674,36 +651,34 @@ export default function NewFuelIntakeFormWizard() {
                     id="quantity_kg_received" 
                     name="quantity_kg_received" 
                     type="number" 
-                    value={formData.quantity_kg_received === undefined ? '' : formData.quantity_kg_received} 
-                    onChange={handleInputChange} 
-                    placeholder="npr. 800.40"
                     step="0.01"
-                    className={`mt-1 ${formErrors.quantity_kg_received ? 'border-red-500' : ''}`}
+                    min="0"
+                    value={formData.quantity_kg_received || ''} 
+                    onChange={handleInputChange}
+                    className={formErrors.quantity_kg_received ? "border-red-500" : ""}
                   />
-                  {formErrors.quantity_kg_received && <p className="text-xs text-red-500 mt-1">{formErrors.quantity_kg_received}</p>}
+                  {formErrors.quantity_kg_received && (
+                    <p className="text-xs text-red-500 mt-1">{formErrors.quantity_kg_received}</p>
+                  )}
                 </div>
                 <div>
-                  <Label htmlFor="specific_gravity">Specifična gustoća (kg/L)</Label>
+                  <Label htmlFor="specific_gravity">Spec. gustoća (kg/L)</Label>
                   <Input 
                     id="specific_gravity" 
                     name="specific_gravity" 
                     type="number" 
-                    value={formData.specific_gravity === undefined ? '' : formData.specific_gravity} 
-                    onChange={handleInputChange} 
-                    placeholder="npr. 0.800"
                     step="0.001"
-                    className={`mt-1 ${formErrors.specific_gravity ? 'border-red-500' : ''}`}
+                    min="0"
+                    value={formData.specific_gravity || ''} 
+                    readOnly
+                    disabled
+                    className="bg-gray-100"
                   />
-                  {formErrors.specific_gravity && <p className="text-xs text-red-500 mt-1">{formErrors.specific_gravity}</p>}
+                  <p className="text-xs text-gray-500 mt-1">Automatski izračunato</p>
                 </div>
               </div>
-              {(formErrors.quantity_liters_received || formErrors.quantity_kg_received || formErrors.specific_gravity) && 
-                (!formErrors.quantity_liters_received?.includes("pozitivna") && 
-                 !formErrors.quantity_kg_received?.includes("pozitivna") && 
-                 !formErrors.specific_gravity?.includes("pozitivna")) && (
-                <p className="text-xs text-red-500 -mt-2">Unesite barem dvije pozitivne vrijednosti za količine/gustoću.</p>
-              )}
-              <p className="text-xs text-gray-500">Unesite bilo koja dva od tri polja (Količina L, Količina KG, Specifična gustoća) i treće će biti automatski izračunato.</p>
+              
+              <p className="text-xs text-gray-500">Unesite količinu u litrama i kilogramima, a specifična gustoća će biti automatski izračunata.</p>
 
               <div>
                 <Label htmlFor="fuel_type">Tip goriva</Label>
