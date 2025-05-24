@@ -357,8 +357,12 @@ const FuelIntakeReport: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white">
-        <div className="flex items-center justify-between">
+      <div className="p-6 text-white relative overflow-hidden">
+        {/* Black glassmorphism background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <div className="flex items-center justify-between relative z-10">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Izvještaj o Ulazu Goriva</h2>
             <p className="mt-1 text-blue-100 text-sm">Pregled svih zapisa o ulazu goriva i pratećih dokumenata</p>

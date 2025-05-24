@@ -283,15 +283,24 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
         <DialogTitle className="sr-only">Detalji fiksnog tanka {tank.tank_name}</DialogTitle>
-        <div className="hope-gradient p-6 text-white">
-          <div className="flex items-start justify-between">
+        <div className="relative overflow-hidden p-6 text-white">
+          {/* Glassmorphism background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-[#1a1a1a]/80 to-black/60 backdrop-blur-xl z-0"></div>
+          
+          {/* Subtle accent color gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#E60026]/5 to-[#4D000A]/10 z-0"></div>
+          
+          {/* Glass highlight effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+          
+          <div className="flex items-start justify-between relative z-10">
             <div>
               <h2 className="text-2xl font-bold flex items-center">
-                <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-6 h-6 mr-2 text-[#E60026]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M20 10V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V10M20 10V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10M20 10H4M8 14H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   <path d="M12 10V18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                {tank.tank_name}
+                <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">{tank.tank_name} ({tank.tank_identifier})</span>
               </h2>
               <div className="mt-1 flex items-center">
                 <span className="px-2 py-1 bg-white/20 rounded text-sm mr-3">{tank.tank_identifier}</span>
@@ -620,7 +629,7 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
             ) : (
               <Button 
                 onClick={handleEditToggle} 
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-gradient-to-r from-[#E60026] to-[#4D000A] hover:from-[#B3001F] hover:to-[#800014] text-white"
               >
                 Uredi Tank
               </Button>
@@ -630,7 +639,7 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
                 if (isEditing) handleEditToggle(); 
                 onClose(); 
               }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-black/80 hover:bg-black text-white"
               disabled={isSaving}
             >
               Zatvori

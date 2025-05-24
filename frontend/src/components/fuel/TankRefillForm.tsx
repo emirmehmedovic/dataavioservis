@@ -21,8 +21,10 @@ interface FuelTank {
 
 interface FixedStorageTank {
   id: number;
-  name: string;
-  identifier: string;
+  tank_name: string;
+  tank_identifier: string;
+  name?: string; // Fallback for backward compatibility
+  identifier?: string; // Fallback for backward compatibility
   capacity_liters: number;
   current_quantity_liters: number;
   fuel_type: string;
@@ -217,12 +219,16 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
 
   return (
     <div>
-      <div className="hope-gradient p-5 rounded-t-lg text-white mb-6 -m-6">
-        <h3 className="text-xl font-bold flex items-center">
+      <div className="p-5 rounded-t-lg text-white mb-6 -m-6 relative overflow-hidden">
+        {/* Black glassmorphism background - exactly matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect - matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <h3 className="text-xl font-bold flex items-center relative z-10">
           <ArrowUpCircleIcon className="w-6 h-6 mr-2" />
           Dopuna Cisterne
         </h3>
-        <p className="mt-1 text-sm opacity-90">{tank.name} ({tank.identifier})</p>
+        <p className="mt-1 text-sm opacity-90 relative z-10">{tank.name} ({tank.identifier})</p>
       </div>
       
       <motion.div 
@@ -378,7 +384,7 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
                     </option>
                     {fixedTanks.map((ft) => (
                       <option key={ft.id} value={ft.id}>
-                        {ft.name} ({ft.identifier}) - Dostupno: {(ft.current_quantity_liters ?? 0).toLocaleString()} L / Kapacitet: {(ft.capacity_liters ?? 0).toLocaleString()} L
+                        {ft.tank_name || ft.name} ({ft.tank_identifier || ft.identifier}) - Dostupno: {(ft.current_quantity_liters ?? 0).toLocaleString()} L / Kapacitet: {(ft.capacity_liters ?? 0).toLocaleString()} L
                       </option>
                     ))}
                   </select>
@@ -394,7 +400,7 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
                       <svg className="w-4 h-4 text-indigo-600 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M20 10V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V10M20 10V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10M20 10H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                       </svg>
-                      <span className="font-medium text-indigo-800 text-sm">{selectedFixedTank.name} ({selectedFixedTank.identifier})</span>
+                      <span className="font-medium text-indigo-800 text-sm">{selectedFixedTank.tank_name || selectedFixedTank.name} ({selectedFixedTank.tank_identifier || selectedFixedTank.identifier})</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
@@ -454,7 +460,7 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
           <button
             type="submit"
             disabled={submitting}
-            className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2.5 hope-gradient text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm transition-colors"
+            className="w-full inline-flex justify-center items-center rounded-md border border-white/20 shadow-sm px-4 py-2.5 relative overflow-hidden bg-black/60 backdrop-blur-sm text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm transition-colors"
           >
             {submitting ? (
               <>

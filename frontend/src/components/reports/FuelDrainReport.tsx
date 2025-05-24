@@ -274,13 +274,19 @@ const FuelDrainReport = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Evidencija Dreniranog Goriva</CardTitle>
+      <div className="relative overflow-hidden">
+        {/* Black glassmorphism background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <CardHeader className="flex flex-row items-center justify-between relative z-10 text-white">
+          <CardTitle>Evidencija Dreniranog Goriva</CardTitle>
         <Button onClick={handleExportAllToPdf} variant="outline" size="sm" disabled={filteredData.length === 0}>
           <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
           Preuzmi PDF (filtrirano)
         </Button>
       </CardHeader>
+      </div>
       <CardContent>
         {/* Combined Filters Row */}
         <div className="flex flex-wrap gap-4 mb-6 p-4 border rounded-md bg-gray-50 items-end">

@@ -363,8 +363,12 @@ export default function FuelingOperations() {
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-md">
       {/* Header with title and action buttons */}
-      <div className="hope-gradient p-6 rounded-t-lg shadow-md text-white">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+      <div className="p-6 rounded-t-lg text-white relative overflow-hidden">
+        {/* Black glassmorphism background - exactly matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect - matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 relative z-10">
           <div>
             <h2 className="text-2xl font-bold flex items-center">
               <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -380,7 +384,7 @@ export default function FuelingOperations() {
               resetForm();
               setShowAddModal(true);
             }}
-            className="mt-4 sm:mt-0 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md backdrop-blur-sm border border-white/20 transition-colors flex items-center font-medium shadow-sm"
+            className="mt-4 sm:mt-0 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md backdrop-blur-sm border border-white/20 transition-colors flex items-center font-medium shadow-sm relative z-10"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -390,7 +394,8 @@ export default function FuelingOperations() {
         </div>
         
         {/* Filter Section */}
-        <FilterSection 
+        <div className="relative z-10">
+          <FilterSection 
           startDate={startDate}
           setStartDate={setStartDate}
           endDate={endDate}
@@ -408,6 +413,7 @@ export default function FuelingOperations() {
           airlines={airlines}
           tanks={tanks}
         />
+        </div>
       </div>
 
       <div className="p-6">

@@ -100,15 +100,15 @@ export default function FixedTanksDisplay({
   const getStatusBadgeClasses = (status: FixedTankStatus): string => {
     switch (status) {
       case FixedTankStatus.ACTIVE:
-        return 'bg-green-500 text-white hover:bg-green-600';
+        return 'bg-gradient-to-r from-[#00B300] to-[#008000] text-white';
       case FixedTankStatus.INACTIVE:
-        return 'bg-gray-500 text-white hover:bg-gray-600';
+        return 'bg-gradient-to-r from-[#666666] to-[#444444] text-white';
       case FixedTankStatus.MAINTENANCE:
-        return 'bg-yellow-500 text-black hover:bg-yellow-600';
+        return 'bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black';
       case FixedTankStatus.OUT_OF_SERVICE:
-        return 'bg-red-500 text-white hover:bg-red-600';
+        return 'bg-gradient-to-r from-[#E60026] to-[#4D000A] text-white';
       default:
-        return 'bg-gray-300 text-black hover:bg-gray-400'; // Default to a visible gray
+        return 'bg-gradient-to-r from-[#AAAAAA] to-[#888888] text-black'; // Default to a visible gray
     }
   };
 
@@ -143,20 +143,25 @@ export default function FixedTanksDisplay({
   const uniqueFuelTypes = Array.from(new Set(tanks.map(tank => tank.fuel_type)));
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden">
+    <div className="bg-white rounded-lg overflow-hidden shadow-lg border border-gray-100">
       {/* Header with title and action buttons */}
-      <div className="hope-gradient p-6 rounded-t-lg shadow-md text-white">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+      <div className="relative overflow-hidden p-6 rounded-t-lg shadow-md text-white">
+        {/* Black glassmorphism background - exactly matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        
+        {/* Glass highlight effect - matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 relative z-10">
           <div>
             <h2 className="text-2xl font-bold flex items-center">
-              <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-6 h-6 mr-2 text-[#E60026]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 10V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V10M20 10V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10M20 10H4M8 14H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 <path d="M12 10V18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              Fiksni Tankovi Goriva
+              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">Fiksni Tankovi Goriva</span>
             </h2>
-            <p className="text-lg mt-1 ml-8">
-              Ukupno goriva: <strong>{totalFuel.toLocaleString()} L</strong>
+            <p className="text-lg mt-1 ml-8 text-white/80">
+              Ukupno goriva: <strong className="text-white">{totalFuel.toLocaleString()} L</strong>
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -165,16 +170,16 @@ export default function FixedTanksDisplay({
                 <DialogTrigger asChild>
                   <Button 
                     variant="default"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md shadow-sm flex items-center space-x-2 text-sm"
+                    className="bg-gradient-to-r from-[#E60026] to-[#4D000A] hover:from-[#B3001F] hover:to-[#800014] text-white py-2 px-4 rounded-md shadow-sm flex items-center space-x-2 text-sm"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4C11.4477 4 11 4.44772 11 5V11H5C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13H11V19C11 19.5523 11.4477 20 12 20C12.5523 20 13 19.5523 13 19V13H19C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11H13V5C13 4.44772 12.5523 4 12 4Z" fill="currentColor"/></svg>
                     <span>Dodaj Novi Tank</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Dodaj Novi Fiksni Tank</DialogTitle>
-                    <DialogDescription>
+                <DialogContent className="sm:max-w-[800px] bg-gradient-to-br from-[#1A1A1A] to-[#111111]/90 backdrop-blur-md border-0 shadow-2xl text-white">
+                  <DialogHeader className="pb-4 border-b border-white/20">
+                    <DialogTitle className="text-xl font-bold text-white">Dodaj Novi Fiksni Tank</DialogTitle>
+                    <DialogDescription className="text-white/70">
                       Unesite detalje za novi fiksni tank goriva.
                     </DialogDescription>
                   </DialogHeader>
@@ -184,9 +189,9 @@ export default function FixedTanksDisplay({
                       onCancel={() => setIsAddTankModalOpen(false)}
                     />
                   </div>
-                  <DialogFooter className="pt-4 border-t mt-auto">
-                    <Button variant="outline" onClick={() => setIsAddTankModalOpen(false)}>Otkaži</Button>
-                    <Button type="submit" form="new-tank-form">Sačuvaj</Button>
+                  <DialogFooter className="pt-4 border-t border-white/20 mt-auto">
+                    <Button variant="outline" onClick={() => setIsAddTankModalOpen(false)} className="border-[#E60026]/50 bg-[#E60026]/10 text-[#E60026] hover:bg-[#E60026]/20 hover:border-[#E60026]/70">Otkaži</Button>
+                    <Button type="submit" form="new-tank-form" className="bg-gradient-to-r from-[#E60026] to-[#4D000A] hover:from-[#B3001F] hover:to-[#800014] text-white">Sačuvaj</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -195,7 +200,7 @@ export default function FixedTanksDisplay({
               <Button 
                 variant="outline"
                 onClick={() => setIsTransferModalOpen(true)}
-                className="ml-4 border-purple-500 text-purple-700 hover:bg-purple-50 hover:text-purple-800 py-2 px-4 rounded-md shadow-sm flex items-center space-x-2 text-sm"
+                className="ml-4 border-[#E60026]/30 text-[#E60026] bg-white hover:bg-[#E60026]/10 py-2 px-4 rounded-md shadow-sm flex items-center space-x-2 text-sm"
               >
                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.0002 4.00001H8.00016C6.89559 4.00001 6.00016 4.89544 6.00016 6.00001V18C6.00016 19.1046 6.89559 20 8.00016 20H16.0002C17.1047 20 18.0002 19.1046 18.0002 18V6.00001C18.0002 4.89544 17.1047 4.00001 16.0002 4.00001ZM12.0002 16L9.00016 13H11.0002V10C11.0002 9.44772 11.4479 9.00001 12.0002 9.00001C12.5524 9.00001 13.0002 9.44772 13.0002 10V13H15.0002L12.0002 16Z" fill="currentColor"/></svg>
                 <span>Pretakanje (Fiksni u Fiksni)</span>
@@ -204,15 +209,15 @@ export default function FixedTanksDisplay({
           </div>
         </div>
         {/* Filter controls */}
-        <div className="flex flex-col sm:flex-row gap-3 mt-4 bg-white/10 p-3 rounded-lg backdrop-blur-sm">
+        <div className="flex flex-col sm:flex-row gap-3 mt-4 bg-white/10 p-3 rounded-lg backdrop-blur-sm relative z-10">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[200px] bg-white/20 border-white/30 text-white">
               <SelectValue placeholder="Filtriraj po statusu" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-gray-200 shadow-lg">
-              <SelectItem value="all" className="text-gray-800 hover:bg-indigo-50 focus:bg-indigo-50">Svi Statusi</SelectItem>
+              <SelectItem value="all" className="text-gray-800 hover:bg-[#E60026]/10 focus:bg-[#E60026]/10">Svi Statusi</SelectItem>
               {Object.values(FixedTankStatus).map(status => (
-                <SelectItem key={status} value={status} className="text-gray-800 hover:bg-indigo-50 focus:bg-indigo-50">{status}</SelectItem>
+                <SelectItem key={status} value={status} className="text-gray-800 hover:bg-[#E60026]/10 focus:bg-[#E60026]/10">{status}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -222,9 +227,9 @@ export default function FixedTanksDisplay({
               <SelectValue placeholder="Filtriraj po tipu goriva" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-gray-200 shadow-lg">
-              <SelectItem value="all" className="text-gray-800 hover:bg-indigo-50 focus:bg-indigo-50">Svi Tipovi Goriva</SelectItem>
+              <SelectItem value="all" className="text-gray-800 hover:bg-[#E60026]/10 focus:bg-[#E60026]/10">Svi Tipovi Goriva</SelectItem>
               {uniqueFuelTypes.map(fuelType => (
-                <SelectItem key={fuelType} value={fuelType} className="text-gray-800 hover:bg-indigo-50 focus:bg-indigo-50">{fuelType}</SelectItem>
+                <SelectItem key={fuelType} value={fuelType} className="text-gray-800 hover:bg-[#E60026]/10 focus:bg-[#E60026]/10">{fuelType}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -240,7 +245,7 @@ export default function FixedTanksDisplay({
       {/* Content area */}
       <div className="p-6">
         {filteredTanks.length === 0 && !loading && (
-          <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+          <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300 transition-all hover:border-[#E60026]/30">
             <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 10V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V10M20 10V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10M20 10H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -252,7 +257,7 @@ export default function FixedTanksDisplay({
         {filteredTanks.length > 0 && (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-gray-50">
+              <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <TableRow>
                   <TableHead className="w-[180px] font-semibold">Naziv</TableHead>
                   <TableHead className="font-semibold">Identifikator</TableHead>
@@ -275,17 +280,27 @@ export default function FixedTanksDisplay({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <span className="w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
-                          {tank.fuel_type}
+                          {tank.fuel_type.toLowerCase() === 'jet a-1'.toLowerCase() ? (
+                            <img 
+                              src="/JET A-1.svg" 
+                              alt="JET A-1" 
+                              className="w-14 h-14 object-contain" 
+                            />
+                          ) : (
+                            <>
+                              <span className="w-3 h-3 rounded-full bg-[#E60026] mr-2"></span>
+                              {tank.fuel_type}
+                            </>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium">{tank.capacity_liters.toLocaleString()}</TableCell>
                       <TableCell className="text-right font-medium">{tank.current_quantity_liters.toLocaleString()}</TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <div className={`w-[calc(100%-40px)] mr-2 h-2.5 rounded-full overflow-hidden ${percentage > 80 ? 'bg-green-100' : percentage > 30 ? 'bg-blue-100' : 'bg-red-100'}`}>
+                          <div className="w-[calc(100%-40px)] mr-2 h-2.5 rounded-full overflow-hidden bg-gray-100">
                             <div 
-                              className={`h-full rounded-full ${percentage > 80 ? 'bg-green-500' : percentage > 30 ? 'bg-blue-500' : 'bg-red-500'}`}
+                              className={`h-full rounded-full ${percentage > 80 ? 'bg-[#E60026]' : percentage > 30 ? 'bg-[#B3001F]' : 'bg-[#800014]'}`}
                               style={{ width: `${percentage}%` }}
                             />
                           </div>
@@ -302,7 +317,7 @@ export default function FixedTanksDisplay({
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleOpenDetailsModal(tank)}
-                              className="text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
+                              className="text-[#E60026] hover:bg-[#E60026]/10 dark:text-[#E60026] dark:hover:bg-[#E60026]/20"
                             >
                               <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -317,7 +332,7 @@ export default function FixedTanksDisplay({
                   );
                 })}
               </TableBody>
-              <TableCaption className="mt-4 text-gray-500 italic">
+              <TableCaption className="mt-4 text-gray-500 italic font-light">
                 Lista svih fiksnih tankova goriva.
               </TableCaption>
             </Table>

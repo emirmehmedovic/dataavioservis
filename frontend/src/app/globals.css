@@ -117,7 +117,7 @@ html, body {
 
 /* Custom gradient background with OKLAB colors */
 .hope-gradient {
-  background: linear-gradient(var(--angle), var(--clr-hope-100), var(--clr-hope-200));
+  background: linear-gradient(to bottom, #363636, #000000, #363636);
 }
 
 /* Custom Card Styles */

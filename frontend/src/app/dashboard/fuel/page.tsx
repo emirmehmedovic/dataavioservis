@@ -125,10 +125,12 @@ export default function FuelManagement() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-white rounded-xl shadow-xl overflow-hidden"
+          className="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100"
         >
           <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-            <div className="hope-gradient p-1">
+            <div className="bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 p-1 rounded-t-xl shadow-inner overflow-hidden relative">
+              {/* Glass reflection effect */}
+              <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
               <Tab.List className="flex gap-1 overflow-x-auto">
                 {Object.entries(categories).map(([category, { id }], idx) => (
                   <Tab
@@ -138,8 +140,8 @@ export default function FuelManagement() {
                         'px-6 py-4 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2',
                         'focus:outline-none',
                         selected
-                          ? 'bg-white text-indigo-800 rounded-t-lg shadow-lg'
-                          : 'text-white hover:bg-white/10 rounded-t-lg'
+                          ? 'bg-white text-[#E60026] rounded-t-lg shadow-lg'
+                          : 'text-white hover:bg-white/10 hover:text-[#E60026]/80 rounded-t-lg'
                       )
                     }
                   >
@@ -245,20 +247,7 @@ export default function FuelManagement() {
           </Tab.Group>
         </motion.div>
 
-        {/* Footer */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="mt-10 mb-4 flex justify-center"
-        >
-          <div className="bg-gradient-to-r from-indigo-800 to-purple-800 rounded-full px-6 py-3 shadow-lg flex items-center">
-            <svg className="w-5 h-5 text-white mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <span className="text-sm font-medium text-white">Za dodatnu pomoć ili informacije, kontaktirajte administratora sistema</span>
-          </div>
-        </motion.div>
+        {/* Footer removed */}
       </div>
     </div>
   );

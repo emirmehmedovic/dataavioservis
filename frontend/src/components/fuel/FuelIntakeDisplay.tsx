@@ -170,8 +170,12 @@ export default function FuelIntakeDisplay() {
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-md">
       {/* Header with title and action buttons */}
-      <div className="hope-gradient p-6 rounded-t-lg shadow-md text-white">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+      <div className="p-6 rounded-t-lg text-white relative overflow-hidden">
+        {/* Black glassmorphism background - exactly matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect - matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 relative z-10">
           <div>
             <h2 className="text-2xl font-bold flex items-center">
               <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

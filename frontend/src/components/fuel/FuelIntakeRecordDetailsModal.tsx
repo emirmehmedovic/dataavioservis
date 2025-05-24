@@ -95,9 +95,13 @@ export default function FuelIntakeRecordDetailsModal({
           <DialogTitle>Detalji Zapisa o Ulazu Goriva</DialogTitle>
         </DialogHeader>
         
-        {/* Header with gradient background */}
-        <div className="hope-gradient p-6 text-white">
-          <div className="flex flex-col space-y-1">
+        {/* Header with black glassmorphism effect */}
+        <div className="p-6 text-white relative overflow-hidden">
+          {/* Black glassmorphism background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+          {/* Glass highlight effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+          <div className="flex flex-col space-y-1 relative z-10">
             <h2 className="text-2xl font-bold flex items-center">
               <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 4V20M12 20L6 14M12 20L18 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

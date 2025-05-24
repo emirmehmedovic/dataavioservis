@@ -13,9 +13,13 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-0">
-        {/* Header with gradient background */}
-        <div className="hope-gradient p-6 text-white">
-          <div className="flex justify-between items-center">
+        {/* Header with black glassmorphism effect */}
+        <div className="p-6 text-white relative overflow-hidden">
+          {/* Black glassmorphism background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+          {/* Glass highlight effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+          <div className="flex justify-between items-center relative z-10">
             <div className="flex flex-col space-y-1">
               <h2 className="text-2xl font-bold flex items-center">
                 <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

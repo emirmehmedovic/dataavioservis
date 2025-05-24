@@ -60,9 +60,13 @@ export default function ReportsPage() {
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-12 w-full">
       <div className="w-full px-2 sm:px-4 md:px-6 py-6">
-        {/* Header with gradient background */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl mb-8 p-6 sm:p-8 text-white">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Header with black glassmorphism effect */}
+        <div className="rounded-2xl shadow-xl mb-8 p-6 sm:p-8 text-white relative overflow-hidden">
+          {/* Black glassmorphism background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+          {/* Glass highlight effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Izvještaji i Statistika</h1>
               <p className="mt-2 text-indigo-100 text-sm sm:text-base">Pregled svih ključnih podataka o gorivu i operacijama</p>
@@ -81,10 +85,10 @@ export default function ReportsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap
+                className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 whitespace-nowrap
                   ${activeTab === tab.id
-                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                    : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-indigo-300'}`}
+                    ? 'bg-gradient-to-r from-[#E60026] to-[#B3001F] text-white shadow-md dark:from-[#B3001F] dark:to-[#800014]'
+                    : 'text-gray-600 hover:text-[#E60026] hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-[#E60026]'}`}
               >
                 <span className="mr-2">{tab.icon}</span>
                 {tab.label}

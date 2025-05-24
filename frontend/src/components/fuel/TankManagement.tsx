@@ -190,9 +190,13 @@ export default function TankManagement() {
   return (
     <div className="bg-white rounded-lg overflow-hidden">
       {/* Header with title and action buttons */}
-      <div className="hope-gradient p-6 rounded-t-lg shadow-md text-white">
+      <div className="p-5 rounded-t-lg text-white relative overflow-hidden">
+        {/* Black glassmorphism background - exactly matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect - matching tab header */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-          <div>
+          <div className="relative z-10">
             <h2 className="text-2xl font-bold flex items-center">
               <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 8H21L19 16H5L3 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -240,10 +244,10 @@ export default function TankManagement() {
         <div className="flex justify-center items-center h-64 p-6">
           <div className="flex flex-col items-center">
             <div className="relative">
-              <div className="w-16 h-16 border-4 border-indigo-200 border-opacity-50 rounded-full"></div>
-              <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-indigo-600 rounded-full animate-spin"></div>
+              <div className="w-16 h-16 border-4 border-[#B3001F] border-opacity-50 rounded-full"></div>
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-[#800014] rounded-full animate-spin"></div>
             </div>
-            <p className="mt-6 text-indigo-700 font-medium">Učitavanje podataka o cisternama...</p>
+            <p className="mt-6 text-[#E60026] font-medium">Učitavanje podataka o cisternama...</p>
           </div>
         </div>
       ) : tanks.length === 0 ? (
@@ -254,7 +258,7 @@ export default function TankManagement() {
             transition={{ duration: 0.5 }}
             className="max-w-md mx-auto"
           >
-            <div className="mx-auto w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-5 shadow-inner">
+            <div className="mx-auto w-20 h-20 bg-[#E60026] rounded-full flex items-center justify-center mb-5 shadow-inner">
               <ExclamationCircleIcon className="w-10 h-10 text-indigo-400" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Nema unesenih cisterni</h3>
@@ -264,7 +268,7 @@ export default function TankManagement() {
                 resetForm();
                 setShowAddModal(true);
               }}
-              className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white hope-gradient focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-[#E60026] to-[#800014] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors"
             >
               <PlusIcon className="-ml-0.5 mr-2 h-5 w-5" />
               Dodaj Prvu Cisternu
@@ -290,34 +294,15 @@ export default function TankManagement() {
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 relative group"
                 >
-                  {/* Card Header with hope gradient */}
-                  <div className="hope-gradient px-5 py-4 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex space-x-1 z-10">
-                      <button
-                        onClick={() => openRefillModal(tank)}
-                        className="p-1.5 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors"
-                        title="Dopuni cisternu"
-                      >
-                        <ArrowUpCircleIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => openEditModal(tank)}
-                        className="p-1.5 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors"
-                        title="Uredi cisternu"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTank(tank.id)}
-                        className="p-1.5 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors"
-                        title="Obriši cisternu"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
+                  {/* Card Header with white gradient effect */}
+                  <div className="px-5 py-4 text-gray-800 relative overflow-hidden">
+                    {/* White gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-white via-gray-50 to-white border border-gray-100 z-0"></div>
+                    {/* Subtle highlight effect */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent z-0"></div>
                     
                     {/* Abstract background pattern */}
-                    <div className="absolute inset-0 opacity-20">
+                    <div className="absolute inset-0 opacity-10">
                       <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                         <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#pattern-${tank.id})" />
                         <defs>
@@ -328,25 +313,15 @@ export default function TankManagement() {
                       </svg>
                     </div>
                     
-                    {/* Tank icon */}
-                    <div className="absolute right-4 bottom-4 opacity-30">
-                      <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 8H21L19 16H5L3 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M7 8V6C7 4.89543 7.89543 4 9 4H15C16.1046 4 17 4.89543 17 6V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="7" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="17" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                    </div>
-                    
                     {/* Tank name and identifier */}
                     <div className="relative z-10">
                       <div className="flex items-center">
-                        <h3 className="text-xl font-bold mr-3">{tank.name}</h3>
-                        <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
+                        <h3 className="text-xl font-bold text-gray-800 mr-3">{tank.name}</h3>
+                        <span className="px-2 py-0.5 bg-gray-200 rounded-full text-xs font-medium text-gray-700">
                           {tank.identifier}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm opacity-90 truncate">{locationText}</p>
+                      <p className="mt-1 text-sm text-gray-600 truncate">{locationText}</p>
                     </div>
                   </div>
                   
@@ -402,7 +377,7 @@ export default function TankManagement() {
                     <div className="mt-5 flex space-x-2">
                       <button
                         onClick={() => openRefillModal(tank)}
-                        className="flex-1 flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white hope-gradient focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                        className="flex-1 flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-[#E60026] to-[#800014] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
                       >
                         <ArrowUpCircleIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
                         Dopuni
@@ -410,7 +385,7 @@ export default function TankManagement() {
                       
                       <button
                         onClick={() => openEditModal(tank)}
-                        className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                        className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
                       >
                         <PencilIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
                         Uredi
@@ -439,18 +414,12 @@ export default function TankManagement() {
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="hope-gradient p-5 rounded-t-lg text-white relative overflow-hidden">
-                {/* Abstract background pattern */}
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#add-pattern)" />
-                    <defs>
-                      <pattern id="add-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M0 20 L40 20 M20 0 L20 40" stroke="currentColor" strokeWidth="1" fill="none" />
-                      </pattern>
-                    </defs>
-                  </svg>
-                </div>
+              <div className="p-5 rounded-t-lg text-white relative overflow-hidden">
+                {/* Black glassmorphism background - exactly matching tab header */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+                {/* Glass highlight effect - matching tab header */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+                {/* No abstract background pattern */}
                 
                 <h3 className="text-xl font-bold flex items-center relative z-10">
                   <PlusIcon className="w-6 h-6 mr-2" />
@@ -469,7 +438,7 @@ export default function TankManagement() {
                   >
                     <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
                       <div className="flex items-center mb-3">
-                        <BeakerIcon className="w-5 h-5 text-indigo-600 mr-2" />
+                        <BeakerIcon className="w-5 h-5 text-[#E60026] mr-2" />
                         <h4 className="font-medium text-indigo-800">Osnovne Informacije</h4>
                       </div>
                       
@@ -487,7 +456,7 @@ export default function TankManagement() {
                               onChange={handleInputChange}
                               required
                               placeholder="npr. AV-001"
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                           </div>
                         </div>
@@ -505,7 +474,7 @@ export default function TankManagement() {
                               onChange={handleInputChange}
                               required
                               placeholder="npr. Cisterna 1"
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                           </div>
                         </div>
@@ -514,7 +483,7 @@ export default function TankManagement() {
                     
                     <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
                       <div className="flex items-center mb-3">
-                        <MapPinIcon className="w-5 h-5 text-indigo-600 mr-2" />
+                        <MapPinIcon className="w-5 h-5 text-[#E60026] mr-2" />
                         <h4 className="font-medium text-indigo-800">Lokacija</h4>
                       </div>
                       
@@ -531,7 +500,7 @@ export default function TankManagement() {
                             onChange={handleInputChange}
                             required
                             placeholder="npr. Aerodrom Sarajevo"
-                            className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                           />
                         </div>
                       </div>
@@ -539,7 +508,7 @@ export default function TankManagement() {
                     
                     <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
                       <div className="flex items-center mb-3">
-                        <svg className="w-5 h-5 text-indigo-600 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 text-[#E60026] mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M19 14C19 16.7614 16.7614 19 14 19H10C7.23858 19 5 16.7614 5 14V10C5 7.23858 7.23858 5 10 5H14C16.7614 5 19 7.23858 19 10V14Z" stroke="currentColor" strokeWidth="2" />
                           <path d="M9 12H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                           <path d="M12 9L12 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -562,7 +531,7 @@ export default function TankManagement() {
                               value={formData.capacity_liters || ''}
                               onChange={handleInputChange}
                               required
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                               <span className="text-gray-500 sm:text-sm">L</span>
@@ -584,7 +553,7 @@ export default function TankManagement() {
                               value={formData.current_liters || ''}
                               onChange={handleInputChange}
                               required
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                               <span className="text-gray-500 sm:text-sm">L</span>
@@ -602,7 +571,7 @@ export default function TankManagement() {
                               name="fuel_type"
                               value={formData.fuel_type}
                               onChange={handleInputChange}
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pr-10 appearance-none"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm pr-10 appearance-none"
                             >
                               <option value="Jet A-1">Jet A-1</option>
                               <option value="Avgas 100LL">Avgas 100LL</option>
@@ -623,13 +592,13 @@ export default function TankManagement() {
                     <button
                       type="button"
                       onClick={() => setShowAddModal(false)}
-                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm transition-colors"
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:mt-0 sm:text-sm transition-colors"
                     >
                       Odustani
                     </button>
                     <button
                       type="submit"
-                      className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2.5 hope-gradient text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm transition-colors"
+                      className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2.5 bg-gradient-to-r from-[#E60026] to-[#800014] text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:text-sm transition-colors"
                     >
                       <PlusIcon className="w-5 h-5 mr-2" />
                       Dodaj Cisternu
@@ -649,7 +618,7 @@ export default function TankManagement() {
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="hope-gradient p-5 rounded-t-lg text-white relative overflow-hidden">
+              <div className="bg-gradient-to-r from-[#E60026] to-[#800014] p-5 rounded-t-lg text-white relative overflow-hidden">
                 {/* Abstract background pattern */}
                 <div className="absolute inset-0 opacity-20">
                   <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -677,7 +646,7 @@ export default function TankManagement() {
                   className="mb-6 bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-lg border border-indigo-100 shadow-sm"
                 >
                   <div className="flex items-center mb-3">
-                    <TruckIcon className="w-5 h-5 text-indigo-600 mr-2" />
+                    <TruckIcon className="w-5 h-5 text-[#E60026] mr-2" />
                     <h4 className="font-medium text-indigo-800">Informacije o Cisternu</h4>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
@@ -705,7 +674,7 @@ export default function TankManagement() {
                   >
                     <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
                       <div className="flex items-center mb-3">
-                        <BeakerIcon className="w-5 h-5 text-indigo-600 mr-2" />
+                        <BeakerIcon className="w-5 h-5 text-[#E60026] mr-2" />
                         <h4 className="font-medium text-indigo-800">Osnovne Informacije</h4>
                       </div>
                       
@@ -722,7 +691,7 @@ export default function TankManagement() {
                               value={formData.identifier}
                               onChange={handleInputChange}
                               required
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                           </div>
                         </div>
@@ -739,7 +708,7 @@ export default function TankManagement() {
                               value={formData.name}
                               onChange={handleInputChange}
                               required
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                           </div>
                         </div>
@@ -748,7 +717,7 @@ export default function TankManagement() {
                     
                     <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
                       <div className="flex items-center mb-3">
-                        <MapPinIcon className="w-5 h-5 text-indigo-600 mr-2" />
+                        <MapPinIcon className="w-5 h-5 text-[#E60026] mr-2" />
                         <h4 className="font-medium text-indigo-800">Lokacija</h4>
                       </div>
                       
@@ -764,7 +733,7 @@ export default function TankManagement() {
                             value={formData.location}
                             onChange={handleInputChange}
                             required
-                            className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             placeholder="npr. Aerodrom Sarajevo"
                           />
                         </div>
@@ -773,7 +742,7 @@ export default function TankManagement() {
                     
                     <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
                       <div className="flex items-center mb-3">
-                        <svg className="w-5 h-5 text-indigo-600 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 text-[#E60026] mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M19 14C19 16.7614 16.7614 19 14 19H10C7.23858 19 5 16.7614 5 14V10C5 7.23858 7.23858 5 10 5H14C16.7614 5 19 7.23858 19 10V14Z" stroke="currentColor" strokeWidth="2" />
                           <path d="M9 12H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                           <path d="M12 9L12 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -796,7 +765,7 @@ export default function TankManagement() {
                               value={formData.capacity_liters || ''}
                               onChange={handleInputChange}
                               required
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                               <span className="text-gray-500 sm:text-sm">L</span>
@@ -818,7 +787,7 @@ export default function TankManagement() {
                               value={formData.current_liters || ''}
                               onChange={handleInputChange}
                               required
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                               <span className="text-gray-500 sm:text-sm">L</span>
@@ -836,7 +805,7 @@ export default function TankManagement() {
                               name="fuel_type"
                               value={formData.fuel_type}
                               onChange={handleInputChange}
-                              className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pr-10 appearance-none"
+                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm pr-10 appearance-none"
                             >
                               <option value="Jet A-1">Jet A-1</option>
                               <option value="Avgas 100LL">Avgas 100LL</option>
@@ -857,13 +826,13 @@ export default function TankManagement() {
                     <button
                       type="button"
                       onClick={() => setShowEditModal(false)}
-                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm transition-colors"
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:mt-0 sm:text-sm transition-colors"
                     >
                       Odustani
                     </button>
                     <button
                       type="submit"
-                      className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2.5 hope-gradient text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm transition-colors"
+                      className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2.5 bg-gradient-to-r from-[#E60026] to-[#800014] text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:text-sm transition-colors"
                     >
                       <PencilIcon className="w-5 h-5 mr-2" />
                       Spremi Promjene

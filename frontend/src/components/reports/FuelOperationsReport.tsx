@@ -459,7 +459,7 @@ export default function FuelOperationsReport() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
         {/* Header with gradient background */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between relative z-10">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">Izvještaj Izlaznih Operacija Goriva</h2>
               <p className="mt-1 text-indigo-100 text-sm">Pregled svih operacija točenja goriva u avione</p>
@@ -488,7 +488,7 @@ export default function FuelOperationsReport() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
         {/* Header with gradient background */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between relative z-10">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">Izvještaj Izlaznih Operacija Goriva</h2>
               <p className="mt-1 text-indigo-100 text-sm">Pregled svih operacija točenja goriva u avione</p>
@@ -514,9 +514,13 @@ export default function FuelOperationsReport() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
-      {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
-        <div className="flex items-center justify-between">
+      {/* Header with black glassmorphism effect */}
+      <div className="p-6 text-white relative overflow-hidden">
+        {/* Black glassmorphism background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <div className="flex items-center justify-between relative z-10">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Izvještaj Izlaznih Operacija Goriva</h2>
             <p className="mt-1 text-indigo-100 text-sm">Pregled svih operacija točenja goriva u avione</p>

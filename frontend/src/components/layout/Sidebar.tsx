@@ -75,7 +75,7 @@ export default function Sidebar() {
     <>
       {/* Mobile menu button - only visible on small screens */}
       <motion.button
-        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg md:hidden backdrop-blur-lg"
+        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-gradient-to-r from-[#E60026] to-[#4D000A] text-white shadow-lg md:hidden backdrop-blur-lg"
         onClick={toggleMobileSidebar}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -113,7 +113,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center space-x-3 overflow-hidden">
             <motion.div
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold shadow-md"
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#E60026] to-[#4D000A] text-white font-bold shadow-md"
               animate={{ 
                 rotate: collapsed ? 360 : 0,
                 scale: [1, 1.05, 1]
@@ -138,7 +138,7 @@ export default function Sidebar() {
                 transition={{ delay: 0.1 }}
                 className="flex flex-col"
               >
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">
+                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-[#E60026]/70">
                   AvioServis
                 </h1>
                 <span className="text-xs text-white/60">Admin Panel</span>
@@ -209,7 +209,7 @@ export default function Sidebar() {
                     className={cn(
                       'flex items-center rounded-xl transition-all duration-200 overflow-hidden backdrop-blur-md',
                       isActive
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg border border-white/10'
+                        ? 'bg-gradient-to-r from-[#E60026] to-[#4D000A] text-white shadow-lg border border-white/10'
                         : 'text-white/80 hover:bg-white/10 border border-transparent',
                       collapsed ? 'justify-center p-3 my-2' : 'p-3 space-x-3'
                     )}
@@ -253,14 +253,14 @@ export default function Sidebar() {
               <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
-                    <Activity size={14} className="text-blue-400" />
+                    <Activity size={14} className="text-[#E60026]" />
                     <span className="text-sm">Aktivna vozila</span>
                   </div>
-                  <span className="font-bold text-blue-400">28</span>
+                  <span className="font-bold text-[#E60026]">28</span>
                 </div>
                 <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
                   <motion.div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+                    className="h-full bg-gradient-to-r from-[#E60026] to-[#4D000A] rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: '75%' }}
                     transition={{ delay: 0.5, duration: 1 }}
@@ -290,8 +290,8 @@ export default function Sidebar() {
             onClick={logout}
             className={cn(
               'w-full flex items-center rounded-xl transition-all duration-200 p-3 backdrop-blur-sm',
-              'border border-red-500/20 bg-gradient-to-r from-red-500/20 to-pink-500/20',
-              'hover:from-red-500/30 hover:to-pink-500/30 text-white',
+              'border border-[#E60026]/20 bg-gradient-to-r from-[#E60026]/20 to-[#4D000A]/20',
+              'hover:from-[#E60026]/30 hover:to-[#4D000A]/30 text-white',
               collapsed ? 'justify-center' : 'space-x-3'
             )}
             whileHover={{ y: -2 }}

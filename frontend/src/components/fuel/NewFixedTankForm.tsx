@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FixedTankStatus, FuelType, FixedStorageTank } from '@/types/fuel';
 import { createFixedTank } from '@/lib/apiService';
+import { Card } from '@/components/ui/Card';
 
 interface NewFixedTankFormProps {
   onSubmitSuccess: () => void;
@@ -113,69 +114,143 @@ const NewFixedTankForm: React.FC<NewFixedTankFormProps> = ({ onSubmitSuccess, on
   };
 
   return (
-    <form onSubmit={handleSubmit} id="new-tank-form" className="space-y-4">
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div>
-        <Label htmlFor="name">Naziv Tank</Label>
-        <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
-      </div>
-      <div>
-        <Label htmlFor="identifier">Identifikator</Label>
-        <Input id="identifier" name="identifier" value={formData.identifier} onChange={handleChange} required />
-      </div>
-      <div>
-        <Label htmlFor="capacity_liters">Kapacitet (L)</Label>
-        <Input id="capacity_liters" name="capacity_liters" type="number" value={formData.capacity_liters} onChange={handleChange} required />
-      </div>
-      <div>
-        <Label htmlFor="current_quantity_liters">Početna Količina (L)</Label>
-        <Input id="current_quantity_liters" name="current_quantity_liters" type="number" value={formData.current_quantity_liters} onChange={handleChange} />
-      </div>
-      <div>
-        <Label htmlFor="fuel_type">Tip Goriva</Label>
-        <Select name="fuel_type" value={formData.fuel_type} onValueChange={(value: string) => handleSelectChange('fuel_type', value as FuelType)} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Odaberite tip goriva" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(FuelType).map(type => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="status">Status</Label>
-        <Select name="status" value={formData.status} onValueChange={(value: string) => handleSelectChange('status', value as FixedTankStatus)} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Odaberite status" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(FixedTankStatus).map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-       <div>
-        <Label htmlFor="location_description">Opis Lokacije</Label>
-        <Input id="location_description" name="location_description" value={formData.location_description} onChange={handleChange} />
-      </div>
-      <div>
-        <Label htmlFor="identificationDocument">Identifikacioni Dokument (Opciono)</Label>
-        <Input 
-          id="identificationDocument" 
-          name="identificationDocument" 
-          type="file" 
-          onChange={handleFileChange} 
-          className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-          accept=".pdf,.jpg,.jpeg,.png"
-        />
-        {selectedDocument && (
-          <p className="mt-1 text-xs text-green-600">Odabran dokument: {selectedDocument.name}</p>
+    <Card className="bg-gradient-to-br from-[#1A1A1A] to-[#111111]/90 backdrop-blur-md border-0 shadow-2xl p-6 rounded-xl">
+      <form onSubmit={handleSubmit} id="new-tank-form" className="space-y-6">
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
         )}
-      </div>
-    </form>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left column */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-white/90 font-medium">Naziv Tanka</Label>
+              <Input 
+                id="name" 
+                name="name" 
+                value={formData.name} 
+                onChange={handleChange} 
+                required 
+                className="bg-white/10 border-white/20 text-white focus:border-[#E60026]/70 focus:ring-[#E60026]/20"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="identifier" className="text-white/90 font-medium">Identifikator</Label>
+              <Input 
+                id="identifier" 
+                name="identifier" 
+                value={formData.identifier} 
+                onChange={handleChange} 
+                required 
+                className="bg-white/10 border-white/20 text-white focus:border-[#E60026]/70 focus:ring-[#E60026]/20"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="capacity_liters" className="text-white/90 font-medium">Kapacitet (L)</Label>
+              <Input 
+                id="capacity_liters" 
+                name="capacity_liters" 
+                type="number" 
+                value={formData.capacity_liters} 
+                onChange={handleChange} 
+                required 
+                className="bg-white/10 border-white/20 text-white focus:border-[#E60026]/70 focus:ring-[#E60026]/20"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="current_quantity_liters" className="text-white/90 font-medium">Početna Količina (L)</Label>
+              <Input 
+                id="current_quantity_liters" 
+                name="current_quantity_liters" 
+                type="number" 
+                value={formData.current_quantity_liters} 
+                onChange={handleChange} 
+                className="bg-white/10 border-white/20 text-white focus:border-[#E60026]/70 focus:ring-[#E60026]/20"
+              />
+            </div>
+          </div>
+          
+          {/* Right column */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fuel_type" className="text-white/90 font-medium">Tip Goriva</Label>
+              <Select 
+                name="fuel_type" 
+                value={formData.fuel_type} 
+                onValueChange={(value: string) => handleSelectChange('fuel_type', value as FuelType)} 
+                required
+              >
+                <SelectTrigger className="bg-white/10 border-white/20 text-white focus:border-[#E60026]/70 focus:ring-[#E60026]/20">
+                  <SelectValue placeholder="Odaberite tip goriva" />
+                </SelectTrigger>
+                <SelectContent className="bg-black/90 border-white/20 text-white">
+                  {Object.values(FuelType).map(type => (
+                    <SelectItem key={type} value={type} className="focus:bg-[#E60026]/20 focus:text-white">
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-white/90 font-medium">Status</Label>
+              <Select 
+                name="status" 
+                value={formData.status} 
+                onValueChange={(value: string) => handleSelectChange('status', value as FixedTankStatus)} 
+                required
+              >
+                <SelectTrigger className="bg-white/10 border-white/20 text-white focus:border-[#E60026]/70 focus:ring-[#E60026]/20">
+                  <SelectValue placeholder="Odaberite status" />
+                </SelectTrigger>
+                <SelectContent className="bg-black/90 border-white/20 text-white">
+                  {Object.values(FixedTankStatus).map(s => (
+                    <SelectItem key={s} value={s} className="focus:bg-[#E60026]/20 focus:text-white">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="location_description" className="text-white/90 font-medium">Opis Lokacije</Label>
+              <Input 
+                id="location_description" 
+                name="location_description" 
+                value={formData.location_description} 
+                onChange={handleChange} 
+                className="bg-white/10 border-white/20 text-white focus:border-[#E60026]/70 focus:ring-[#E60026]/20"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Full width document upload */}
+        <div className="space-y-2 pt-2">
+          <Label htmlFor="identificationDocument" className="text-white/90 font-medium">Identifikacioni Dokument (Opciono)</Label>
+          <Input 
+            id="identificationDocument" 
+            name="identificationDocument" 
+            type="file" 
+            onChange={handleFileChange} 
+            className="mt-1 block w-full text-sm text-white/80 bg-white/10 border-white/20 rounded-lg
+                      file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium 
+                      file:bg-[#E60026]/80 file:text-white hover:file:bg-[#E60026]" 
+            accept=".pdf,.jpg,.jpeg,.png"
+          />
+          {selectedDocument && (
+            <p className="mt-1 text-xs text-[#E60026]/80">Odabran dokument: {selectedDocument.name}</p>
+          )}
+        </div>
+      </form>
+    </Card>
   );
 };
 

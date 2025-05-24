@@ -302,8 +302,12 @@ export default function FuelReports() {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      <div className="hope-gradient rounded-xl p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+      <div className="rounded-xl p-6 shadow-xl relative overflow-hidden">
+        {/* Black glassmorphism background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+        {/* Glass highlight effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
           <div className="flex items-center">
             <div className="mr-4 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
               <ChartBarIcon className="h-8 w-8 text-white" />
@@ -370,8 +374,12 @@ export default function FuelReports() {
 
       {/* Tab Navigation */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="hope-gradient p-1">
-          <nav className="flex space-x-1 overflow-x-auto" aria-label="Tabs">
+        <div className="p-1 relative overflow-hidden">
+          {/* Black glassmorphism background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+          {/* Glass highlight effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+          <nav className="flex space-x-1 overflow-x-auto relative z-10" aria-label="Tabs">
             {[
               { id: 'overview', name: 'Opšti Pregled', icon: <ChartBarIcon className="h-4 w-4" /> },
               { id: 'consumptionAnalysis', name: 'Analiza Potrošnje', icon: <ChartPieIcon className="h-4 w-4" /> },
