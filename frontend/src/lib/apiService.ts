@@ -369,8 +369,22 @@ export const getFixedTankHistory = async (
     
     const queryString = params.toString();
     const url = `${API_BASE_URL}/api/fuel/fixed-tanks/${tankId}/history${queryString ? `?${queryString}` : ''}`;
+    
+    console.log(`Fetching tank history from URL: ${url}`);
+    console.log(`Environment: ${process.env.NODE_ENV}, API_BASE_URL: ${API_BASE_URL}`);
 
     const data = await fetchWithAuth<TankTransaction[]>(url);
+    
+    console.log(`Received tank history data for tank ID ${tankId}:`, data);
+    console.log(`Number of transactions: ${data.length}`);
+    console.log(`Transaction types:`, data.map(t => t.type));
+    
+    // Check if there are any 'intake' transactions
+    const intakeTransactions = data.filter(t => t.type === 'intake');
+    console.log(`Number of 'intake' transactions: ${intakeTransactions.length}`);
+    if (intakeTransactions.length > 0) {
+      console.log('Sample intake transaction:', intakeTransactions[0]);
+    }
 
     return data;
 

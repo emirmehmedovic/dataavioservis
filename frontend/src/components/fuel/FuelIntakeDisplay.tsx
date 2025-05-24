@@ -302,9 +302,19 @@ export default function FuelIntakeDisplay() {
                     <TableCell className="text-right">{record.quantity_kg_received.toLocaleString()} kg</TableCell>
                     <TableCell className="text-right">{record.specific_gravity.toFixed(4)}</TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        {record.fuel_type}
-                      </span>
+                      {record.fuel_type?.toLowerCase() === 'jet a-1'.toLowerCase() ? (
+                        <div className="flex items-center">
+                          <img 
+                            src="/JET A-1.svg" 
+                            alt="JET A-1" 
+                            className="w-10 h-10 object-contain" 
+                          />
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          {record.fuel_type}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {record.customs_declaration_number ? (

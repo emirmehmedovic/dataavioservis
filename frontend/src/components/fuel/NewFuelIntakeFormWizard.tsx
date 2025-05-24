@@ -589,161 +589,338 @@ export default function NewFuelIntakeFormWizard() {
       case STEPS.DELIVERY_DETAILS:
         return (
           <div>
-            <h3 className="text-lg font-medium mb-6">Korak 1: Osnovni Podaci o Dostavi</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="delivery_vehicle_plate">Registarska oznaka dostavne cisterne</Label>
-                  <Input 
-                    id="delivery_vehicle_plate" 
-                    name="delivery_vehicle_plate" 
-                    value={formData.delivery_vehicle_plate || ''} 
-                    onChange={handleInputChange} 
-                    className={`mt-1 ${formErrors.delivery_vehicle_plate ? 'border-red-500' : ''}`}
-                  />
-                  {formErrors.delivery_vehicle_plate && <p className="text-xs text-red-500 mt-1">{formErrors.delivery_vehicle_plate}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="delivery_vehicle_driver_name">Ime vozača (opciono)</Label>
-                  <Input 
-                    id="delivery_vehicle_driver_name" 
-                    name="delivery_vehicle_driver_name" 
-                    value={formData.delivery_vehicle_driver_name || ''} 
-                    onChange={handleInputChange} 
-                    className="mt-1"
-                  />
+            <div className="flex items-center mb-6">
+              <div className="bg-blue-100 p-2 rounded-full mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <line x1="10" y1="9" x2="8" y2="9"/>
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">Osnovni Podaci o Dostavi</h3>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Delivery Vehicle Information Card */}
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                    <rect x="1" y="3" width="15" height="13"/>
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                  </svg>
+                  Informacije o Dostavnom Vozilu
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="delivery_vehicle_plate" className="text-gray-700">Registarska oznaka dostavne cisterne</Label>
+                    <div className="relative">
+                      <Input 
+                        id="delivery_vehicle_plate" 
+                        name="delivery_vehicle_plate" 
+                        value={formData.delivery_vehicle_plate || ''} 
+                        onChange={handleInputChange} 
+                        className={`mt-1 pl-9 ${formErrors.delivery_vehicle_plate ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="4" width="20" height="16" rx="2"/>
+                          <path d="M8 4v16"/>
+                          <path d="M16 4v16"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {formErrors.delivery_vehicle_plate && <p className="text-xs text-red-500 mt-1">{formErrors.delivery_vehicle_plate}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="delivery_vehicle_driver_name" className="text-gray-700">Ime vozača (opciono)</Label>
+                    <div className="relative">
+                      <Input 
+                        id="delivery_vehicle_driver_name" 
+                        name="delivery_vehicle_driver_name" 
+                        value={formData.delivery_vehicle_driver_name || ''} 
+                        onChange={handleInputChange} 
+                        className="mt-1 pl-9 focus:ring-blue-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="intake_datetime">Datum i vrijeme ulaza</Label>
-                <Input 
-                  id="intake_datetime" 
-                  name="intake_datetime" 
-                  type="datetime-local" 
-                  value={formData.intake_datetime || ''} 
-                  onChange={handleInputChange} 
-                  className={`mt-1 ${formErrors.intake_datetime ? 'border-red-500' : ''}`}
-                />
-                {formErrors.intake_datetime && <p className="text-xs text-red-500 mt-1">{formErrors.intake_datetime}</p>}
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
+              {/* Date and Time Card */}
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  Datum i Vrijeme
+                </h4>
                 <div>
-                  <Label htmlFor="quantity_liters_received">Količina (L)</Label>
-                  <Input 
-                    id="quantity_liters_received" 
-                    name="quantity_liters_received" 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    value={formData.quantity_liters_received || ''} 
-                    onChange={handleInputChange}
-                    className={formErrors.quantity_liters_received ? "border-red-500" : ""}
-                  />
-                  {formErrors.quantity_liters_received && (
-                    <p className="text-xs text-red-500 mt-1">{formErrors.quantity_liters_received}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="quantity_kg_received">Količina (KG)</Label>
-                  <Input 
-                    id="quantity_kg_received" 
-                    name="quantity_kg_received" 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    value={formData.quantity_kg_received || ''} 
-                    onChange={handleInputChange}
-                    className={formErrors.quantity_kg_received ? "border-red-500" : ""}
-                  />
-                  {formErrors.quantity_kg_received && (
-                    <p className="text-xs text-red-500 mt-1">{formErrors.quantity_kg_received}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="specific_gravity">Spec. gustoća (kg/L)</Label>
-                  <Input 
-                    id="specific_gravity" 
-                    name="specific_gravity" 
-                    type="number" 
-                    step="0.001"
-                    min="0"
-                    value={formData.specific_gravity || ''} 
-                    readOnly
-                    disabled
-                    className="bg-gray-100"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Automatski izračunato</p>
+                  <Label htmlFor="intake_datetime" className="text-gray-700">Datum i vrijeme ulaza</Label>
+                  <div className="relative">
+                    <Input 
+                      id="intake_datetime" 
+                      name="intake_datetime" 
+                      type="datetime-local" 
+                      value={formData.intake_datetime || ''} 
+                      onChange={handleInputChange} 
+                      className={`mt-1 pl-9 ${formErrors.intake_datetime ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                    </div>
+                  </div>
+                  {formErrors.intake_datetime && <p className="text-xs text-red-500 mt-1">{formErrors.intake_datetime}</p>}
                 </div>
               </div>
-              
-              <p className="text-xs text-gray-500">Unesite količinu u litrama i kilogramima, a specifična gustoća će biti automatski izračunata.</p>
 
-              <div>
-                <Label htmlFor="fuel_type">Tip goriva</Label>
-                <Select 
-                  name="fuel_type"
-                  onValueChange={(value: string) => handleInputChange(value, 'fuel_type')}
-                  value={formData.fuel_type || ''}
-                >
-                  <SelectTrigger className={`w-full mt-1 ${formErrors.fuel_type ? 'border-red-500' : ''}`}>
-                    <SelectValue placeholder="Odaberite tip goriva" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(FuelType).map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formErrors.fuel_type && <p className="text-xs text-red-500 mt-1">{formErrors.fuel_type}</p>}
+              {/* Quantity Information Card */}
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"/>
+                    <path d="M6 9h12"/>
+                    <path d="M6 12h12"/>
+                    <path d="M6 15h12"/>
+                  </svg>
+                  Količina i Tip Goriva
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                  <div>
+                    <Label htmlFor="quantity_liters_received" className="text-gray-700">Količina (L)</Label>
+                    <div className="relative">
+                      <Input 
+                        id="quantity_liters_received" 
+                        name="quantity_liters_received" 
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        value={formData.quantity_liters_received || ''} 
+                        onChange={handleInputChange}
+                        className={`mt-1 pl-9 ${formErrors.quantity_liters_received ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M8 21h8"/>
+                          <path d="M12 21v-5"/>
+                          <path d="M10 3L4 9a1 1 0 0 0 0 1.41l8.59 8.59a1 1 0 0 0 1.41 0l8.59-8.59A1 1 0 0 0 22 9l-6-6-6 6"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {formErrors.quantity_liters_received && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.quantity_liters_received}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="quantity_kg_received" className="text-gray-700">Količina (KG)</Label>
+                    <div className="relative">
+                      <Input 
+                        id="quantity_kg_received" 
+                        name="quantity_kg_received" 
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        value={formData.quantity_kg_received || ''} 
+                        onChange={handleInputChange}
+                        className={`mt-1 pl-9 ${formErrors.quantity_kg_received ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 18h12"/>
+                          <path d="M6 6h12"/>
+                          <circle cx="18" cy="12" r="3"/>
+                          <circle cx="6" cy="12" r="3"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {formErrors.quantity_kg_received && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.quantity_kg_received}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="specific_gravity" className="text-gray-700">Spec. gustoća (kg/L)</Label>
+                    <div className="relative">
+                      <Input 
+                        id="specific_gravity" 
+                        name="specific_gravity" 
+                        type="number" 
+                        step="0.001"
+                        min="0"
+                        value={formData.specific_gravity || ''} 
+                        readOnly
+                        disabled
+                        className="mt-1 pl-9 bg-gray-50 text-gray-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 3v18"/>
+                          <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 italic">Automatski izračunato</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-100">Unesite količinu u litrama i kilogramima, a specifična gustoća će biti automatski izračunata.</p>
+                
+                <div className="mt-4">
+                  <Label htmlFor="fuel_type" className="text-gray-700">Tip goriva</Label>
+                  <Select 
+                    name="fuel_type"
+                    onValueChange={(value: string) => handleInputChange(value, 'fuel_type')}
+                    value={formData.fuel_type || ''}
+                  >
+                    <SelectTrigger className={`w-full mt-1 ${formErrors.fuel_type ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder="Odaberite tip goriva" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(FuelType).map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.fuel_type && <p className="text-xs text-red-500 mt-1">{formErrors.fuel_type}</p>}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="supplier_name">Dobavljač (opciono)</Label>
-                  <Input 
-                    id="supplier_name" 
-                    name="supplier_name" 
-                    value={formData.supplier_name || ''} 
-                    onChange={handleInputChange} 
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="delivery_note_number">Broj dostavnice (opciono)</Label>
-                  <Input 
-                    id="delivery_note_number" 
-                    name="delivery_note_number" 
-                    value={formData.delivery_note_number || ''} 
-                    onChange={handleInputChange} 
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="customs_declaration_number">Broj carinske deklaracije (opciono)</Label>
-                  <Input 
-                    id="customs_declaration_number" 
-                    name="customs_declaration_number" 
-                    value={formData.customs_declaration_number || ''} 
-                    onChange={handleInputChange} 
-                    className="mt-1"
-                  />
+              {/* Documentation Card */}
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                  Dokumentacija
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="supplier_name" className="text-gray-700">Dobavljač (opciono)</Label>
+                    <div className="relative">
+                      <Input 
+                        id="supplier_name" 
+                        name="supplier_name" 
+                        value={formData.supplier_name || ''} 
+                        onChange={handleInputChange} 
+                        className="mt-1 pl-9 focus:ring-blue-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                          <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="delivery_note_number" className="text-gray-700">Broj dostavnice (opciono)</Label>
+                    <div className="relative">
+                      <Input 
+                        id="delivery_note_number" 
+                        name="delivery_note_number" 
+                        value={formData.delivery_note_number || ''} 
+                        onChange={handleInputChange} 
+                        className="mt-1 pl-9 focus:ring-blue-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                          <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="customs_declaration_number" className="text-gray-700">Broj carinske deklaracije (opciono)</Label>
+                    <div className="relative">
+                      <Input 
+                        id="customs_declaration_number" 
+                        name="customs_declaration_number" 
+                        value={formData.customs_declaration_number || ''} 
+                        onChange={handleInputChange} 
+                        className="mt-1 pl-9 focus:ring-blue-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="9" y1="9" x2="15" y2="9"/>
+                          <line x1="9" y1="15" x2="15" y2="15"/>
+                          <line x1="9" y1="12" x2="15" y2="12"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         );
       case STEPS.TANK_DISTRIBUTION:
-        if (tanksLoading) return <p>Učitavanje dostupnih tankova...</p>;
-        if (tanksError) return <p className="text-red-500">Greška pri učitavanju tankova: {tanksError}</p>;
+        if (tanksLoading) return (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <p className="text-gray-600">Učitavanje dostupnih tankova...</p>
+          </div>
+        );
+        
+        if (tanksError) return (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-lg font-medium text-red-800 mb-2">Greška pri učitavanju tankova</h3>
+            <p className="text-red-600">{tanksError}</p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 bg-red-600 hover:bg-red-700 text-white"
+            >
+              Pokušaj ponovo
+            </Button>
+          </div>
+        );
         
         const selectedFuelType = formData.fuel_type;
         if (!selectedFuelType) {
           return (
             <div>
-              <h3 className="text-lg font-medium mb-4">Korak 2: Raspodjela u Fiksne Tankove</h3>
-              <p className="text-orange-600 bg-orange-100 p-3 rounded mb-4">Molimo odaberite tip goriva u Koraku 1 da biste nastavili sa raspodjelom.</p>
+              <div className="flex items-center mb-6">
+                <div className="bg-blue-100 p-2 rounded-full mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                    <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
+                    <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800">Raspodjela u Fiksne Tankove</h3>
+              </div>
+              <div className="flex p-6 mb-6 text-orange-800 border-l-4 border-orange-500 bg-orange-50" role="alert">
+                <svg className="flex-shrink-0 w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+                </svg>
+                <div>
+                  <span className="font-medium">Potreban tip goriva!</span> Molimo odaberite tip goriva u Koraku 1 da biste nastavili sa raspodjelom.
+                </div>
+              </div>
             </div>
           );
         }
@@ -753,163 +930,399 @@ export default function NewFuelIntakeFormWizard() {
 
         return (
           <div>
-            <h3 className="text-lg font-medium mb-6">Korak 2: Raspodjela u Fiksne Tankove</h3>
-            <div className="mb-4 p-4 border rounded-md bg-gray-50">
-              <p className="text-sm text-gray-700">Ukupno primljeno goriva (Tip: {selectedFuelType}): 
-                <strong className="text-blue-600"> {formData.quantity_liters_received?.toFixed(2) || '0.00'} L</strong>
-              </p>
-              <p className="text-sm text-gray-700">Ukupno raspoređeno do sada: 
-                <strong className={totalDistributedQuantity > (formData.quantity_liters_received || 0) ? 'text-red-600' : 'text-green-600'}>
-                  {totalDistributedQuantity.toFixed(2)} L
-                </strong>
-              </p>
-              <p className="text-sm text-gray-700">Preostalo za raspodjelu: 
-                <strong className={( (formData.quantity_liters_received || 0) - totalDistributedQuantity) < 0 ? 'text-red-600' : 'text-gray-800' }>
-                  {((formData.quantity_liters_received || 0) - totalDistributedQuantity).toFixed(2)} L
-                </strong>
-              </p>
+            <div className="flex items-center mb-6">
+              <div className="bg-blue-100 p-2 rounded-full mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                  <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
+                  <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">Raspodjela u Fiksne Tankove</h3>
+            </div>
+            
+            <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-6">
+              <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                Pregled Količina
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <div className="text-sm text-gray-600 mb-1">Ukupno primljeno goriva:</div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <span className="text-lg font-bold text-blue-700">{formData.quantity_liters_received?.toFixed(2) || '0.00'} L</span>
+                      <div className="text-xs text-blue-600 mt-1">Tip: {selectedFuelType}</div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                      <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                    </svg>
+                  </div>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                  <div className="text-sm text-gray-600 mb-1">Ukupno raspoređeno do sada:</div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <span className={`text-lg font-bold ${totalDistributedQuantity > (formData.quantity_liters_received || 0) ? 'text-red-600' : 'text-green-700'}`}>
+                        {totalDistributedQuantity.toFixed(2)} L
+                      </span>
+                      <div className="text-xs text-green-600 mt-1">
+                        {formData.tank_distributions?.filter(d => d.tank_id).length || 0} tankova odabrano
+                      </div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                      <polyline points="9 11 12 14 22 4"></polyline>
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="text-sm text-gray-600 mb-1">Preostalo za raspodjelu:</div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <span className={`text-lg font-bold ${((formData.quantity_liters_received || 0) - totalDistributedQuantity) < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        {((formData.quantity_liters_received || 0) - totalDistributedQuantity).toFixed(2)} L
+                      </span>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {((formData.quantity_liters_received || 0) - totalDistributedQuantity) < 0 ? 'Prekoračenje količine!' : 'Dostupno za raspodjelu'}
+                      </div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="16"></line>
+                      <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {formErrors.general_tank_distribution && 
-                <p className="text-sm text-red-500 bg-red-100 p-2 rounded mb-3">{formErrors.general_tank_distribution}</p>}
-
-            {formData.tank_distributions?.map((distribution, index) => {
-              const tankError = formErrors.tank_distributions?.[index]?.tank_id;
-              const qtyError = formErrors.tank_distributions?.[index]?.quantity_liters;
-              const currentTankId = distribution.tank_id;
-
-              const selectableTanks = tanksForSelectedFuelType.filter(
-                tank => tank.status === 'ACTIVE' && (tank.id === currentTankId || !currentlySelectedTankIdsInStep2.has(tank.id))
-              );
-              
-              return (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 items-end border p-4 rounded-md mb-3 relative">
-                  <div className="col-span-1 md:col-span-1">
-                    <Label htmlFor={`tank_id_${index}`}>Odaberite Tank (Tip: {selectedFuelType})</Label>
-                    <Select
-                      name={`tank_id_${index}`}
-                      value={distribution.tank_id?.toString() || ''}
-                      onValueChange={(value: string) => handleTankDistributionChange(index, 'tank_id', value)}
-                    >
-                      <SelectTrigger className={`w-full mt-1 ${tankError ? 'border-red-500' : ''}`}>
-                        <SelectValue placeholder="Odaberite fiksni tank..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectableTanks.length === 0 && !currentTankId && <SelectItem value="" disabled>Nema dostupnih tankova ovog tipa ili su svi već odabrani.</SelectItem>}
-                        {selectableTanks.map(tank => (
-                          <SelectItem key={tank.id} value={tank.id.toString()}>
-                            {getTankDisplayInfo(tank.id)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {tankError && <p className="text-xs text-red-500 mt-1">{tankError}</p>}
-                  </div>
-
-                  <div className="col-span-1 md:col-span-1">
-                    <Label htmlFor={`quantity_liters_${index}`}>Količina za ovaj tank (L)</Label>
-                    <Input
-                      id={`quantity_liters_${index}`}
-                      name={`quantity_liters_${index}`}
-                      type="number"
-                      value={distribution.quantity_liters === undefined ? '' : distribution.quantity_liters}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTankDistributionChange(index, 'quantity_liters', e.target.value)}
-                      placeholder="npr. 500"
-                      step="0.01"
-                      className={`mt-1 ${qtyError ? 'border-red-500' : ''}`}
-                    />
-                    {qtyError && <p className="text-xs text-red-500 mt-1">{qtyError}</p>}
-                  </div>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => handleRemoveTankDistribution(index)} 
-                    className="text-red-500 hover:text-red-700 md:self-end md:mb-1" // Aligns button with input field bottom
-                    aria-label="Ukloni raspodjelu"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </Button>
+            {formErrors.general_tank_distribution && (
+              <div className="flex p-4 mb-6 text-red-800 border-l-4 border-red-500 bg-red-50" role="alert">
+                <svg className="flex-shrink-0 w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+                </svg>
+                <div>
+                  <span className="font-medium">Greška:</span> {formErrors.general_tank_distribution}
                 </div>
-              );
-            })}
+              </div>
+            )}
 
-            {tanksForSelectedFuelType.length > (formData.tank_distributions?.length || 0) && (
-                 <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleAddTankDistribution} 
-                    className="mt-4"
-                 >
-                    Dodaj Tank za Raspodjelu
+            <div className="space-y-4">
+              {formData.tank_distributions?.map((distribution, index) => {
+                const tankError = formErrors.tank_distributions?.[index]?.tank_id;
+                const qtyError = formErrors.tank_distributions?.[index]?.quantity_liters;
+                const currentTankId = distribution.tank_id;
+
+                const selectableTanks = tanksForSelectedFuelType.filter(
+                  tank => tank.status === 'ACTIVE' && (tank.id === currentTankId || !currentlySelectedTankIdsInStep2.has(tank.id))
+                );
+                
+                return (
+                  <div key={index} className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md">
+                    <div className="flex justify-between items-start mb-3">
+                      <h5 className="text-md font-medium text-gray-700 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                          <path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9"/>
+                          <path d="M9 22V12h6v10M2 10.6L12 2l10 8.6"/>
+                        </svg>
+                        Tank #{index + 1}
+                      </h5>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleRemoveTankDistribution(index)} 
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-200 rounded-full" 
+                        aria-label="Ukloni raspodjelu"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor={`tank_id_${index}`} className="text-gray-700 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 text-gray-500">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                          </svg>
+                          Odaberite Tank (Tip: {selectedFuelType})
+                        </Label>
+                        <Select
+                          name={`tank_id_${index}`}
+                          value={distribution.tank_id?.toString() || ''}
+                          onValueChange={(value: string) => handleTankDistributionChange(index, 'tank_id', value)}
+                        >
+                          <SelectTrigger className={`w-full mt-1 ${tankError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}>
+                            <SelectValue placeholder="Odaberite fiksni tank..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {selectableTanks.length === 0 && !currentTankId && <SelectItem value="" disabled>Nema dostupnih tankova ovog tipa ili su svi već odabrani.</SelectItem>}
+                            {selectableTanks.map(tank => (
+                              <SelectItem key={tank.id} value={tank.id.toString()}>
+                                {getTankDisplayInfo(tank.id)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {tankError && (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            {tankError}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`quantity_liters_${index}`} className="text-gray-700 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 text-gray-500">
+                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                          </svg>
+                          Količina za ovaj tank (L)
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id={`quantity_liters_${index}`}
+                            name={`quantity_liters_${index}`}
+                            type="number"
+                            value={distribution.quantity_liters === undefined ? '' : distribution.quantity_liters}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTankDistributionChange(index, 'quantity_liters', e.target.value)}
+                            placeholder="npr. 500"
+                            step="0.01"
+                            className={`mt-1 pl-9 ${qtyError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                          />
+                          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M8 21h8"/>
+                              <path d="M12 21v-5"/>
+                              <path d="M10 3L4 9a1 1 0 0 0 0 1.41l8.59 8.59a1 1 0 0 0 1.41 0l8.59-8.59A1 1 0 0 0 22 9l-6-6-6 6"/>
+                            </svg>
+                          </div>
+                        </div>
+                        {qtyError && (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            {qtyError}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {tanksForSelectedFuelType.length > (formData.tank_distributions?.length || 0) ? (
+              <div className="flex justify-center mt-6">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleAddTankDistribution} 
+                  className="flex items-center gap-2 px-5 py-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                  </svg>
+                  Dodaj Tank za Raspodjelu
                 </Button>
-            )}
-            {tanksForSelectedFuelType.length === 0 && !tanksLoading && (
-                 <p className="text-sm text-gray-600 mt-4">Nema dostupnih aktivnih fiksnih tankova za tip goriva: <span className="font-semibold">{selectedFuelType}</span>.</p>
-            )}
+              </div>
+            ) : tanksForSelectedFuelType.length === 0 && !tanksLoading ? (
+              <div className="flex p-6 mt-6 text-gray-700 border border-gray-200 rounded-lg bg-gray-50">
+                <svg className="flex-shrink-0 w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p className="font-medium">Nema dostupnih tankova</p>
+                  <p className="text-sm text-gray-600 mt-1">Nema dostupnih aktivnih fiksnih tankova za tip goriva: <span className="font-semibold">{selectedFuelType}</span>.</p>
+                </div>
+              </div>
+            ) : null}
 
           </div>
         );
       case STEPS.DOCUMENT_UPLOAD:
         return (
           <div>
-            <h3 className="text-lg font-medium mb-6">Korak 3: Upload Dokumenata</h3>
+            <div className="flex items-center mb-6">
+              <div className="bg-blue-100 p-2 rounded-full mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">Upload Dokumenata</h3>
+            </div>
             
-            <div className="mb-6">
-              <Label 
-                htmlFor="file-upload-input"
-                className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <UploadCloud className="w-10 h-10 mb-3 text-gray-400" />
-                  <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Kliknite za upload</span> ili prevucite fajlove</p>
-                  <p className="text-xs text-gray-500">PDF, JPG, PNG, DOCX (MAX. 5MB po fajlu - primjer)</p>
-                </div>
-                <input 
-                  id="file-upload-input" 
-                  ref={fileInputRef} 
-                  type="file" 
-                  multiple 
-                  className="hidden" 
-                  onChange={handleFileSelect}
-                  // accept=".pdf,.jpg,.jpeg,.png,.docx" // Example accept types
-                />
-              </Label>
-              {formErrors.general_document_upload && 
-                <p className="text-xs text-red-500 mt-1">{formErrors.general_document_upload}</p>}
+            <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-6">
+              <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Dodaj Dokumente
+              </h4>
+              
+              <div className="mb-6">
+                <Label 
+                  htmlFor="file-upload-input"
+                  className="flex flex-col items-center justify-center w-full h-56 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-all duration-300 group"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <div className="bg-blue-100 p-3 rounded-full mb-3 group-hover:bg-blue-200 transition-all duration-300">
+                      <UploadCloud className="w-10 h-10 text-blue-500" />
+                    </div>
+                    <p className="mb-2 text-sm text-gray-700"><span className="font-semibold text-blue-600">Kliknite za upload</span> ili prevucite fajlove</p>
+                    <p className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">PDF, JPG, PNG, DOCX (MAX. 5MB po fajlu)</p>
+                  </div>
+                  <input 
+                    id="file-upload-input" 
+                    ref={fileInputRef} 
+                    type="file" 
+                    multiple 
+                    className="hidden" 
+                    onChange={handleFileSelect}
+                    // accept=".pdf,.jpg,.jpeg,.png,.docx" // Example accept types
+                  />
+                </Label>
+                {formErrors.general_document_upload && (
+                  <div className="flex p-3 mt-3 text-red-800 border-l-4 border-red-500 bg-red-50" role="alert">
+                    <svg className="flex-shrink-0 w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+                    </svg>
+                    <div>{formErrors.general_document_upload}</div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {formData.document_uploads && formData.document_uploads.length > 0 && (
-              <div className="space-y-4">
-                <h4 className="text-md font-medium">Odabrani fajlovi:</h4>
-                {formData.document_uploads.map((docUpload, index) => {
-                  const docError = formErrors.document_uploads?.[index]?.document_type;
-                  return (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-md bg-white shadow-sm">
-                      <div className="flex-grow">
-                        <p className="text-sm font-medium text-gray-700">{docUpload.file.name}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(docUpload.file.size)}</p>
-                        <Input 
-                          type="text"
-                          placeholder="Unesite tip dokumenta (npr. Dostavnica)"
-                          value={docUpload.document_type}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleDocumentTypeChange(index, e.target.value)}
-                          className={`mt-2 text-sm ${docError ? 'border-red-500' : ''}`}
-                        />
-                        {docError && <p className="text-xs text-red-500 mt-1">{docError}</p>}
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-green-500">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  Odabrani Dokumenti ({formData.document_uploads.length})
+                </h4>
+                <div className="space-y-4">
+                  {formData.document_uploads.map((docUpload, index) => {
+                    const docError = formErrors.document_uploads?.[index]?.document_type;
+                    const fileType = docUpload.file.name.split('.').pop()?.toLowerCase();
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileType || '');
+                    const isPdf = fileType === 'pdf';
+                    const isDoc = ['doc', 'docx'].includes(fileType || '');
+                    
+                    return (
+                      <div key={index} className="flex items-start p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-200">
+                        <div className="mr-4 bg-gray-100 p-3 rounded-lg">
+                          {isImage && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                              <circle cx="8.5" cy="8.5" r="1.5"/>
+                              <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                          )}
+                          {isPdf && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                              <polyline points="14 2 14 8 20 8"/>
+                              <path d="M9 15h6"/>
+                              <path d="M9 11h6"/>
+                            </svg>
+                          )}
+                          {isDoc && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                              <polyline points="14 2 14 8 20 8"/>
+                              <line x1="16" y1="13" x2="8" y2="13"/>
+                              <line x1="16" y1="17" x2="8" y2="17"/>
+                              <polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                          )}
+                          {!isImage && !isPdf && !isDoc && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                              <polyline points="13 2 13 9 20 9"/>
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-grow">
+                          <p className="text-sm font-medium text-gray-800 mb-1">{docUpload.file.name}</p>
+                          <div className="flex items-center">
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{formatFileSize(docUpload.file.size)}</span>
+                            {fileType && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full ml-2 uppercase">{fileType}</span>}
+                          </div>
+                          <div className="mt-3">
+                            <Label htmlFor={`document_type_${index}`} className="text-xs text-gray-600 mb-1 block">Tip dokumenta</Label>
+                            <div className="relative">
+                              <Input 
+                                id={`document_type_${index}`}
+                                type="text"
+                                placeholder="Unesite tip dokumenta (npr. Dostavnica)"
+                                value={docUpload.document_type}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleDocumentTypeChange(index, e.target.value)}
+                                className={`pl-8 text-sm ${docError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                              />
+                              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                  <polyline points="14 2 14 8 20 8"/>
+                                  <line x1="16" y1="13" x2="8" y2="13"/>
+                                  <line x1="16" y1="17" x2="8" y2="17"/>
+                                </svg>
+                              </div>
+                            </div>
+                            {docError && (
+                              <p className="text-xs text-red-500 mt-1 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                {docError}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleRemoveDocument(index)}
+                          className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-200 rounded-full"
+                          aria-label="Ukloni dokument"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleRemoveDocument(index)}
-                        className="ml-4 text-red-500 hover:text-red-700"
-                        aria-label="Ukloni dokument"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {formData.document_uploads && formData.document_uploads.length === 0 && (
+              <div className="flex p-6 text-gray-700 border border-gray-200 rounded-lg bg-gray-50">
+                <svg className="flex-shrink-0 w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p className="font-medium">Nema dokumenata</p>
+                  <p className="text-sm text-gray-600 mt-1">Dodajte dokumente koristeći upload polje iznad.</p>
+                </div>
               </div>
             )}
           </div>
@@ -917,54 +1330,249 @@ export default function NewFuelIntakeFormWizard() {
       case STEPS.REVIEW_SUBMIT:
         return (
           <div>
-            <h3 className="text-xl font-semibold mb-6 text-center">Korak 4: Pregled i Slanje</h3>
-            <p className="text-sm text-center text-gray-600 mb-8">Molimo pregledajte sve unesene podatke prije finalnog slanja.</p>
-
-            <ReviewSection title="Detalji Dostave" step={STEPS.DELIVERY_DETAILS}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <p><strong>Reg. dost. cisterne:</strong> {displayValue(formData.delivery_vehicle_plate)}</p>
-                <p><strong>Vozač:</strong> {displayValue(formData.delivery_vehicle_driver_name)}</p>
-                <p><strong>Datum i vrijeme ulaza:</strong> {displayValue(formData.intake_datetime ? new Date(formData.intake_datetime).toLocaleString() : undefined)}</p>
-                <p><strong>Tip goriva:</strong> {displayValue(formData.fuel_type)}</p>
-                <p><strong>Količina (L):</strong> {displayValue(formData.quantity_liters_received?.toFixed(2))}</p>
-                <p><strong>Količina (KG):</strong> {displayValue(formData.quantity_kg_received?.toFixed(2))}</p>
-                <p><strong>Spec. gustoća (kg/L):</strong> {displayValue(formData.specific_gravity?.toFixed(3))}</p>
-                <p><strong>Dobavljač:</strong> {displayValue(formData.supplier_name)}</p>
-                <p><strong>Br. dostavnice:</strong> {displayValue(formData.delivery_note_number)}</p>
-                <p><strong>Br. car. deklaracije:</strong> {displayValue(formData.customs_declaration_number)}</p>
+            <div className="flex items-center mb-6">
+              <div className="bg-blue-100 p-2 rounded-full mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
               </div>
-            </ReviewSection>
-
-            <ReviewSection title="Raspodjela u Fiksne Tankove" step={STEPS.TANK_DISTRIBUTION}>
-              {(!formData.tank_distributions || formData.tank_distributions.length === 0 || formData.tank_distributions.every(d => !d.tank_id)) ? (
-                <p className="text-gray-500 italic">Nema raspodjele u tankove.</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {formData.tank_distributions.filter(dist => dist.tank_id).map((dist, index) => (
-                    <li key={index} className="p-2 border-b border-gray-100">
-                      <span className="font-medium">{getTankDisplayInfo(dist.tank_id)}:</span> {displayValue(dist.quantity_liters?.toFixed(2))} L
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <p className="mt-3 text-sm font-semibold">Ukupno raspoređeno: {totalDistributedQuantity.toFixed(2)} L</p>
-            </ReviewSection>
-
-            <ReviewSection title="Priloženi Dokumenti" step={STEPS.DOCUMENT_UPLOAD}>
-              {(!formData.document_uploads || formData.document_uploads.length === 0) ? (
-                <p className="text-gray-500 italic">Nema priloženih dokumenata.</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {formData.document_uploads.map((doc, index) => (
-                    <li key={index} className="p-2 border-b border-gray-100">
-                      <span className="font-medium">{doc.file.name}</span> ({formatFileSize(doc.file.size)}) - Tip: {displayValue(doc.document_type)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </ReviewSection>
+              <h3 className="text-xl font-semibold text-gray-800">Pregled i Slanje</h3>
+            </div>
             
-            {error && <p className="text-red-600 bg-red-100 p-3 rounded-md mt-6 text-sm">Greška: {error}</p>} 
+            <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-8 rounded-r-lg">
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-green-700 font-medium">Molimo pregledajte sve unesene podatke prije finalnog slanja.</p>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-md font-medium text-gray-700 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                      <rect x="1" y="3" width="15" height="13"/>
+                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                      <circle cx="5.5" cy="18.5" r="2.5"/>
+                      <circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                    Detalji Dostave
+                  </h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(STEPS.DELIVERY_DETAILS)}
+                    className="text-xs flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                    Izmijeni
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm bg-gray-50 p-4 rounded-lg">
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Reg. dost. cisterne:</span>
+                    <span className="font-medium">{displayValue(formData.delivery_vehicle_plate)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Vozač:</span>
+                    <span className="font-medium">{displayValue(formData.delivery_vehicle_driver_name)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Datum i vrijeme ulaza:</span>
+                    <span className="font-medium">{displayValue(formData.intake_datetime ? new Date(formData.intake_datetime).toLocaleString() : undefined)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Tip goriva:</span>
+                    <span className="font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">{displayValue(formData.fuel_type)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Količina (L):</span>
+                    <span className="font-medium">{displayValue(formData.quantity_liters_received?.toFixed(2))}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Količina (KG):</span>
+                    <span className="font-medium">{displayValue(formData.quantity_kg_received?.toFixed(2))}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Spec. gustoća (kg/L):</span>
+                    <span className="font-medium">{displayValue(formData.specific_gravity?.toFixed(3))}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Dobavljač:</span>
+                    <span className="font-medium">{displayValue(formData.supplier_name)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Br. dostavnice:</span>
+                    <span className="font-medium">{displayValue(formData.delivery_note_number)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Br. car. deklaracije:</span>
+                    <span className="font-medium">{displayValue(formData.customs_declaration_number)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-md font-medium text-gray-700 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                      <path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9"/>
+                      <path d="M9 22V12h6v10M2 10.6L12 2l10 8.6"/>
+                    </svg>
+                    Raspodjela u Fiksne Tankove
+                  </h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(STEPS.TANK_DISTRIBUTION)}
+                    className="text-xs flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                    Izmijeni
+                  </Button>
+                </div>
+                
+                {(!formData.tank_distributions || formData.tank_distributions.length === 0 || formData.tank_distributions.every(d => !d.tank_id)) ? (
+                  <div className="bg-gray-50 p-4 rounded-lg text-gray-500 italic flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Nema raspodjele u tankove.
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="space-y-2">
+                      {formData.tank_distributions.filter(dist => dist.tank_id).map((dist, index) => (
+                        <div key={index} className="flex justify-between items-center p-2 border-b border-gray-200 last:border-0">
+                          <div className="flex items-center">
+                            <div className="bg-blue-100 text-blue-700 w-6 h-6 rounded-full flex items-center justify-center mr-3 text-xs font-bold">
+                              {index + 1}
+                            </div>
+                            <span className="font-medium">{getTankDisplayInfo(dist.tank_id)}</span>
+                          </div>
+                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                            {displayValue(dist.quantity_liters?.toFixed(2))} L
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
+                      <span className="text-gray-600 font-medium">Ukupno raspoređeno:</span>
+                      <span className="font-bold text-blue-700">{totalDistributedQuantity.toFixed(2)} L</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-md font-medium text-gray-700 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    Priloženi Dokumenti
+                  </h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(STEPS.DOCUMENT_UPLOAD)}
+                    className="text-xs flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                    Izmijeni
+                  </Button>
+                </div>
+                
+                {(!formData.document_uploads || formData.document_uploads.length === 0) ? (
+                  <div className="bg-gray-50 p-4 rounded-lg text-gray-500 italic flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Nema priloženih dokumenata.
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="space-y-2">
+                      {formData.document_uploads.map((doc, index) => {
+                        const fileType = doc.file.name.split('.').pop()?.toLowerCase();
+                        return (
+                          <div key={index} className="flex items-center p-2 border-b border-gray-200 last:border-0">
+                            <div className="mr-3">
+                              {['jpg', 'jpeg', 'png', 'gif'].includes(fileType || '') && (
+                                <div className="bg-blue-100 p-1 rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                  </svg>
+                                </div>
+                              )}
+                              {fileType === 'pdf' && (
+                                <div className="bg-red-100 p-1 rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                  </svg>
+                                </div>
+                              )}
+                              {['doc', 'docx'].includes(fileType || '') && (
+                                <div className="bg-blue-100 p-1 rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                  </svg>
+                                </div>
+                              )}
+                              {!['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'].includes(fileType || '') && (
+                                <div className="bg-gray-100 p-1 rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                                    <polyline points="13 2 13 9 20 9"/>
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-grow">
+                              <p className="font-medium text-sm">{doc.file.name}</p>
+                              <div className="flex items-center mt-1">
+                                <span className="text-xs text-gray-500">{formatFileSize(doc.file.size)}</span>
+                                <span className="mx-2 text-gray-300">|</span>
+                                <span className="text-xs text-gray-500">Tip: {displayValue(doc.document_type)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {error && (
+              <div className="flex p-4 mt-6 text-red-800 border-l-4 border-red-500 bg-red-50" role="alert">
+                <svg className="flex-shrink-0 w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+                </svg>
+                <div>
+                  <span className="font-medium">Greška:</span> {error}
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-blue-700 text-sm">Kliknite na "Sačuvaj Zapis" ispod da potvrdite unos i sačuvate podatke o ulazu goriva.</p>
+            </div>
           </div>
         );
       default:
@@ -975,35 +1583,126 @@ export default function NewFuelIntakeFormWizard() {
   // Determine the maximum step available (if review step is conditional)
   const maxSteps = STEPS.REVIEW_SUBMIT;
 
+  // Helper function to determine step status for the step indicator
+  const getStepStatus = (stepNumber: number) => {
+    if (stepNumber < currentStep) return 'completed';
+    if (stepNumber === currentStep) return 'current';
+    return 'upcoming';
+  };
+
   return (
-    <div className="p-6 bg-white shadow-md rounded-lg max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-center">Novi Zapis o Ulazu Goriva - Korak {currentStep} od {maxSteps}</h2>
+    <div className="p-8 bg-white shadow-lg rounded-xl max-w-5xl mx-auto border border-gray-100">
+      <h2 className="text-2xl font-bold mb-2 text-center text-gray-800">Novi Zapis o Ulazu Goriva</h2>
+      <p className="text-center text-gray-500 mb-8">Unesite podatke o novom ulazu goriva u sistem</p>
       
-      {/* Display general error message at the top if not on review step, review step has its own error display spot */}
-      {error && currentStep !== STEPS.REVIEW_SUBMIT && <p className="text-red-500 bg-red-100 p-3 rounded mb-4">Greška: {error}</p>}
+      {/* Modern Step Indicator */}
+      <div className="mb-10">
+        <div className="flex justify-between items-center relative">
+          {/* Progress Line */}
+          <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 bg-gray-200 z-0"></div>
+          <div 
+            className="absolute left-0 top-1/2 h-1 -translate-y-1/2 bg-blue-500 z-0 transition-all duration-300 ease-in-out"
+            style={{ width: `${(currentStep - 1) / (maxSteps - 1) * 100}%` }}
+          ></div>
+          
+          {/* Step Circles */}
+          {Object.values(STEPS).map((step, index) => (
+            <div key={index} className="z-10 flex flex-col items-center">
+              <div 
+                className={`flex items-center justify-center w-10 h-10 rounded-full font-medium text-sm transition-all duration-300
+                  ${getStepStatus(step) === 'completed' ? 'bg-blue-500 text-white' : 
+                    getStepStatus(step) === 'current' ? 'bg-white border-2 border-blue-500 text-blue-500' : 
+                    'bg-white border-2 border-gray-300 text-gray-400'}`}
+              >
+                {getStepStatus(step) === 'completed' ? '✓' : step}
+              </div>
+              <span 
+                className={`mt-2 text-xs font-medium transition-all duration-300
+                  ${getStepStatus(step) === 'completed' ? 'text-blue-500' : 
+                    getStepStatus(step) === 'current' ? 'text-blue-500' : 
+                    'text-gray-400'}`}
+              >
+                {step === STEPS.DELIVERY_DETAILS ? 'Osnovni Podaci' : 
+                 step === STEPS.TANK_DISTRIBUTION ? 'Raspodjela' : 
+                 step === STEPS.DOCUMENT_UPLOAD ? 'Dokumenti' : 'Pregled'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Error and Success Messages */}
+      {error && currentStep !== STEPS.REVIEW_SUBMIT && (
+        <div className="flex items-center p-4 mb-6 text-red-800 rounded-lg bg-red-50" role="alert">
+          <svg className="flex-shrink-0 w-4 h-4 mr-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+          </svg>
+          <span className="font-medium">Greška:</span> {error}
+        </div>
+      )}
 
-      {/* Display success message at the top if not on review step, review step has its own success display spot */}
-      {successMessage && currentStep !== STEPS.REVIEW_SUBMIT && <p className="text-green-500 bg-green-100 p-3 rounded mb-4">Uspjeh: {successMessage}</p>}
+      {successMessage && currentStep !== STEPS.REVIEW_SUBMIT && (
+        <div className="flex items-center p-4 mb-6 text-green-800 rounded-lg bg-green-50" role="alert">
+          <svg className="flex-shrink-0 w-4 h-4 mr-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+          </svg>
+          <span className="font-medium">Uspjeh:</span> {successMessage}
+        </div>
+      )}
 
-      <div className="mb-8">
+      {/* Form Content */}
+      <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 mb-8">
         {renderStepContent()}
       </div>
 
+      {/* Navigation Buttons */}
       <div className="flex justify-between mt-8">
         <Button 
           onClick={handleBack} 
           variant="outline" 
           disabled={currentStep === STEPS.DELIVERY_DETAILS || isLoading}
+          className="px-6 py-2 flex items-center gap-2 transition-all duration-200"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
           Nazad
         </Button>
         {currentStep < maxSteps ? (
-          <Button onClick={handleNext} disabled={isLoading || (currentStep === STEPS.TANK_DISTRIBUTION && tanksLoading)}>
+          <Button 
+            onClick={handleNext} 
+            disabled={isLoading || (currentStep === STEPS.TANK_DISTRIBUTION && tanksLoading)}
+            className="px-6 py-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-all duration-200"
+          >
             Naprijed
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
           </Button>
         ) : (
-          <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? 'Slanje...' : 'Sačuvaj Zapis'}
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isLoading}
+            className="px-6 py-2 flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-all duration-200"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Slanje...
+              </>
+            ) : (
+              <>
+                Sačuvaj Zapis
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+              </>
+            )}
           </Button>
         )}
       </div>

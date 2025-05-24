@@ -40,35 +40,39 @@ const FilterSection: React.FC<FilterSectionProps> = ({
 }) => {
   return (
     <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-white mb-1">Od datuma:</label>
+      <div className="flex flex-wrap items-end gap-2">
+        {/* Date Range Filters */}
+        <div className="flex-1 min-w-[140px]">
+          <label htmlFor="startDate" className="block text-xs font-medium text-white mb-1">Od datuma:</label>
           <input
             type="date"
             name="startDate"
             id="startDate"
-            className="w-full sm:w-auto bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white focus:ring-white rounded-md"
+            className="w-full bg-white/20 border-white/30 text-white text-sm placeholder:text-white/60 focus:border-white focus:ring-white rounded-md py-1"
             value={startDate || ''}
             onChange={(e) => setStartDate(e.target.value)}
           />
         </div>
-        <div>
-          <label htmlFor="endDate" className="block text-sm font-medium text-white mb-1">Do datuma:</label>
+        
+        <div className="flex-1 min-w-[140px]">
+          <label htmlFor="endDate" className="block text-xs font-medium text-white mb-1">Do datuma:</label>
           <input
             type="date"
             name="endDate"
             id="endDate"
-            className="w-full sm:w-auto bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white focus:ring-white rounded-md"
+            className="w-full bg-white/20 border-white/30 text-white text-sm placeholder:text-white/60 focus:border-white focus:ring-white rounded-md py-1"
             value={endDate || ''}
             onChange={(e) => setEndDate(e.target.value)}
           />
         </div>
-        <div>
-          <label htmlFor="selectedAirline" className="block text-sm font-medium text-white mb-1">Avio Kompanija:</label>
+
+        {/* Airline Filter */}
+        <div className="flex-1 min-w-[160px]">
+          <label htmlFor="selectedAirline" className="block text-xs font-medium text-white mb-1">Avio Kompanija:</label>
           <select
             id="selectedAirline"
             name="selectedAirline"
-            className="w-full sm:w-auto bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white focus:ring-white rounded-md"
+            className="w-full bg-white/20 border-white/30 text-white text-sm placeholder:text-white/60 focus:border-white focus:ring-white rounded-md py-1"
             value={selectedAirline}
             onChange={(e) => setSelectedAirline(e.target.value)}
           >
@@ -78,24 +82,28 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor="selectedDestination" className="block text-sm font-medium text-white mb-1">Destinacija:</label>
+
+        {/* Destination Filter */}
+        <div className="flex-1 min-w-[140px]">
+          <label htmlFor="selectedDestination" className="block text-xs font-medium text-white mb-1">Destinacija:</label>
           <input
             type="text"
             name="selectedDestination"
             id="selectedDestination"
-            className="w-full sm:w-auto bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white focus:ring-white rounded-md"
+            className="w-full bg-white/20 border-white/30 text-white text-sm placeholder:text-white/60 focus:border-white focus:ring-white rounded-md py-1"
             value={selectedDestination}
             onChange={(e) => setSelectedDestination(e.target.value)}
             placeholder="Unesite destinaciju"
           />
         </div>
-        <div>
-          <label htmlFor="selectedTank" className="block text-sm font-medium text-white mb-1">Avio cisterna:</label>
+
+        {/* Tank Filter */}
+        <div className="flex-1 min-w-[160px]">
+          <label htmlFor="selectedTank" className="block text-xs font-medium text-white mb-1">Avio cisterna:</label>
           <select
             id="selectedTank"
             name="selectedTank"
-            className="w-full sm:w-auto bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white focus:ring-white rounded-md"
+            className="w-full bg-white/20 border-white/30 text-white text-sm placeholder:text-white/60 focus:border-white focus:ring-white rounded-md py-1"
             value={selectedTank}
             onChange={(e) => setSelectedTank(e.target.value)}
           >
@@ -105,12 +113,14 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor="selectedTrafficType" className="block text-sm font-medium text-white mb-1">Tip saobraćaja:</label>
+
+        {/* Traffic Type Filter */}
+        <div className="flex-1 min-w-[140px]">
+          <label htmlFor="selectedTrafficType" className="block text-xs font-medium text-white mb-1">Tip saobraćaja:</label>
           <select
             id="selectedTrafficType"
             name="selectedTrafficType"
-            className="w-full sm:w-auto bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white focus:ring-white rounded-md"
+            className="w-full bg-white/20 border-white/30 text-white text-sm placeholder:text-white/60 focus:border-white focus:ring-white rounded-md py-1"
             value={selectedTrafficType}
             onChange={(e) => setSelectedTrafficType(e.target.value)}
           >
@@ -119,12 +129,14 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             <option value="Unutarnji saobraćaj">Unutarnji saobraćaj</option>
           </select>
         </div>
-        <div>
-          <label htmlFor="selectedCurrency" className="block text-sm font-medium text-white mb-1">Valuta:</label>
+
+        {/* Currency Filter */}
+        <div className="flex-1 min-w-[100px]">
+          <label htmlFor="selectedCurrency" className="block text-xs font-medium text-white mb-1">Valuta:</label>
           <select
             id="selectedCurrency"
             name="selectedCurrency"
-            className="w-full sm:w-auto bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white focus:ring-white rounded-md"
+            className="w-full bg-white/20 border-white/30 text-white text-sm placeholder:text-white/60 focus:border-white focus:ring-white rounded-md py-1"
             value={selectedCurrency}
             onChange={(e) => setSelectedCurrency(e.target.value)}
           >
@@ -134,6 +146,22 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             <option value="USD">USD</option>
           </select>
         </div>
+
+        {/* Reset Filters Button */}
+        <button 
+          onClick={() => {
+            setStartDate('');
+            setEndDate('');
+            setSelectedAirline('');
+            setSelectedDestination('');
+            setSelectedTank('');
+            setSelectedTrafficType('');
+            setSelectedCurrency('');
+          }}
+          className="bg-white/20 hover:bg-white/30 text-white text-sm px-4 py-[0.3rem] rounded-md transition-colors ml-auto mt-auto"
+        >
+          Resetuj filtere
+        </button>
       </div>
     </div>
   );

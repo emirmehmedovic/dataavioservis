@@ -242,19 +242,18 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Add invoice title at the top
-    doc.setFontSize(16);
+    // Add invoice title
+    doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
     doc.text('ZBIRNA FAKTURA ZA GORIVO - UNUTARNJI SAOBRAĆAJ', pageWidth / 2, 20, { align: 'center' });
     
-    // Add invoice number and date at top left
+    // Add invoice number and date
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     const invoiceNumber = `DOM-CONS-INV-${new Date().getTime().toString().slice(-6)}-${new Date().getFullYear()}`;
-    doc.text(`Broj fakture: ${invoiceNumber}`, 14, 35);
-    doc.text(`Datum izdavanja: ${formatDate(new Date().toISOString())}`, 14, 40);
-    doc.text(`Datum isporuke: ${formatDate(new Date().toISOString())}`, 14, 45);
-    doc.text(`Period: ${filterDescription}`, 14, 50);
+    doc.text(`Broj fakture: ${invoiceNumber}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text(`Datum izdavanja: ${formatDate(new Date().toISOString())}`, pageWidth / 2, 33, { align: 'center' });
+    doc.text(`Period: ${filterDescription}`, pageWidth / 2, 38, { align: 'center' });
     
     // Find the most common airline to use as the recipient
     const airlineCounts: Record<string, { count: number, airline: FuelingOperation['airline'] }> = {};
@@ -280,35 +279,47 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
       }
     });
     
-    // Add client information on the left side
+    // Draw boxes for seller and buyer information
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.5);
+    
+    // Left box for customer (buyer) information
+    doc.roundedRect(14, 45, pageWidth / 2 - 20, 50, 2, 2, 'S');
+    
+    // Right box for seller information
+    doc.roundedRect(pageWidth / 2 + 6, 45, pageWidth / 2 - 20, 50, 2, 2, 'S');
+    
+    // Add client information (left side - buyer)
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('KUPAC:', 14, 55);
+    doc.text('KUPAC:', 20, 52);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
     
     if (mostCommonAirline) {
       // Use type assertion to access airline properties
       const airline = mostCommonAirline as any;
-      doc.text(`${airline.name || 'N/A'}`, 14, 60);
-      doc.text(`${airline.address || 'N/A'}`, 14, 65);
-      doc.text(`ID/PDV: ${airline.taxId || 'N/A'}`, 14, 70);
-      doc.text(`Tel: ${airline.contact_details || 'N/A'}`, 14, 75);
+      doc.text(`${airline.name || 'N/A'}`, 20, 58);
+      doc.text(`ID/PDV broj: ${airline.taxId || 'N/A'}`, 20, 63);
+      doc.text(`Adresa: ${airline.address || 'N/A'}`, 20, 68);
+      doc.text(`Kontakt: ${airline.contact_details || 'N/A'}`, 20, 73);
     } else {
-      doc.text('Nije dostupno', 14, 60);
+      doc.text('Nije dostupno', 20, 58);
     }
     
-    // Add company information on the right side
+    // Add seller information (right side)
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('PRODAVAC:', pageWidth - 90, 55);
+    doc.text('PRODAVAC:', pageWidth / 2 + 12, 52);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
-    doc.text('HIFA Petrol d.o.o.', pageWidth - 90, 60);
-    doc.text('Međunarodni aerodrom Tuzla', pageWidth - 90, 65);
-    doc.text('Tešanj, Bosna i Hercegovina', pageWidth - 90, 70);
-    doc.text('ID/PDV: 4200468580006', pageWidth - 90, 75);
-    doc.text('Tel: +387 33 289 100', pageWidth - 90, 80);
+    doc.text('HIFA Petrol d.o.o.', pageWidth / 2 + 12, 58);
+    doc.text('ID: 4200468580006', pageWidth / 2 + 12, 63);
+    doc.text('PDV: 200468580006', pageWidth / 2 + 12, 68);
+    doc.text('Međunarodni aerodrom Tuzla', pageWidth / 2 + 12, 73);
+    doc.text('Tešanj, Bosna i Hercegovina', pageWidth / 2 + 12, 78);
+    doc.text('Tel: +387 33 289 100', pageWidth / 2 + 12, 83);
+    doc.text('Email: info@hifapetrol.ba', pageWidth / 2 + 12, 88);
     
     // Calculate totals
     let totalLiters = 0;
@@ -356,7 +367,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     // Add transaction details header
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('ZBIRNI PREGLED:', 14, 100);
+    doc.text('ZBIRNI PREGLED:', 14, 95);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
     
@@ -384,7 +395,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     autoTable(doc, {
       head: [summaryColumn],
       body: summaryRows,
-      startY: 105,
+      startY: 100,
       theme: 'grid',
       styles: { fontSize: 9, cellPadding: 2, font: FONT_NAME },
       headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -394,7 +405,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     
     // Get the final y position after the summary table
     // @ts-ignore - lastAutoTable is added by the plugin but not in the types
-    const summaryFinalY = (doc as any).lastAutoTable?.finalY + 10 || 150;
+    const summaryFinalY = (doc as any).lastAutoTable?.finalY + 5 || 120;
     
     // Add operations table header
     doc.setFontSize(11);
@@ -561,7 +572,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     
     // Add footer
     doc.setFontSize(8);
-    doc.text('AVIOSERVIS d.o.o. | ID: 4200468580006 | PDV: 200468580006', pageWidth / 2, 280, { align: 'center' });
+    doc.text('HIFA Petrol d.o.o. | ID: 4200468580006 | PDV: 200468580006', pageWidth / 2, 280, { align: 'center' });
     doc.text(`Faktura generisana: ${new Date().toLocaleString('hr-HR')}`, pageWidth / 2, 285, { align: 'center' });
     
     // Save the PDF

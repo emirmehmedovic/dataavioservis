@@ -351,18 +351,29 @@ export default function TankManagement() {
                     
                     {/* Tank details in a grid */}
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Tip Goriva</p>
-                        <div className="flex items-center">
-                          <span className="w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
-                          <p className="font-medium text-gray-900">{tank.fuel_type}</p>
+                       <div className="bg-gray-50 p-3 rounded-lg">
+                         <p className="text-xs text-gray-500 mb-0">Tip Goriva</p>
+                         <div className="flex items-start pt-0">
+                          {tank.fuel_type.toLowerCase() === 'jet a-1'.toLowerCase() ? (
+                            <img 
+                              src="/JET A-1.svg" 
+                              alt="JET A-1" 
+                              className="w-14 h-14 object-contain" 
+                            />
+                          ) : (
+                            <>
+                              <span className="w-3 h-3 rounded-full bg-[#E60026] mr-2"></span>
+                              <p className="font-medium text-gray-900">{tank.fuel_type}</p>
+                            </>
+                          )}
                         </div>
-                      </div>
+                       </div>
                       
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">Kapacitet</p>
                         <p className="font-medium text-gray-900">{tank.capacity_liters.toLocaleString()} L</p>
                       </div>
+
                       
                       <div className="bg-gray-50 p-3 rounded-lg col-span-2">
                         <p className="text-xs text-gray-500 mb-1">Trenutna Količina</p>

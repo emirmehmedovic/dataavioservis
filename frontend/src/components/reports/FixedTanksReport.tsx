@@ -140,18 +140,36 @@ export default function FixedTanksReport() {
   };
 
   const toggleHistory = async (tankId: number, forceFetch: boolean = false) => {
+    console.log(`FixedTanksReport - toggleHistory called for tank ID ${tankId}, forceFetch: ${forceFetch}`);
+    console.log(`Current filter dates: startDate=${tanks.find(t => t.id === tankId)?.filterStartDate}, endDate=${tanks.find(t => t.id === tankId)?.filterEndDate}`);
+    console.log(`Current filter transaction type: ${tanks.find(t => t.id === tankId)?.filterTransactionType || 'all'}`);
+
     const targetTank = tanks.find(t => t.id === tankId);
     if (!targetTank) return;
 
     if (!targetTank.showHistory || forceFetch) {
       try {
+        console.log(`FixedTanksReport - Fetching history for tank ID ${tankId}...`);
         setTanks(prev => prev.map(t => t.id === tankId ? { ...t, historyLoading: true, errorHistory: null } : t));
         if (!authToken) {
+            console.log('FixedTanksReport - Authentication token not found');
             setTanks(prev => prev.map(t => t.id === tankId ? { ...t, historyLoading: false, errorHistory: 'Token za autentifikaciju nije pronađen.' } : t));
             return;
         }
         
         const historyData = await getFixedTankHistory(tankId, targetTank.filterStartDate, targetTank.filterEndDate);
+        console.log(`FixedTanksReport - History data received for tank ID ${tankId}:`, historyData);
+        
+        // Log transaction types distribution
+        const transactionTypes: Record<string, number> = {};
+        historyData.forEach(transaction => {
+          transactionTypes[transaction.type] = (transactionTypes[transaction.type] || 0) + 1;
+        });
+        console.log('FixedTanksReport - Transaction types distribution:', transactionTypes);
+        
+        // Check if there are any 'intake' transactions
+        const intakeTransactions = historyData.filter(t => t.type === 'intake');
+        console.log(`FixedTanksReport - Number of 'intake' transactions: ${intakeTransactions.length}`);
         
         setTanks(prev => prev.map(t => t.id === tankId ? { ...t, history: historyData, showHistory: true, historyLoading: false } : t));
       } catch (err: any) {
@@ -159,6 +177,7 @@ export default function FixedTanksReport() {
         setTanks(prev => prev.map(t => t.id === tankId ? { ...t, showHistory: true, historyLoading: false, errorHistory: err.message || 'Greška pri dohvatu povijesti.' } : t));
       }
     } else {
+      console.log(`FixedTanksReport - Hiding history for tank ID ${tankId}`);
       setTanks(prev => prev.map(t => t.id === tankId ? { ...t, showHistory: false } : t));
     }
   };

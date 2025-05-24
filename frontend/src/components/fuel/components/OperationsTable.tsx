@@ -17,6 +17,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Registracija</th>
             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Avio Kompanija</th>
             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Destinacija</th>
+            <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Tip goriva</th>
             <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Količina (L)</th>
             <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Gustoća</th>
             <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Količina (kg)</th>
@@ -48,6 +49,21 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">{operation.airline.name}</td>
               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{operation.destination}</td>
+              <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
+                {operation.tank?.fuel_type?.toLowerCase() === 'jet a-1'.toLowerCase() ? (
+                  <div className="flex justify-center">
+                    <img 
+                      src="/JET A-1.svg" 
+                      alt="JET A-1" 
+                      className="w-10 h-10 object-contain" 
+                    />
+                  </div>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                    {operation.tank?.fuel_type || 'N/A'}
+                  </span>
+                )}
+              </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900 text-right">
                 {(operation.quantity_liters || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L
               </td>

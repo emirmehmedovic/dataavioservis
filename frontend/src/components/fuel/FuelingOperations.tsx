@@ -71,6 +71,13 @@ export default function FuelingOperations() {
     notes: '',
     tip_saobracaja: 'Izvoz',
   });
+  
+  // Dodatno stanje za tekstualni prikaz polja
+  const [textInputs, setTextInputs] = useState({
+    quantity_liters: '',
+    quantity_kg: '',
+    price_per_kg: '',
+  });
 
   // Fetch operations with filters
   const loadOperations = useCallback(async () => {
@@ -180,27 +187,58 @@ export default function FuelingOperations() {
     // Update the specific field that changed
     const formKey = name as keyof typeof formData;
 
-    // Handle numeric inputs
-    if (['quantity_liters', 'specific_density', 'quantity_kg', 'price_per_kg'].includes(formKey)) {
-      const numValue = parseFloat(value) || 0;
+    // Handle numeric inputs that are now text inputs
+    if (['quantity_liters', 'quantity_kg', 'price_per_kg'].includes(formKey)) {
+      // Provjera valjanosti unosa za sva tekstualna polja s brojevima
+      const validationPatterns = {
+        'quantity_liters': /^\d*(\.\d{0,2})?$/,
+        'quantity_kg': /^\d*(\.\d{0,2})?$/,
+        'price_per_kg': /^\d*(\.\d{0,4})?$/
+      };
       
-      // Type-safe assignment for numeric fields
-      if (formKey === 'quantity_liters') {
-        newFormData.quantity_liters = numValue;
-        // When liters change, calculate kg based on specific density
-        newFormData.quantity_kg = +(numValue * newFormData.specific_density).toFixed(2);
-      } else if (formKey === 'specific_density') {
-        newFormData.specific_density = numValue;
-        // When specific density changes, recalculate kg based on liters
-        newFormData.quantity_kg = +(newFormData.quantity_liters * numValue).toFixed(2);
-      } else if (formKey === 'quantity_kg') {
-        newFormData.quantity_kg = numValue;
-        // When kg changes, calculate liters based on specific density
-        if (newFormData.specific_density > 0) {
-          newFormData.quantity_liters = +(numValue / newFormData.specific_density).toFixed(2);
+      // Ažuriraj tekstualno stanje za prikaz u poljima
+      setTextInputs(prev => ({
+        ...prev,
+        [formKey]: value
+      }));
+      
+      // Provjeri da li je unos prazan ili validan broj prema odgovarajućem obrascu
+      const pattern = validationPatterns[formKey as keyof typeof validationPatterns];
+      if (value === '' || pattern.test(value)) {
+        // Ako je unos prazan, postavi vrijednost na 0, inače pretvori u broj
+        const numValue = value === '' ? 0 : parseFloat(value);
+        
+        // Type-safe assignment for numeric fields
+        if (formKey === 'quantity_liters') {
+          newFormData.quantity_liters = numValue;
+          
+          // Ako su i litri i kilogrami veći od 0, izračunaj gustoću
+          if (numValue > 0 && newFormData.quantity_kg > 0) {
+            // Izračunaj gustoću s 3 decimale: kg / L
+            const calculatedDensity = newFormData.quantity_kg / numValue;
+            newFormData.specific_density = isNaN(calculatedDensity) ? 0 : parseFloat(calculatedDensity.toFixed(3));
+          } else if (numValue === 0 || newFormData.quantity_kg === 0) {
+            // Ako je bilo koji od vrijednosti 0, postavi gustoću na 0
+            newFormData.specific_density = 0;
+          }
+        } else if (formKey === 'quantity_kg') {
+          newFormData.quantity_kg = numValue;
+          
+          // Ako su i litri i kilogrami veći od 0, izračunaj gustoću
+          if (numValue > 0 && newFormData.quantity_liters > 0) {
+            // Izračunaj gustoću s 3 decimale: kg / L
+            const calculatedDensity = numValue / newFormData.quantity_liters;
+            newFormData.specific_density = isNaN(calculatedDensity) ? 0 : parseFloat(calculatedDensity.toFixed(3));
+          } else if (numValue === 0 || newFormData.quantity_liters === 0) {
+            // Ako je bilo koji od vrijednosti 0, postavi gustoću na 0
+            newFormData.specific_density = 0;
+          }
+        } else if (formKey === 'price_per_kg') {
+          newFormData.price_per_kg = numValue;
         }
-      } else if (formKey === 'price_per_kg') {
-        newFormData.price_per_kg = numValue;
+      } else {
+        // Ako nije validan format, zadrži prethodnu vrijednost
+        return;
       }
       
       // Izračunaj ukupan iznos plaćanja nakon promjene količine ili cijene
@@ -456,136 +494,194 @@ export default function FuelingOperations() {
             
             {/* Consolidated Invoice Button */}
             <div className="mt-6 flex space-x-3">
-              <button
-                type="button"
-                onClick={() => {
-                  // Prepare filter description
-                  const filterDesc: string[] = [];
-                  if (startDate) filterDesc.push(`Od: ${formatDate(dayjs(startDate).startOf('day').toISOString())}`);
-                  if (endDate) filterDesc.push(`Do: ${formatDate(dayjs(endDate).endOf('day').toISOString())}`);
-                  if (selectedAirline) {
-                    const airline = airlines.find(a => a.id.toString() === selectedAirline);
-                    if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
-                  }
-                  if (selectedDestination) filterDesc.push(`Destinacija: ${selectedDestination}`);
-                  if (selectedTank) {
-                    const tank = tanks.find(t => t.id.toString() === selectedTank);
-                    if (tank) filterDesc.push(`Tanker: ${tank.identifier} - ${tank.name}`);
-                  }
-                  if (selectedTrafficType) filterDesc.push(`Tip saobraćaja: ${selectedTrafficType}`);
-                  if (selectedCurrency) filterDesc.push(`Valuta: ${selectedCurrency}`);
-                  
-                  const filterDescription = filterDesc.length > 0 
-                    ? filterDesc.join(', ') 
-                    : 'Sve operacije';
-                  
-                  try {
-                    generateConsolidatedPDFInvoice(operations, filterDescription);
-                    toast.success('Zbirna PDF faktura je uspješno generisana!');
-                  } catch (error) {
-                    console.error('Error generating consolidated PDF invoice:', error);
-                    toast.error('Došlo je do greške prilikom generisanja zbirne PDF fakture.');
-                  }
-                }}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center font-medium shadow-sm"
-                disabled={operations.length === 0}
-                title="Standardna faktura za izvoz"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 21H17C18.1046 21 19 20.1046 19 19V9.41421C19 9.149 18.8946 8.89464 18.7071 8.70711L13.2929 3.29289C13.1054 3.10536 12.851 3 12.5858 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="rgba(255, 255, 255, 0.1)"/>
-                  <path d="M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M9 13H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M9 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M9 9H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Generiši PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // Prepare filter description
-                  const filterDesc: string[] = [];
-                  if (startDate) filterDesc.push(`Od: ${formatDate(dayjs(startDate).startOf('day').toISOString())}`);
-                  if (endDate) filterDesc.push(`Do: ${formatDate(dayjs(endDate).endOf('day').toISOString())}`);
-                  if (selectedAirline) {
-                    const airline = airlines.find(a => a.id.toString() === selectedAirline);
-                    if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
-                  }
-                  if (selectedDestination) filterDesc.push(`Destinacija: ${selectedDestination}`);
-                  if (selectedTank) {
-                    const tank = tanks.find(t => t.id.toString() === selectedTank);
-                    if (tank) filterDesc.push(`Tanker: ${tank.identifier} - ${tank.name}`);
-                  }
-                  if (selectedTrafficType) filterDesc.push(`Tip saobraćaja: ${selectedTrafficType}`);
-                  if (selectedCurrency) filterDesc.push(`Valuta: ${selectedCurrency}`);
-                  
-                  const filterDescription = filterDesc.length > 0 
-                    ? filterDesc.join(', ') 
-                    : 'Sve operacije';
-                  
-                  try {
-                    generateConsolidatedDomesticPDFInvoice(operations, filterDescription);
-                    toast.success('Zbirna domaća faktura je uspješno generisana!');
-                  } catch (error) {
-                    console.error('Error generating consolidated domestic invoice:', error);
-                    toast.error('Došlo je do greške prilikom generisanja zbirne domaće fakture.');
-                  }
-                }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center font-medium shadow-sm"
-                disabled={operations.length === 0}
-                title="Faktura za unutarnji saobraćaj sa PDV-om"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 21H17C18.1046 21 19 20.1046 19 19V9.41421C19 9.149 18.8946 8.89464 18.7071 8.70711L13.2929 3.29289C13.1054 3.10536 12.851 3 12.5858 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="rgba(255, 255, 255, 0.1)"/>
-                  <path d="M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M9 13H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M9 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Generiši Domaću Fakturu
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // Prepare filter description
-                  const filterDesc: string[] = [];
-                  if (startDate) filterDesc.push(`Od: ${formatDate(dayjs(startDate).startOf('day').toISOString())}`);
-                  if (endDate) filterDesc.push(`Do: ${formatDate(dayjs(endDate).endOf('day').toISOString())}`);
-                  if (selectedAirline) {
-                    const airline = airlines.find(a => a.id.toString() === selectedAirline);
-                    if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
-                  }
-                  if (selectedDestination) filterDesc.push(`Destinacija: ${selectedDestination}`);
-                  if (selectedTank) {
-                    const tank = tanks.find(t => t.id.toString() === selectedTank);
-                    if (tank) filterDesc.push(`Tanker: ${tank.identifier} - ${tank.name}`);
-                  }
-                  if (selectedTrafficType) filterDesc.push(`Tip saobraćaja: ${selectedTrafficType}`);
-                  if (selectedCurrency) filterDesc.push(`Valuta: ${selectedCurrency}`);
-                  
-                  const filterDescription = filterDesc.length > 0 
-                    ? filterDesc.join(', ') 
-                    : 'Sve operacije';
-                  
-                  try {
-                    const xmlContent = generateConsolidatedXMLInvoice(operations, filterDescription);
-                    downloadXML(xmlContent, `Zbirna-Faktura-XML-${dayjs().format('YYYYMMDD')}.xml`);
-                    toast.success('Zbirna XML faktura je uspješno generisana!');
-                  } catch (error) {
-                    console.error('Error generating consolidated XML invoice:', error);
-                    toast.error('Došlo je do greške prilikom generisanja zbirne XML fakture.');
-                  }
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center font-medium shadow-sm"
-                disabled={operations.length === 0}
-                title="XML faktura za sistemsku integraciju"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 8l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 13V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20 18H4M4 18v1a2 2 0 002 2h12a2 2 0 002-2v-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Generiši XML
-              </button>
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Generisanje Zbirnih Dokumenata
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">Izaberite tip dokumenta koji želite generisati za trenutno filtrirane operacije</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Export PDF Invoice Card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Prepare filter description
+                      const filterDesc: string[] = [];
+                      if (startDate) filterDesc.push(`Od: ${formatDate(dayjs(startDate).startOf('day').toISOString())}`);
+                      if (endDate) filterDesc.push(`Do: ${formatDate(dayjs(endDate).endOf('day').toISOString())}`);
+                      if (selectedAirline) {
+                        const airline = airlines.find(a => a.id.toString() === selectedAirline);
+                        if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
+                      }
+                      if (selectedDestination) filterDesc.push(`Destinacija: ${selectedDestination}`);
+                      if (selectedTank) {
+                        const tank = tanks.find(t => t.id.toString() === selectedTank);
+                        if (tank) filterDesc.push(`Tanker: ${tank.identifier} - ${tank.name}`);
+                      }
+                      if (selectedTrafficType) filterDesc.push(`Tip saobraćaja: ${selectedTrafficType}`);
+                      if (selectedCurrency) filterDesc.push(`Valuta: ${selectedCurrency}`);
+                      
+                      const filterDescription = filterDesc.length > 0 
+                        ? filterDesc.join(', ') 
+                        : 'Sve operacije';
+                      
+                      try {
+                        generateConsolidatedPDFInvoice(operations, filterDescription);
+                        toast.success('Zbirna PDF faktura je uspješno generisana!');
+                      } catch (error) {
+                        console.error('Error generating consolidated PDF invoice:', error);
+                        toast.error('Došlo je do greške prilikom generisanja zbirne PDF fakture.');
+                      }
+                    }}
+                    className={`group relative bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200 text-left flex flex-col h-full ${operations.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={operations.length === 0}
+                    title="Standardna faktura za izvoz"
+                  >
+                    <div className="flex items-center mb-2">
+                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3 group-hover:bg-green-200 transition-colors">
+                        <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">Zbirna PDF Faktura</h4>
+                        <p className="text-xs text-gray-500">Za izvoz</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2 flex-grow">Standardna faktura bez PDV-a za izvozne operacije točenja goriva</p>
+                    <div className="flex justify-end">
+                      <span className="inline-flex items-center text-xs font-medium text-green-600 group-hover:text-green-700">
+                        Generiši
+                        <svg className="ml-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Domestic PDF Invoice Card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Prepare filter description
+                      const filterDesc: string[] = [];
+                      if (startDate) filterDesc.push(`Od: ${formatDate(dayjs(startDate).startOf('day').toISOString())}`);
+                      if (endDate) filterDesc.push(`Do: ${formatDate(dayjs(endDate).endOf('day').toISOString())}`);
+                      if (selectedAirline) {
+                        const airline = airlines.find(a => a.id.toString() === selectedAirline);
+                        if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
+                      }
+                      if (selectedDestination) filterDesc.push(`Destinacija: ${selectedDestination}`);
+                      if (selectedTank) {
+                        const tank = tanks.find(t => t.id.toString() === selectedTank);
+                        if (tank) filterDesc.push(`Tanker: ${tank.identifier} - ${tank.name}`);
+                      }
+                      if (selectedTrafficType) filterDesc.push(`Tip saobraćaja: ${selectedTrafficType}`);
+                      if (selectedCurrency) filterDesc.push(`Valuta: ${selectedCurrency}`);
+                      
+                      const filterDescription = filterDesc.length > 0 
+                        ? filterDesc.join(', ') 
+                        : 'Sve operacije';
+                      
+                      try {
+                        generateConsolidatedDomesticPDFInvoice(operations, filterDescription);
+                        toast.success('Zbirna domaća faktura je uspješno generisana!');
+                      } catch (error) {
+                        console.error('Error generating consolidated domestic invoice:', error);
+                        toast.error('Došlo je do greške prilikom generisanja zbirne domaće fakture.');
+                      }
+                    }}
+                    className={`group relative bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200 text-left flex flex-col h-full ${operations.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={operations.length === 0}
+                    title="Faktura za unutarnji saobraćaj sa PDV-om"
+                  >
+                    <div className="flex items-center mb-2">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3 group-hover:bg-purple-200 transition-colors">
+                        <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15V9" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12h-6" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">Zbirna Domaća Faktura</h4>
+                        <p className="text-xs text-gray-500">Sa PDV-om</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2 flex-grow">Faktura sa obračunatim PDV-om za unutarnji saobraćaj</p>
+                    <div className="flex justify-end">
+                      <span className="inline-flex items-center text-xs font-medium text-purple-600 group-hover:text-purple-700">
+                        Generiši
+                        <svg className="ml-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* XML Invoice Card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Prepare filter description
+                      const filterDesc: string[] = [];
+                      if (startDate) filterDesc.push(`Od: ${formatDate(dayjs(startDate).startOf('day').toISOString())}`);
+                      if (endDate) filterDesc.push(`Do: ${formatDate(dayjs(endDate).endOf('day').toISOString())}`);
+                      if (selectedAirline) {
+                        const airline = airlines.find(a => a.id.toString() === selectedAirline);
+                        if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
+                      }
+                      if (selectedDestination) filterDesc.push(`Destinacija: ${selectedDestination}`);
+                      if (selectedTank) {
+                        const tank = tanks.find(t => t.id.toString() === selectedTank);
+                        if (tank) filterDesc.push(`Tanker: ${tank.identifier} - ${tank.name}`);
+                      }
+                      if (selectedTrafficType) filterDesc.push(`Tip saobraćaja: ${selectedTrafficType}`);
+                      if (selectedCurrency) filterDesc.push(`Valuta: ${selectedCurrency}`);
+                      
+                      const filterDescription = filterDesc.length > 0 
+                        ? filterDesc.join(', ') 
+                        : 'Sve operacije';
+                      
+                      try {
+                        const xmlContent = generateConsolidatedXMLInvoice(operations, filterDescription);
+                        downloadXML(xmlContent, `Zbirna-Faktura-XML-${dayjs().format('YYYYMMDD')}.xml`);
+                        toast.success('Zbirna XML faktura je uspješno generisana!');
+                      } catch (error) {
+                        console.error('Error generating consolidated XML invoice:', error);
+                        toast.error('Došlo je do greške prilikom generisanja zbirne XML fakture.');
+                      }
+                    }}
+                    className={`group relative bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200 text-left flex flex-col h-full ${operations.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={operations.length === 0}
+                    title="XML faktura za sistemsku integraciju"
+                  >
+                    <div className="flex items-center mb-2">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3 group-hover:bg-blue-200 transition-colors">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">Zbirna XML Faktura</h4>
+                        <p className="text-xs text-gray-500">Za integraciju</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2 flex-grow">Strukturirani XML dokument za integraciju sa drugim sistemima</p>
+                    <div className="flex justify-end">
+                      <span className="inline-flex items-center text-xs font-medium text-blue-600 group-hover:text-blue-700">
+                        Preuzmi
+                        <svg className="ml-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -599,6 +695,7 @@ export default function FuelingOperations() {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Dodaj Operaciju Točenja Goriva</h3>
               <AddOperationForm 
                 formData={formData}
+                textInputs={textInputs}
                 handleInputChange={handleInputChange}
                 handleAddOperation={handleAddOperation}
                 selectedFiles={selectedFiles}
