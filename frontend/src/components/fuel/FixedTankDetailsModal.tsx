@@ -257,7 +257,7 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
     return (
       <div className="mt-1">
         <a 
-          href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${editableTankData.identificationDocumentUrl}`}
+          href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/fixed_tank_documents/${editableTankData.identificationDocumentUrl.split('/').pop()}`}
           target="_blank" 
           rel="noopener noreferrer" 
           className="text-sm text-indigo-600 hover:text-indigo-800 underline truncate flex items-center"
