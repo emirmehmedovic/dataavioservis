@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as z from 'zod';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
 
@@ -193,6 +197,14 @@ export const deleteFuelTank = async (req: Request, res: Response): Promise<void>
     //   where: { sourceFuelTankId: Number(id) },
     // });
     
+    // Delete the tank image if it exists
+    if (existingTank.image_url) {
+      const imagePath = path.join(__dirname, '../../public', existingTank.image_url.replace(/^\/public/, ''));
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+    
     // Delete the FuelTank
     await (prisma as any).fuelTank.delete({
       where: { id: Number(id) },
@@ -202,5 +214,88 @@ export const deleteFuelTank = async (req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error('Error deleting fuel tank:', error);
     res.status(500).json({ message: 'Greška pri brisanju tankera' });
+  }
+}; 
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../public/uploads/tanks');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueFilename);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    const filetypes = /jpeg|jpg|png|gif/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Samo slike (jpeg, jpg, png, gif) su dozvoljene!'));
+  },
+});
+
+// Middleware for handling single image upload
+export const uploadTankImage = upload.single('image');
+
+// Controller function for uploading tank image
+export const handleTankImageUpload = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  
+  try {
+    // Check if the tank exists
+    const existingTank = await (prisma as any).fuelTank.findUnique({
+      where: { id: Number(id) },
+    });
+    
+    if (!existingTank) {
+      res.status(404).json({ message: 'Tanker nije pronađen' });
+      return;
+    }
+    
+    if (!req.file) {
+      res.status(400).json({ message: 'Slika nije priložena' });
+      return;
+    }
+    
+    // Delete old image if it exists
+    if (existingTank.image_url) {
+      const oldImagePath = path.join(__dirname, '../../public', existingTank.image_url.replace(/^\/public/, ''));
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
+    
+    // Create image URL for database
+    const imageUrl = `/public/uploads/tanks/${req.file.filename}`;
+    
+    // Update tank with new image URL
+    const updatedTank = await (prisma as any).fuelTank.update({
+      where: { id: Number(id) },
+      data: { image_url: imageUrl },
+    });
+    
+    res.status(200).json({ 
+      message: 'Slika uspješno uploadana', 
+      image_url: imageUrl,
+      tank: updatedTank
+    });
+  } catch (error) {
+    console.error('Error uploading tank image:', error);
+    res.status(500).json({ message: 'Greška pri uploadu slike tankera' });
   }
 }; 

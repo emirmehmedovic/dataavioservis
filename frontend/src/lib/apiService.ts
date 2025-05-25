@@ -133,10 +133,29 @@ export async function fetchWithAuth<T>(urlPath: string, options: FetchWithAuthOp
       errorData = { message: response.statusText };
     }
     console.error('API Error:', errorData, 'URL:', fullUrl); // Use fullUrl
-    const errorMessage = errorData.message || 
-                        (errorData.errors && errorData.errors.length > 0 ? 
-                         errorData.errors.map((e: any) => e.msg).join(', ') : 
-                         `Server error (${response.status})`);
+    
+    // Improved error message extraction
+    let errorMessage = errorData.message || `Server error (${response.status})`;
+    
+    // Handle validation errors from express-validator
+    if (errorData.errors && Array.isArray(errorData.errors)) {
+      console.log('Validation errors detected:', errorData.errors);
+      const validationErrors = errorData.errors.map((err: any) => {
+        if (typeof err === 'object') {
+          // Handle both {field: message} format and {msg, param} format
+          if (err.msg && err.param) {
+            return `${err.param}: ${err.msg}`;
+          } else {
+            return Object.entries(err).map(([key, value]) => `${key}: ${value}`).join(', ');
+          }
+        }
+        return err;
+      }).join('; ');
+      
+      if (validationErrors) {
+        errorMessage = `${errorMessage} - ${validationErrors}`;
+      }
+    }
     
     const errorToThrow = new Error(errorMessage);
     // Dodajemo cijelo parsirano tijelo greške na error objekt za lakši pristup u catch blokovima
@@ -319,6 +338,18 @@ export async function deleteUser(id: number): Promise<{ message: string }> {
 }
 
 // FIXED STORAGE TANKS -- START
+
+// Upload image for a tank
+export const uploadTankImage = async (tankId: number, file: File): Promise<{ image_url: string, message: string }> => {
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  return fetchWithAuth<{ image_url: string, message: string }>(`/api/fuel/tanks/${tankId}/image`, {
+    method: 'POST',
+    body: formData,
+  });
+};
+
 export const getFixedTanks = async (): Promise<FixedStorageTank[]> => {
   const url = `${API_BASE_URL}/api/fuel/fixed-tanks`;
   console.log('Fetching fixed tanks from URL:', url); // Log the URL

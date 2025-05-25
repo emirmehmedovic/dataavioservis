@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { PrismaClient, Prisma } from '@prisma/client';
+import { AuthRequest } from '../middleware/auth';
+import { logActivity } from './activity.controller';
 
 const prisma = new PrismaClient();
 
@@ -295,7 +297,7 @@ export const updateFuelIntakeRecord: RequestHandler<{ id: string }, unknown, any
 
 // DELETE /api/fuel/intake-records/:id - Brisanje zapisa o prijemu goriva
 // OPREZ: Ovo će obrisati i sve povezane FuelIntakeDocuments i FixedTankTransfers zbog `onDelete: CASCADE`
-export const deleteFuelIntakeRecord: RequestHandler<{ id: string }, unknown, unknown, unknown> = async (req, res, next): Promise<void> => {
+export const deleteFuelIntakeRecord = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const parsedId = parseInt(id);
@@ -307,7 +309,19 @@ export const deleteFuelIntakeRecord: RequestHandler<{ id: string }, unknown, unk
     
     const record = await prisma.fuelIntakeRecords.findUnique({
       where: { id: parsedId },
-      include: { fixedTankTransfers: true, documents: true }
+      include: { 
+        fixedTankTransfers: {
+          include: {
+            affectedFixedTank: {
+              select: {
+                tank_name: true,
+                tank_identifier: true
+              }
+            }
+          }
+        }, 
+        documents: true 
+      }
     });
 
     if (!record) {
@@ -331,6 +345,50 @@ export const deleteFuelIntakeRecord: RequestHandler<{ id: string }, unknown, unk
         });
         console.log(`Deleted FuelIntakeRecord with ID: ${parsedId}`);
     });
+
+    // Log the activity
+    if (req.user) {
+      try {
+        // Create metadata for activity logging
+        const metadata = {
+          recordId: record.id,
+          intake_datetime: record.intake_datetime,
+          delivery_vehicle_plate: record.delivery_vehicle_plate,
+          delivery_vehicle_driver_name: record.delivery_vehicle_driver_name,
+          quantity_liters_received: record.quantity_liters_received,
+          quantity_kg_received: record.quantity_kg_received,
+          fuel_type: record.fuel_type,
+          supplier_name: record.supplier_name,
+          delivery_note_number: record.delivery_note_number,
+          customs_declaration_number: record.customs_declaration_number,
+          tankTransfers: record.fixedTankTransfers.map(transfer => ({
+            tankName: transfer.affectedFixedTank?.tank_name || 'Nepoznat tank',
+            tankIdentifier: transfer.affectedFixedTank?.tank_identifier || 'Nepoznat ID',
+            quantity_liters: transfer.quantity_liters_transferred
+          })),
+          documentCount: record.documents.length
+        };
+
+        const description = `Korisnik ${req.user.username} je obrisao zapis o prijemu goriva ${record.quantity_liters_received.toFixed(2)} litara ${record.fuel_type} goriva od dobavljača ${record.supplier_name || 'Nepoznat dobavljač'} (Vozilo: ${record.delivery_vehicle_plate}).`;
+
+        await logActivity(
+          req.user.id,
+          req.user.username,
+          'DELETE_FUEL_INTAKE',
+          'FuelIntakeRecord',
+          record.id,
+          description,
+          metadata,
+          req
+        );
+        
+        console.log('Activity logged successfully for fuel intake deletion');
+      } catch (activityError) {
+        console.error('Error logging activity for fuel intake deletion:', activityError);
+      }
+    } else {
+      console.error('Cannot log activity: req.user is undefined');
+    }
 
     res.status(200).json({ message: 'Fuel intake record and associated data deleted successfully.' });
     return;

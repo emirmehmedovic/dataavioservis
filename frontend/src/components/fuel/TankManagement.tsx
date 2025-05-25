@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import TankRefillForm from './TankRefillForm';
-import { fetchWithAuth } from '@/lib/apiService';
+import { fetchWithAuth, uploadTankImage } from '@/lib/apiService';
 import { motion, AnimatePresence } from 'framer-motion';
+import TankFormWithImageUpload from './TankFormWithImageUpload';
+import TankImageDisplay from './TankImageDisplay';
 
 interface FuelTank {
   id: number;
@@ -17,6 +19,7 @@ interface FuelTank {
   fuel_type: string;
   last_refill_date?: string;
   last_maintenance_date?: string;
+  image_url?: string; // URL to the tank image
 }
 
 export default function TankManagement() {
@@ -37,6 +40,9 @@ export default function TankManagement() {
     current_liters: '',
     fuel_type: 'Jet A-1'
   });
+  
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTanks();
@@ -62,6 +68,23 @@ export default function TankManagement() {
       [name]: value
     });
   };
+  
+  const handleImageUploaded = async (imageUrl: string) => {
+    setImagePreview(imageUrl);
+    // Refresh the tanks data to get the updated image URL
+    await fetchTanks();
+  };
+  
+  // Use the imported uploadTankImage function from apiService
+  const handleTankImageUpload = async (tankId: number, file: File): Promise<string> => {
+    try {
+      const response = await uploadTankImage(tankId, file);
+      return response.image_url;
+    } catch (error) {
+      console.error('Error uploading tank image:', error);
+      throw error;
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -72,6 +95,8 @@ export default function TankManagement() {
       current_liters: '',
       fuel_type: 'Jet A-1'
     });
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const handleAddTank = async (e: React.FormEvent) => {
@@ -85,10 +110,20 @@ export default function TankManagement() {
         current_liters: parseFloat(formData.current_liters) || 0
       };
       
-      await fetchWithAuth<FuelTank>('/api/fuel/tanks', {
+      const newTank = await fetchWithAuth<FuelTank>('/api/fuel/tanks', {
         method: 'POST',
         body: JSON.stringify(dataToSubmit),
       });
+      
+      // Image upload is handled by TankFormWithImageUpload component
+      if (newTank.id) {
+        try {
+          // Image already uploaded by the TankFormWithImageUpload component
+        } catch (imageError) {
+          console.error('Error uploading tank image:', imageError);
+          toast.error('Tank je dodan, ali slika nije uspješno uploadana');
+        }
+      }
       
       toast.success('Tanker uspješno dodan');
       setShowAddModal(false);
@@ -117,6 +152,8 @@ export default function TankManagement() {
         method: 'PUT',
         body: JSON.stringify(dataToSubmit),
       });
+      
+      // Image upload is handled by TankFormWithImageUpload component
       
       toast.success('Tanker uspješno ažuriran');
       setShowEditModal(false);
@@ -147,13 +184,22 @@ export default function TankManagement() {
   const openEditModal = (tank: FuelTank) => {
     setCurrentTank(tank);
     setFormData({
-      identifier: tank.identifier,
-      name: tank.name,
-      location: tank.location,
-      capacity_liters: tank.capacity_liters.toString(),
-      current_liters: tank.current_liters.toString(),
-      fuel_type: tank.fuel_type
+      identifier: tank.identifier || '',
+      name: tank.name || '',
+      location: tank.location || '',
+      capacity_liters: tank.capacity_liters?.toString() || '0',
+      current_liters: (tank.current_liters || tank.current_quantity_liters || 0).toString(),
+      fuel_type: tank.fuel_type || 'Jet A-1'
     });
+    
+    // Set image preview if tank has an image
+    if (tank.image_url) {
+      setImagePreview(tank.image_url);
+    } else {
+      setImagePreview(null);
+    }
+    
+    setSelectedImage(null);
     setShowEditModal(true);
   };
 
@@ -294,53 +340,39 @@ export default function TankManagement() {
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 relative group"
                 >
-                  {/* Card Header with white gradient effect */}
-                  <div className="px-5 py-4 text-gray-800 relative overflow-hidden">
-                    {/* White gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-white via-gray-50 to-white border border-gray-100 z-0"></div>
-                    {/* Subtle highlight effect */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent z-0"></div>
-                    
-                    {/* Abstract background pattern */}
-                    <div className="absolute inset-0 opacity-10">
-                      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#pattern-${tank.id})" />
-                        <defs>
-                          <pattern id={`pattern-${tank.id}`} x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                            <path d="M0 20 L40 20 M20 0 L20 40" stroke="currentColor" strokeWidth="1" fill="none" />
-                          </pattern>
-                        </defs>
-                      </svg>
-                    </div>
-                    
-                    {/* Tank name and identifier */}
-                    <div className="relative z-10">
-                      <div className="flex items-center">
-                        <h3 className="text-xl font-bold text-gray-800 mr-3">{tank.name}</h3>
-                        <span className="px-2 py-0.5 bg-gray-200 rounded-full text-xs font-medium text-gray-700">
-                          {tank.identifier}
-                        </span>
+                  <div className="flex flex-col h-full">
+                    <div className="flex-1 bg-white rounded-t-lg p-4 relative overflow-hidden">
+                      <div className="w-full h-48 mb-2">
+                        {tank.image_url ? (
+                          <TankImageDisplay 
+                            imageUrl={tank.image_url} 
+                            tankName={tank.name} 
+                            height="h-48"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <TruckIcon className="h-20 w-20 text-gray-300" />
+                          </div>
+                        )}
                       </div>
-                      <p className="mt-1 text-sm text-gray-600 truncate">{locationText}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Card Content */}
-                  <div className="p-5">
-                    {/* Status indicator */}
-                    <div className="flex justify-between items-center mb-4">
-                      <div className={`${status.bgColor} px-3 py-1 rounded-full flex items-center`}>
-                        <span className={`w-2 h-2 rounded-full ${status.color} mr-2`}></span>
-                        <span className={`text-xs font-semibold ${status.textColor}`}>{status.label}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-bold">{fillPercentage}%</span>
-                        <span className="text-xs text-gray-500 ml-1">popunjenost</span>
+                      <div className="flex flex-col justify-between mt-2">
+                        <div className="flex justify-between">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {tank.name || 'Cisterna'}
+                          </span>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            ID: {tank.identifier}
+                          </span>
+                        </div>
+                        <div className="text-right mt-2">
+                          <span className="text-sm font-bold">{fillPercentage}%</span>
+                          <span className="text-xs text-gray-500 ml-1">popunjenost</span>
+                        </div>
                       </div>
                     </div>
                     
                     {/* Fuel gauge visualization */}
-                    <div className="mb-6">
+                    <div className="p-4 pt-0">
                       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div 
                           className={`h-full rounded-full transition-all duration-500 ease-out ${status.color}`}
@@ -424,198 +456,19 @@ export default function TankManagement() {
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="p-5 rounded-t-lg text-white relative overflow-hidden">
-                {/* Black glassmorphism background - exactly matching tab header */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-                {/* Glass highlight effect - matching tab header */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
-                {/* No abstract background pattern */}
-                
-                <h3 className="text-xl font-bold flex items-center relative z-10">
-                  <PlusIcon className="w-6 h-6 mr-2" />
-                  Dodaj Novu Cisternu
-                </h3>
-                <p className="mt-1 text-sm opacity-90 relative z-10">Unos podataka o novoj avio cisterni</p>
-              </div>
-              
-              <div className="p-6">
-                <form onSubmit={handleAddTank}>
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2"
-                  >
-                    <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
-                      <div className="flex items-center mb-3">
-                        <BeakerIcon className="w-5 h-5 text-[#E60026] mr-2" />
-                        <h4 className="font-medium text-indigo-800">Osnovne Informacije</h4>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
-                            Identifikator
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="text"
-                              name="identifier"
-                              id="identifier"
-                              value={formData.identifier}
-                              onChange={handleInputChange}
-                              required
-                              placeholder="npr. AV-001"
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                            Naziv
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="text"
-                              name="name"
-                              id="name"
-                              value={formData.name}
-                              onChange={handleInputChange}
-                              required
-                              placeholder="npr. Cisterna 1"
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
-                      <div className="flex items-center mb-3">
-                        <MapPinIcon className="w-5 h-5 text-[#E60026] mr-2" />
-                        <h4 className="font-medium text-indigo-800">Lokacija</h4>
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                          Lokacija Cisterne
-                        </label>
-                        <div className="mt-1 relative rounded-md shadow-sm">
-                          <input
-                            type="text"
-                            name="location"
-                            id="location"
-                            value={formData.location}
-                            onChange={handleInputChange}
-                            required
-                            placeholder="npr. Aerodrom Sarajevo"
-                            className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center mb-3">
-                        <svg className="w-5 h-5 text-[#E60026] mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M19 14C19 16.7614 16.7614 19 14 19H10C7.23858 19 5 16.7614 5 14V10C5 7.23858 7.23858 5 10 5H14C16.7614 5 19 7.23858 19 10V14Z" stroke="currentColor" strokeWidth="2" />
-                          <path d="M9 12H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M12 9L12 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                        <h4 className="font-medium text-indigo-800">Kapacitet i Gorivo</h4>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                          <label htmlFor="capacity_liters" className="block text-sm font-medium text-gray-700">
-                            Kapacitet (litara)
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="number"
-                              name="capacity_liters"
-                              id="capacity_liters"
-                              min="0"
-                              step="0.1"
-                              value={formData.capacity_liters || ''}
-                              onChange={handleInputChange}
-                              required
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                              <span className="text-gray-500 sm:text-sm">L</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="current_liters" className="block text-sm font-medium text-gray-700">
-                            Trenutna Količina
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="number"
-                              name="current_liters"
-                              id="current_liters"
-                              min="0"
-                              step="0.1"
-                              value={formData.current_liters || ''}
-                              onChange={handleInputChange}
-                              required
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                              <span className="text-gray-500 sm:text-sm">L</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="sm:col-span-2">
-                          <label htmlFor="fuel_type" className="block text-sm font-medium text-gray-700">
-                            Tip Goriva
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <select
-                              id="fuel_type"
-                              name="fuel_type"
-                              value={formData.fuel_type}
-                              onChange={handleInputChange}
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm pr-10 appearance-none"
-                            >
-                              <option value="Jet A-1">Jet A-1</option>
-                              <option value="Avgas 100LL">Avgas 100LL</option>
-                              <option value="Druga vrsta goriva">Druga vrsta goriva</option>
-                            </select>
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                  
-                  <div className="mt-6 sm:mt-8 sm:grid sm:grid-cols-2 sm:gap-3 border-t pt-5">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddModal(false)}
-                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:mt-0 sm:text-sm transition-colors"
-                    >
-                      Odustani
-                    </button>
-                    <button
-                      type="submit"
-                      className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2.5 bg-gradient-to-r from-[#E60026] to-[#800014] text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:text-sm transition-colors"
-                    >
-                      <PlusIcon className="w-5 h-5 mr-2" />
-                      Dodaj Cisternu
-                    </button>
-                  </div>
-                </form>
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div>
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Dodaj Novi Tank</h3>
+                <TankFormWithImageUpload
+                  formData={formData}
+                  onSubmit={handleAddTank}
+                  onCancel={() => {
+                    setShowAddModal(false);
+                    resetForm();
+                  }}
+                  handleInputChange={handleInputChange}
+                  onImageUploaded={handleImageUploaded}
+                />
               </div>
             </div>
           </div>
@@ -628,228 +481,19 @@ export default function TankManagement() {
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-gradient-to-r from-[#E60026] to-[#800014] p-5 rounded-t-lg text-white relative overflow-hidden">
-                {/* Abstract background pattern */}
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#edit-pattern)" />
-                    <defs>
-                      <pattern id="edit-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M0 20 L40 20 M20 0 L20 40" stroke="currentColor" strokeWidth="1" fill="none" />
-                      </pattern>
-                    </defs>
-                  </svg>
-                </div>
-                
-                <h3 className="text-xl font-bold flex items-center relative z-10">
-                  <PencilIcon className="w-6 h-6 mr-2" />
-                  Uredi Cisternu
-                </h3>
-                <p className="mt-1 text-sm opacity-90 relative z-10">{currentTank.name} ({currentTank.identifier})</p>
-              </div>
-              
-              <div className="p-6">
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="mb-6 bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-lg border border-indigo-100 shadow-sm"
-                >
-                  <div className="flex items-center mb-3">
-                    <TruckIcon className="w-5 h-5 text-[#E60026] mr-2" />
-                    <h4 className="font-medium text-indigo-800">Informacije o Cisternu</h4>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-white p-3 rounded-lg shadow-sm">
-                      <p className="text-xs text-gray-500 mb-1">Trenutna količina</p>
-                      <p className="text-base font-semibold text-gray-900">{currentTank.current_liters.toLocaleString()} L</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-lg shadow-sm">
-                      <p className="text-xs text-gray-500 mb-1">Kapacitet</p>
-                      <p className="text-base font-semibold text-gray-900">{currentTank.capacity_liters.toLocaleString()} L</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-lg shadow-sm">
-                      <p className="text-xs text-gray-500 mb-1">Slobodno</p>
-                      <p className="text-base font-semibold text-gray-900">{(currentTank.capacity_liters - currentTank.current_liters).toLocaleString()} L</p>
-                    </div>
-                  </div>
-                </motion.div>
-                
-                <form onSubmit={handleEditTank}>
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2"
-                  >
-                    <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
-                      <div className="flex items-center mb-3">
-                        <BeakerIcon className="w-5 h-5 text-[#E60026] mr-2" />
-                        <h4 className="font-medium text-indigo-800">Osnovne Informacije</h4>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <label htmlFor="edit-identifier" className="block text-sm font-medium text-gray-700">
-                            Identifikator
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="text"
-                              name="identifier"
-                              id="edit-identifier"
-                              value={formData.identifier}
-                              onChange={handleInputChange}
-                              required
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700">
-                            Naziv
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="text"
-                              name="name"
-                              id="edit-name"
-                              value={formData.name}
-                              onChange={handleInputChange}
-                              required
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-2">
-                      <div className="flex items-center mb-3">
-                        <MapPinIcon className="w-5 h-5 text-[#E60026] mr-2" />
-                        <h4 className="font-medium text-indigo-800">Lokacija</h4>
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="edit-location" className="block text-sm font-medium text-gray-700">
-                          Lokacija Cisterne
-                        </label>
-                        <div className="mt-1 relative rounded-md shadow-sm">
-                          <input
-                            type="text"
-                            name="location"
-                            id="edit-location"
-                            value={formData.location}
-                            onChange={handleInputChange}
-                            required
-                            className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            placeholder="npr. Aerodrom Sarajevo"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="sm:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center mb-3">
-                        <svg className="w-5 h-5 text-[#E60026] mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M19 14C19 16.7614 16.7614 19 14 19H10C7.23858 19 5 16.7614 5 14V10C5 7.23858 7.23858 5 10 5H14C16.7614 5 19 7.23858 19 10V14Z" stroke="currentColor" strokeWidth="2" />
-                          <path d="M9 12H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M12 9L12 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                        <h4 className="font-medium text-indigo-800">Kapacitet i Gorivo</h4>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                          <label htmlFor="edit-capacity_liters" className="block text-sm font-medium text-gray-700">
-                            Kapacitet (litara)
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="number"
-                              name="capacity_liters"
-                              id="edit-capacity_liters"
-                              min="0"
-                              step="0.1"
-                              value={formData.capacity_liters || ''}
-                              onChange={handleInputChange}
-                              required
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                              <span className="text-gray-500 sm:text-sm">L</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="edit-current_liters" className="block text-sm font-medium text-gray-700">
-                            Trenutna Količina
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <input
-                              type="number"
-                              name="current_liters"
-                              id="edit-current_liters"
-                              min="0"
-                              step="0.1"
-                              value={formData.current_liters || ''}
-                              onChange={handleInputChange}
-                              required
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm"
-                            />
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                              <span className="text-gray-500 sm:text-sm">L</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="sm:col-span-2">
-                          <label htmlFor="edit-fuel_type" className="block text-sm font-medium text-gray-700">
-                            Tip Goriva
-                          </label>
-                          <div className="mt-1 relative rounded-md shadow-sm">
-                            <select
-                              id="edit-fuel_type"
-                              name="fuel_type"
-                              value={formData.fuel_type}
-                              onChange={handleInputChange}
-                              className="block w-full rounded-md border-gray-300 focus:border-[#E60026] focus:ring-[#E60026] sm:text-sm pr-10 appearance-none"
-                            >
-                              <option value="Jet A-1">Jet A-1</option>
-                              <option value="Avgas 100LL">Avgas 100LL</option>
-                              <option value="Druga vrsta goriva">Druga vrsta goriva</option>
-                            </select>
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                  
-                  <div className="mt-6 sm:mt-8 sm:grid sm:grid-cols-2 sm:gap-3 border-t pt-5">
-                    <button
-                      type="button"
-                      onClick={() => setShowEditModal(false)}
-                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:mt-0 sm:text-sm transition-colors"
-                    >
-                      Odustani
-                    </button>
-                    <button
-                      type="submit"
-                      className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2.5 bg-gradient-to-r from-[#E60026] to-[#800014] text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] sm:text-sm transition-colors"
-                    >
-                      <PencilIcon className="w-5 h-5 mr-2" />
-                      Spremi Promjene
-                    </button>
-                  </div>
-                </form>
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div>
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Uredi Tank</h3>
+                <TankFormWithImageUpload
+                  isEdit={true}
+                  tankId={currentTank.id}
+                  existingImageUrl={currentTank.image_url}
+                  formData={formData}
+                  onSubmit={handleEditTank}
+                  onCancel={() => setShowEditModal(false)}
+                  handleInputChange={handleInputChange}
+                  onImageUploaded={handleImageUploaded}
+                />
               </div>
             </div>
           </div>

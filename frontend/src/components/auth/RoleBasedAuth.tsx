@@ -16,6 +16,7 @@ const PAGE_ACCESS_MAP: Record<string, UserRole[]> = {
   '/dashboard/companies': [UserRole.ADMIN],
   '/dashboard/locations': [UserRole.ADMIN],
   '/dashboard/users': [UserRole.ADMIN],
+  '/aktivnosti': [UserRole.ADMIN, UserRole.KONTROLA],
 };
 
 // Component to check if user has access to the current page

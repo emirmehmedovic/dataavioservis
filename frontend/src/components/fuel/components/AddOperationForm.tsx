@@ -7,6 +7,7 @@ interface AddOperationFormProps {
     quantity_liters: string;
     quantity_kg: string;
     price_per_kg: string;
+    discount_percentage: string;
   };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   handleAddOperation: (e: React.FormEvent) => void;
@@ -23,7 +24,8 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
   textInputs = {
     quantity_liters: '',
     quantity_kg: '',
-    price_per_kg: ''
+    price_per_kg: '',
+    discount_percentage: ''
   },
   handleInputChange,
   handleAddOperation,
@@ -295,7 +297,7 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                     type="text"
                     name="price_per_kg"
                     id="price_per_kg"
-                    pattern="^\d*(\.\d{0,4})?$"
+                    pattern="^\d*(\.\d{0,5})?$"
                     placeholder="npr. 0.55"
                     value={textInputs.price_per_kg}
                     onChange={handleInputChange}
@@ -303,6 +305,27 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 sm:text-sm">{formData.currency}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="discount_percentage" className="block text-sm font-medium text-gray-700">
+                  Rabat (%)
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <input
+                    type="text"
+                    name="discount_percentage"
+                    id="discount_percentage"
+                    pattern="^\d*(\.\d{0,2})?$"
+                    placeholder="0"
+                    value={textInputs.discount_percentage}
+                    onChange={handleInputChange}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md pr-12"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 sm:text-sm">%</span>
                   </div>
                 </div>
               </div>
@@ -332,11 +355,14 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                   Ukupan iznos plaćanja
                 </label>
                 <div className="text-2xl font-bold text-gray-900 flex items-center justify-between">
-                  <span>{(formData.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span>{(formData.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 })}</span>
                   <span className="text-lg font-medium text-gray-500">{formData.currency}</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  Izračunato na osnovu: {(formData.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} kg × {(formData.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {formData.currency}/kg
+                  Izračunato na osnovu: {(formData.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} kg × {(formData.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })} {formData.currency}/kg
+                  {formData.discount_percentage > 0 && (
+                    <span className="ml-1 text-indigo-600"> - {formData.discount_percentage}% rabat</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -365,6 +391,22 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                     onChange={handleInputChange}
                     className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                     required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="delivery_note_number" className="block text-sm font-medium text-gray-700">
+                  Broj dostavnice
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    name="delivery_note_number"
+                    id="delivery_note_number"
+                    value={formData.delivery_note_number}
+                    onChange={handleInputChange}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                   />
                 </div>
               </div>

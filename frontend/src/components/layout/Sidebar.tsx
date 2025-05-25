@@ -23,6 +23,7 @@ import {
   ClipboardList,
   ShieldCheck, // Added ShieldCheck
   Plane, // Added Plane for Airport
+  FileText, // Added FileText for Activities
 } from 'lucide-react';
 
 // Define new user roles for specific access
@@ -40,6 +41,7 @@ const baseNavItems = [
   { name: 'Vozila', href: '/dashboard/vehicles', icon: Car, roles: ['ADMIN'] },
   { name: 'Gorivo', href: '/dashboard/fuel', icon: Fuel, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Izvještaji', href: '/dashboard/reports', icon: ClipboardList, roles: ['ADMIN', 'KONTROLA'] },
+  { name: 'Aktivnosti', href: '/aktivnosti', icon: FileText, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Carina', href: '/dashboard/customs', icon: ShieldCheck, roles: ['ADMIN', 'CARINA'] },
   { name: 'Aerodrom', href: '/dashboard/airport', icon: Plane, roles: ['ADMIN', 'AERODROM'] },
   { name: 'Firme', href: '/dashboard/companies', icon: Building2, roles: ['ADMIN'] },

@@ -9,6 +9,7 @@ import {
 import { createFuelingOperationRules, updateFuelingOperationRules, validate } from '../validators/fuelingOperation.validators';
 import { uploadMultipleFuelingDocuments } from '../middleware/fuelingDocumentUpload';
 import { Request, Response, NextFunction } from 'express';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -19,6 +20,9 @@ const router = Router();
 // };
 
 // Base path for these routes will be /api/fuel/fueling-operations
+
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
 
 router.post('/', 
   uploadMultipleFuelingDocuments, 

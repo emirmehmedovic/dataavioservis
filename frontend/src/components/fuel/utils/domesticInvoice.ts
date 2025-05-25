@@ -89,72 +89,99 @@ export const generateDomesticPDFInvoice = (operation: FuelingOperation): void =>
     doc.text(`Broj fakture: ${invoiceNumber}`, 14, 35);
     doc.text(`Datum izdavanja: ${formatDate(operation.dateTime)}`, 14, 40);
     doc.text(`Datum isporuke: ${formatDate(operation.dateTime)}`, 14, 45);
+    doc.text(`Paritet/Parity: CPT Aerodrom Tuzla`, 14, 50);
+    doc.text(`Dostavnica/Delivery voucher: ${operation.delivery_note_number || 'N/A'}`, 14, 55);
     
     // Add client information on the left side
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('KUPAC:', 14, 55);
+    doc.text('KUPAC:', 14, 65);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
-    doc.text(`${operation.airline.name}`, 14, 60);
-    doc.text(`${operation.airline.address || 'N/A'}`, 14, 65);
-    doc.text(`ID/PDV: ${operation.airline.taxId || 'N/A'}`, 14, 70);
-    doc.text(`Tel: ${operation.airline.contact_details || 'N/A'}`, 14, 75);
+    doc.text(`${operation.airline.name}`, 14, 70);
+    doc.text(`${operation.airline.address || 'N/A'}`, 14, 75);
+    doc.text(`ID/PDV: ${operation.airline.taxId || 'N/A'}`, 14, 80);
+    doc.text(`Tel: ${operation.airline.contact_details || 'N/A'}`, 14, 85);
     
     // Add company information on the right side
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('PRODAVAC:', pageWidth - 90, 55);
+    doc.text('PRODAVAC:', pageWidth - 90, 65);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
-    doc.text('HIFA Petrol d.o.o.', pageWidth - 90, 60);
-    doc.text('Međunarodni aerodrom Tuzla', pageWidth - 90, 65);
-    doc.text('Tešanj, Bosna i Hercegovina', pageWidth - 90, 70);
-    doc.text('ID/PDV: 4200468580006', pageWidth - 90, 75);
-    doc.text('Tel: +387 33 289 100', pageWidth - 90, 80);
+    doc.text('HIFA Petrol d.o.o.', pageWidth - 90, 70);
+    doc.text('Međunarodni aerodrom Tuzla', pageWidth - 90, 75);
+    doc.text('Tešanj, Bosna i Hercegovina', pageWidth - 90, 80);
+    doc.text('ID/PDV: 4200468580006', pageWidth - 90, 85);
+    doc.text('Tel: +387 33 289 100', pageWidth - 90, 90);
     
     // Add flight information
     doc.setFontSize(10);
-    doc.text(`Registracija aviona: ${operation.aircraft_registration || 'N/A'}`, 14, 85);
-    doc.text(`Destinacija: ${operation.destination}`, 14, 90);
-    doc.text(`Broj leta: ${operation.flight_number || 'N/A'}`, 14, 95);
+    doc.text(`Registracija aviona: ${operation.aircraft_registration || 'N/A'}`, 14, 95);
+    doc.text(`Destinacija: ${operation.destination}`, 14, 100);
+    doc.text(`Broj leta: ${operation.flight_number || 'N/A'}`, 14, 105);
     
-    // Calculate VAT on net amount, then add excise tax
+    // Izračunaj osnovnu cijenu prije rabata
+    const baseAmount = (operation.quantity_kg || 0) * (operation.price_per_kg || 0);
+    
+    // Izračunaj rabat ako postoji
+    const discountPercentage = operation.discount_percentage || 0;
+    const discountAmount = baseAmount * (discountPercentage / 100);
+    
+    // Neto iznos nakon rabata
     const netAmount = operation.total_amount || 0;
-    const vatAmount = netAmount * VAT_RATE;
-    const exciseTaxAmount = (operation.quantity_liters || 0) * EXCISE_TAX_PER_LITER;
-    const grossAmount = netAmount + vatAmount + exciseTaxAmount;
+    
+    // Ensure all values are numbers
+    const netAmountNum = Number(netAmount || 0);
+    
+    // Calculate VAT on net amount (after discount), then add excise tax
+    const vatAmount = Number((netAmountNum * VAT_RATE).toFixed(5));
+    const exciseTaxAmount = Number(((operation.quantity_liters || 0) * EXCISE_TAX_PER_LITER).toFixed(5));
+    
+    // Međuzbir je neto + PDV - round to 5 decimal places
+    const subtotalWithoutExcise = Number((netAmountNum + vatAmount).toFixed(5));
+    
+    // Ukupan iznos je neto + PDV + akcize - round to 5 decimal places
+    const grossAmount = Number((netAmountNum + vatAmount + exciseTaxAmount).toFixed(5));
     
     // Add transaction details in a table
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('DETALJI TRANSAKCIJE:', 14, 110);
+    doc.text('DETALJI TRANSAKCIJE:', 14, 120);
     
     // Create transaction table
-    const tableColumn = ['Opis', 'Količina (L)', 'Količina (kg)', 'Cijena po kg', 'Neto iznos', 'PDV 17%', 'Akcize (0.30 KM/L)', 'Ukupno sa PDV'];
+    const tableColumn = ['Opis', 'Količina (L)', 'Količina (kg)', 'Cijena po kg', 'Rabat (%)', 'Neto iznos', 'PDV 17%', 'Akcize (0.30 KM/L)', 'Ukupno sa PDV'];
     const tableRows = [
       [
         `Gorivo JET A-1 (${operation.aircraft_registration || 'N/A'})`,
         (operation.quantity_liters || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
         (operation.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        (operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        netAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        vatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        exciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        grossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })
+        (operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 }),
+        discountPercentage > 0 ? `${discountPercentage}%` : '0%',
+        netAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 }),
+        vatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 }),
+        exciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 }),
+        grossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 })
       ]
     ];
+    
+    // Dodaj informacije o rabatu ako postoji
+    if (discountPercentage > 0) {
+      doc.setFontSize(10);
+      doc.text(`Osnovna cijena prije rabata: ${baseAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 })} ${operation.currency || 'BAM'}`, 14, 110);
+      doc.text(`Rabat (${discountPercentage}%): ${discountAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 })} ${operation.currency || 'BAM'}`, 14, 115);
+    }
     
     // Apply autoTable for transaction details
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 115,
+      startY: 125,
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2, font: FONT_NAME },
       headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [240, 240, 240] },
-      margin: { top: 115 }
+      margin: { top: 125 }
     });
     
     // Get the final y position after the table
@@ -177,27 +204,26 @@ export const generateDomesticPDFInvoice = (operation: FuelingOperation): void =>
     
     // First row
     doc.text('Ukupan neto iznos:', labelX, finalY + lineHeight);
-    doc.text(`${netAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} ${operation.currency || 'BAM'}`, valueX, finalY + lineHeight, { align: 'right' });
+    doc.text(`${netAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 })} ${operation.currency || 'BAM'}`, valueX, finalY + lineHeight, { align: 'right' });
     
     // Second row
     doc.text('PDV (17%):', labelX, finalY + 2*lineHeight);
-    doc.text(`${vatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} ${operation.currency || 'BAM'}`, valueX, finalY + 2*lineHeight, { align: 'right' });
+    doc.text(`${vatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 })} ${operation.currency || 'BAM'}`, valueX, finalY + 2*lineHeight, { align: 'right' });
     
     // Third row
     doc.text('Akcize (0.30 KM/L):', labelX, finalY + 3*lineHeight);
-    doc.text(`${exciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} ${operation.currency || 'BAM'}`, valueX, finalY + 3*lineHeight, { align: 'right' });
+    doc.text(`${exciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 })} ${operation.currency || 'BAM'}`, valueX, finalY + 3*lineHeight, { align: 'right' });
     
     // Fourth row - subtotal of net+VAT (without excise)
-    const subtotalWithoutExcise = netAmount + vatAmount;
     doc.text('Međuzbir (bez akcize):', labelX, finalY + 4*lineHeight);
-    doc.text(`${subtotalWithoutExcise.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} ${operation.currency || 'BAM'}`, valueX, finalY + 4*lineHeight, { align: 'right' });
+    doc.text(`${subtotalWithoutExcise.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 })} ${operation.currency || 'BAM'}`, valueX, finalY + 4*lineHeight, { align: 'right' });
     
-    // Final row - total with PDV
+    // Final row
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
     doc.setTextColor(0, 51, 102);
     doc.text('Ukupan iznos za plaćanje (sa PDV):', labelX, finalY + 5*lineHeight);
-    doc.text(`${grossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} ${operation.currency || 'BAM'}`, valueX, finalY + 5*lineHeight, { align: 'right' });
+    doc.text(`${grossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 })} ${operation.currency || 'BAM'}`, valueX, finalY + 5*lineHeight, { align: 'right' });
     
     // Add payment information - moved lower on the page
     doc.setFontSize(10);
@@ -254,6 +280,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     doc.text(`Broj fakture: ${invoiceNumber}`, pageWidth / 2, 28, { align: 'center' });
     doc.text(`Datum izdavanja: ${formatDate(new Date().toISOString())}`, pageWidth / 2, 33, { align: 'center' });
     doc.text(`Period: ${filterDescription}`, pageWidth / 2, 38, { align: 'center' });
+    doc.text(`Paritet/Parity: CPT Aerodrom Tuzla`, pageWidth / 2, 43, { align: 'center' });
     
     // Find the most common airline to use as the recipient
     const airlineCounts: Record<string, { count: number, airline: FuelingOperation['airline'] }> = {};
@@ -284,72 +311,82 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     doc.setLineWidth(0.5);
     
     // Left box for customer (buyer) information
-    doc.roundedRect(14, 45, pageWidth / 2 - 20, 50, 2, 2, 'S');
+    doc.roundedRect(14, 55, pageWidth / 2 - 20, 50, 2, 2, 'S');
     
     // Right box for seller information
-    doc.roundedRect(pageWidth / 2 + 6, 45, pageWidth / 2 - 20, 50, 2, 2, 'S');
+    doc.roundedRect(pageWidth / 2 + 6, 55, pageWidth / 2 - 20, 50, 2, 2, 'S');
     
     // Add client information (left side - buyer)
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('KUPAC:', 20, 52);
+    doc.text('KUPAC:', 20, 62);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
     
     if (mostCommonAirline) {
       // Use type assertion to access airline properties
       const airline = mostCommonAirline as any;
-      doc.text(`${airline.name || 'N/A'}`, 20, 58);
-      doc.text(`ID/PDV broj: ${airline.taxId || 'N/A'}`, 20, 63);
-      doc.text(`Adresa: ${airline.address || 'N/A'}`, 20, 68);
-      doc.text(`Kontakt: ${airline.contact_details || 'N/A'}`, 20, 73);
+      doc.text(`${airline.name || 'N/A'}`, 20, 68);
+      doc.text(`ID/PDV broj: ${airline.taxId || 'N/A'}`, 20, 73);
+      doc.text(`Adresa: ${airline.address || 'N/A'}`, 20, 78);
+      doc.text(`Kontakt: ${airline.contact_details || 'N/A'}`, 20, 83);
     } else {
-      doc.text('Nije dostupno', 20, 58);
+      doc.text('Nije dostupno', 20, 68);
     }
     
     // Add seller information (right side)
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('PRODAVAC:', pageWidth / 2 + 12, 52);
+    doc.text('PRODAVAC:', pageWidth / 2 + 12, 62);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
-    doc.text('HIFA Petrol d.o.o.', pageWidth / 2 + 12, 58);
-    doc.text('ID: 4200468580006', pageWidth / 2 + 12, 63);
-    doc.text('PDV: 200468580006', pageWidth / 2 + 12, 68);
-    doc.text('Međunarodni aerodrom Tuzla', pageWidth / 2 + 12, 73);
-    doc.text('Tešanj, Bosna i Hercegovina', pageWidth / 2 + 12, 78);
-    doc.text('Tel: +387 33 289 100', pageWidth / 2 + 12, 83);
-    doc.text('Email: info@hifapetrol.ba', pageWidth / 2 + 12, 88);
+    doc.text('HIFA Petrol d.o.o.', pageWidth / 2 + 12, 68);
+    doc.text('ID: 4200468580006', pageWidth / 2 + 12, 73);
+    doc.text('PDV: 200468580006', pageWidth / 2 + 12, 78);
+    doc.text('Međunarodni aerodrom Tuzla', pageWidth / 2 + 12, 83);
+    doc.text('Tešanj, Bosna i Hercegovina', pageWidth / 2 + 12, 88);
+    doc.text('Tel: +387 33 289 100', pageWidth / 2 + 12, 93);
+    doc.text('Email: info@hifapetrol.ba', pageWidth / 2 + 12, 98);
     
     // Calculate totals
-    let totalLiters = 0;
-    let totalKg = 0;
-    let totalNetAmount = 0;
-    let totalExciseTaxAmount = 0;
-    let totalSubtotalWithExcise = 0;
-    let totalVatAmount = 0;
-    let totalGrossAmount = 0;
+    let totalLiters = operations.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
+    let totalKg = operations.reduce((sum, op) => sum + (op.quantity_kg || 0), 0);
+    
+    // Izračunaj ukupnu osnovnu cijenu prije rabata - zaokruženo na 5 decimala
+    const totalBaseAmount = Number(operations.reduce((sum, op) => {
+      const baseAmount = (op.quantity_kg || 0) * (op.price_per_kg || 0);
+      return sum + baseAmount;
+    }, 0).toFixed(5));
+    
+    // Izračunaj ukupan rabat - zaokruženo na 5 decimala
+    const totalDiscountAmount = Number(operations.reduce((sum, op) => {
+      const baseAmount = (op.quantity_kg || 0) * (op.price_per_kg || 0);
+      const discountAmount = baseAmount * ((op.discount_percentage || 0) / 100);
+      return sum + discountAmount;
+    }, 0).toFixed(5));
+    
+    // Neto iznos nakon rabata (osnovna cijena - rabat) - zaokruženo na 5 decimala
+    // Koristimo total_amount iz operacija ako postoji, inače računamo iz osnovne cijene i rabata
+    const calculatedNetAmount = Number((totalBaseAmount - totalDiscountAmount).toFixed(5));
+    // Ensure we're working with numbers for all operations
+    const totalNetAmount = operations.reduce((sum, op) => {
+      // Ako operacija ima total_amount, koristi ga, inače izračunaj
+      const netAmount = Number(op.total_amount || 0) || Number(((op.quantity_kg || 0) * (op.price_per_kg || 0)) * (1 - ((op.discount_percentage || 0) / 100)));
+      return sum + netAmount;
+    }, 0);
+    // Ensure totalNetAmount is a number before using toFixed
+    const finalTotalNetAmount = Number(Number(totalNetAmount).toFixed(5));
+    
+    // PDV se računa na neto iznos nakon rabata - zaokruženo na 5 decimala
+    const totalVatAmount = Number((finalTotalNetAmount * VAT_RATE).toFixed(5));
+    
+    // Akcize se računaju na količinu u litrama - zaokruženo na 5 decimala
+    const totalExciseTaxAmount = Number((totalLiters * EXCISE_TAX_PER_LITER).toFixed(5));
     
     // Count occurrences of each currency to determine the most common
     const currencyCounts: Record<string, number> = {};
     
     operations.forEach(operation => {
-      const liters = operation.quantity_liters || 0;
-      totalLiters += liters;
-      totalKg += operation.quantity_kg || 0;
-      
-      const netAmount = operation.total_amount || 0;
-      totalNetAmount += netAmount;
-      
-      const vatAmount = netAmount * VAT_RATE;
-      totalVatAmount += vatAmount;
-      
-      const exciseTaxAmount = (operation.quantity_liters || 0) * EXCISE_TAX_PER_LITER;
-      totalExciseTaxAmount += exciseTaxAmount;
-      
-      totalGrossAmount += netAmount + vatAmount + exciseTaxAmount;
-      
-      // Count currency occurrences
       const currency = operation.currency || 'BAM';
       currencyCounts[currency] = (currencyCounts[currency] || 0) + 1;
     });
@@ -367,40 +404,50 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     // Add transaction details header
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('ZBIRNI PREGLED:', 14, 95);
+    doc.text('ZBIRNI PREGLED:', 14, 105);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
     
-    // Format all amounts to have exactly 2 decimal places
-    const totalNetAmountFormatted = totalNetAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const totalVatAmountFormatted = totalVatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const totalExciseTaxAmountFormatted = totalExciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const totalGrossAmountFormatted = totalGrossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const totalSubtotalWithoutExcise = totalNetAmount + totalVatAmount;
-    const totalSubtotalWithoutExciseFormatted = totalSubtotalWithoutExcise.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Format all amounts to have exactly 5 decimal places
+    // Use comma as decimal separator for Bosnian format
+    const totalBaseAmountFormatted = totalBaseAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    const totalDiscountAmountFormatted = totalDiscountAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    const totalNetAmountFormatted = finalTotalNetAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    const totalVatAmountFormatted = totalVatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    const totalExciseTaxAmountFormatted = totalExciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    
+    // Calculate subtotal (neto + PDV) and format - round to 5 decimal places
+    const totalSubtotalWithoutExcise = Number((finalTotalNetAmount + totalVatAmount).toFixed(5));
+    const totalSubtotalWithoutExciseFormatted = totalSubtotalWithoutExcise.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    
+    // Calculate total (neto + PDV + akcize) and format - round to 5 decimal places
+    const totalGrossAmount = Number((finalTotalNetAmount + totalVatAmount + totalExciseTaxAmount).toFixed(5));
+    const totalGrossAmountFormatted = totalGrossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
     
     // Create summary table
     const summaryColumn = ['Opis', 'Vrijednost', 'Jedinica'];
     const summaryRows = [
       ['Ukupna količina goriva', totalLiters.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 'litara'],
       ['Ukupna količina goriva', totalKg.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 'kg'],
-      ['Ukupan neto iznos', totalNetAmountFormatted, mostCommonCurrency],
+      ['Ukupna osnovna cijena', totalBaseAmountFormatted, mostCommonCurrency],
+      ['Ukupan rabat', totalDiscountAmountFormatted, mostCommonCurrency],
+      ['Ukupan neto iznos (nakon rabata)', totalNetAmountFormatted, mostCommonCurrency],
       ['Ukupan PDV (17%)', totalVatAmountFormatted, mostCommonCurrency],
-      ['Ukupan međuzbir (bez akcize)', totalSubtotalWithoutExciseFormatted, mostCommonCurrency],
+      ['Ukupan međuzbir (neto + PDV)', totalSubtotalWithoutExciseFormatted, mostCommonCurrency],
       ['Ukupan iznos akcize', totalExciseTaxAmountFormatted, mostCommonCurrency],
-      ['Ukupan iznos za plaćanje', totalGrossAmountFormatted, mostCommonCurrency]
+      ['Ukupan iznos za plaćanje (sa PDV)', totalGrossAmountFormatted, mostCommonCurrency]
     ];
     
     // Apply autoTable for summary
     autoTable(doc, {
       head: [summaryColumn],
       body: summaryRows,
-      startY: 100,
+      startY: 110,
       theme: 'grid',
       styles: { fontSize: 9, cellPadding: 2, font: FONT_NAME },
       headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [240, 240, 240] },
-      margin: { top: 105 }
+      margin: { top: 115 }
     });
     
     // Get the final y position after the summary table
@@ -414,23 +461,47 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     doc.setFont(FONT_NAME, 'normal');
     
     // Create detailed operations table
-    const tableColumn = ['Datum', 'Registracija', 'Destinacija', 'Količina (L)', 'Količina (kg)', 'Neto', 'PDV 17%', 'Akcize', 'Bruto', 'Valuta'];
+    const tableColumn = ['Datum', 'Registracija', 'Destinacija', 'Dostavnica', 'Količina (L)', 'Količina (kg)', 'Osnovna cijena', 'Rabat', 'Neto', 'PDV 17%', 'Akcize', 'Bruto', 'Valuta'];
     const tableRows = operations.map(operation => {
-      const netAmount = operation.total_amount || 0;
-      const vatAmount = netAmount * VAT_RATE;
-      const exciseTaxAmount = (operation.quantity_liters || 0) * EXCISE_TAX_PER_LITER;
-      const grossAmount = netAmount + vatAmount + exciseTaxAmount;
+      // Izračunaj osnovnu cijenu prije rabata - zaokruženo na 5 decimala
+      const baseAmount = Number(((operation.quantity_kg || 0) * (operation.price_per_kg || 0)).toFixed(5));
+      
+      // Izračunaj rabat - zaokruženo na 5 decimala
+      const discountPercentage = operation.discount_percentage || 0;
+      const discountAmount = Number((baseAmount * (discountPercentage / 100)).toFixed(5));
+      
+      // Neto iznos nakon rabata - zaokruženo na 5 decimala
+      // Koristi total_amount iz operacije ako postoji, inače izračunaj
+      const calculatedNetAmount = Number((baseAmount - discountAmount).toFixed(5));
+      // Ensure netAmount is a number before using toFixed
+      const netAmount = Number(operation.total_amount || 0) || calculatedNetAmount;
+      const netAmountNum = Number(netAmount.toFixed(5));
+      
+      // PDV se računa na neto iznos nakon rabata - zaokruženo na 5 decimala
+      const vatAmount = Number((netAmountNum * VAT_RATE).toFixed(5));
+      
+      // Akcize se računaju na količinu u litrama - zaokruženo na 5 decimala
+      const exciseTaxAmount = Number(((operation.quantity_liters || 0) * EXCISE_TAX_PER_LITER).toFixed(5));
+      
+      // Međuzbir je neto + PDV (bez akcize) - zaokruženo na 5 decimala
+      const subtotalWithoutExcise = Number((netAmountNum + vatAmount).toFixed(5));
+      
+      // Ukupan iznos je neto + PDV + akcize - zaokruženo na 5 decimala
+      const grossAmount = Number((netAmountNum + vatAmount + exciseTaxAmount).toFixed(5));
       
       return [
         formatDate(operation.dateTime),
         operation.aircraft_registration || 'N/A',
         operation.destination,
+        operation.delivery_note_number || 'N/A',
         (operation.quantity_liters || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
         (operation.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        netAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        vatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        exciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-        grossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
+        baseAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 }),
+        discountAmount > 0 ? discountAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }) : '0,00000',
+        netAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
+        vatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
+        exciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
+        grossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
         operation.currency || 'BAM'
       ];
     });
@@ -440,12 +511,15 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
       'UKUPNO',
       '',
       '',
+      '',
       totalLiters.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
       totalKg.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-      totalNetAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-      totalVatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-      totalExciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
-      totalGrossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }),
+      totalBaseAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5 }),
+      totalDiscountAmount > 0 ? totalDiscountAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }) : '0,00000',
+      finalTotalNetAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
+      totalVatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
+      totalExciseTaxAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
+      totalGrossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 }),
       mostCommonCurrency
     ]);
     
@@ -560,7 +634,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
     doc.setFont(FONT_NAME, 'bold');
     doc.setTextColor(0, 51, 102);
     doc.text('Ukupan iznos za plaćanje (sa PDV):', labelX, finalY + 5*lineHeight);
-    doc.text(`${totalGrossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} ${mostCommonCurrency}`, valueX, finalY + 5*lineHeight, { align: 'right' });
+    doc.text(`${totalGrossAmount.toLocaleString('hr-HR', { minimumFractionDigits: 5, maximumFractionDigits: 5 })} ${mostCommonCurrency}`, valueX, finalY + 5*lineHeight, { align: 'right' });
     
     // Add payment information - moved lower on the page
     doc.setFontSize(10);

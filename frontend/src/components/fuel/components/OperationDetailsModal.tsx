@@ -82,6 +82,10 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                   <span className="font-medium text-gray-900">{operation.destination}</span>
                 </div>
                 <div className="flex items-start">
+                  <span className="text-gray-500 w-40 flex-shrink-0">Broj dostavnice:</span>
+                  <span className="font-medium text-gray-900">{operation.delivery_note_number || 'N/A'}</span>
+                </div>
+                <div className="flex items-start">
                   <span className="text-gray-500 w-40 flex-shrink-0">Tip Goriva:</span>
                   <span className="font-medium text-gray-900 flex items-center">
                     {operation.tank?.fuel_type?.toLowerCase() === 'jet a-1'.toLowerCase() ? (
@@ -116,11 +120,17 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                 </div>
                 <div className="flex items-start">
                   <span className="text-gray-500 w-40 flex-shrink-0">Cijena po kg:</span>
-                  <span className="font-medium text-gray-900">{(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span>
+                  <span className="font-medium text-gray-900">{(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })} {operation.currency || 'BAM'}</span>
                 </div>
+                {operation.discount_percentage !== undefined && operation.discount_percentage > 0 && (
+                  <div className="flex items-start">
+                    <span className="text-gray-500 w-40 flex-shrink-0">Rabat:</span>
+                    <span className="font-medium text-indigo-600">{operation.discount_percentage}%</span>
+                  </div>
+                )}
                 <div className="flex items-start">
                   <span className="text-gray-500 w-40 flex-shrink-0">Ukupan iznos:</span>
-                  <span className="font-medium text-gray-900">{(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span>
+                  <span className="font-medium text-gray-900">{(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })} {operation.currency || 'BAM'}</span>
                 </div>
                 <div className="flex items-start">
                   <span className="text-gray-500 w-40 flex-shrink-0">Avio Cisterna:</span>

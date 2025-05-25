@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import path from 'path';
 import fs from 'fs';
+import { resolveDocumentPath } from '../config/paths';
 
 export const downloadDocument = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { documentId } = req.params;
@@ -22,50 +23,14 @@ export const downloadDocument = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    // Construct the absolute path to the document
-    // Assuming 'document.document_path' is stored relative to a base 'uploads' directory 
-    // and that 'uploads' directory is at the root of the backend project.
-    // e.g., document_path = /uploads/fuel_documents/file.pdf
-    // project_root = /Users/emir_mw/data-avioservis/
-    // file_path = /Users/emir_mw/data-avioservis/backend/uploads/fuel_documents/file.pdf
-    // If document_path already includes /backend, adjust accordingly.
-    // For now, assuming document_path is like '/fuel_documents/file.pdf' and needs 'uploads' and project base to be prepended.
-
-    // Let's assume document_path is stored as something like: '/uploads/fuel_documents/document-xyz.pdf'
-    // And the 'uploads' directory is at the root of the backend project.
-    const basePath = path.join(__dirname, '..', '..'); // This should point to /Users/emir_mw/data-avioservis/backend
-    let filePath = path.join(basePath, document.document_path); // Correctly joins to form an absolute path
-
-    // Check if the file exists
+    // Koristi novu funkciju za rješavanje putanja dokumenata koja radi na svim okruženjima
+    const filePath = resolveDocumentPath(document.document_path);
+    
+    // Provjeri postoji li datoteka
     if (!fs.existsSync(filePath)) {
-        // Attempt an alternative path if the document_path might be relative to the project root directly
-        // e.g. document_path = '/uploads/fuel_documents/file.pdf'
-        // project_root = /Users/emir_mw/data-avioservis
-        // We'd need path.join(project_root, document.document_path)
-        // However, the original example showed: '/uploads/fuel_documents/document-1747850284911-135931953.pdf'
-        // Let's assume the structure is backend/uploads/...
-        // If the 'uploads' folder is in the main project root not 'backend/uploads' then this needs adjustment.
-        // For now, this path construction assumes 'uploads' is a top-level dir in 'backend'.
-        // If document.document_path is absolute, this logic needs to change.
-        // Given the example: document_path: '/uploads/fuel_documents/document-1747850284911-135931953.pdf'
-        // This looks like it's intended to be relative to some static serving root.
-        // If 'uploads' is at /Users/emir_mw/data-avioservis/uploads, then:
-        // const projectRootPath = path.join(__dirname, '..', '..', '..'); // up to data-avioservis
-        // filePath = path.join(projectRootPath, document.document_path);
-
-        // Based on typical Express setups, if you have `app.use('/uploads', express.static(path.join(__dirname, 'uploads')))`
-        // then `document_path` should be relative to that. The current path logic assumes `document_path` is from the project root.
-        // The example `document_path: '/uploads/fuel_documents/document-1747850284911-135931953.pdf'`
-        // This structure suggests that `uploads` is a directory at the root of the *overall project*, not inside `backend/src`.
-        // So, we need to go up three levels from `backend/src/controllers` to reach `data-avioservis`.
-        const projectRoot = path.resolve(__dirname, '..', '..', '..'); // Resolves to /Users/emir_mw/data-avioservis
-        filePath = path.join(projectRoot, document.document_path);
-
-        if (!fs.existsSync(filePath)) {
-            console.error(`File not found at primary path: ${path.join(basePath, document.document_path)} or alternative: ${filePath}`);
-            res.status(404).json({ message: 'Physical document file not found on server.' });
-            return;
-        }
+        console.error(`Physical document file not found on server at: ${filePath}`);
+        res.status(404).json({ message: 'Physical document file not found on server.' });
+        return;
     }
 
     // Set headers to prompt download
@@ -130,42 +95,37 @@ export const downloadFuelingOperationDocument = async (req: Request, res: Respon
       fuelingOperationId: document.fuelingOperationId
     });
 
-    // Construct the absolute path to the document
-    const basePath = path.join(__dirname, '..', '..'); // Points to backend directory
+    // Koristi novu funkciju za rješavanje putanja dokumenata koja radi na svim okruženjima
+    // Ako je storagePath null ili undefined, koristi samo ime datoteke za pretragu
+    const searchPath = document.storagePath || `fuelop-${document.id}.pdf`;
+    const filePath = resolveDocumentPath(searchPath);
     
-    // Try different path combinations to find the file
-    const possiblePaths = [
-      // Path 1: Direct storage path from database
-      path.join(basePath, document.storagePath),
+    // Provjeri postoji li datoteka
+    if (!fs.existsSync(filePath)) {
+      // Pokušaj pronaći datoteku po ID-u u direktoriju za dokumente operacija točenja goriva
+      console.error(`Physical document file not found on server at: ${filePath}`);
+      console.log('Trying to find file by pattern...');
       
-      // Path 2: Assuming storagePath is relative to public directory
-      path.join(basePath, 'public', document.storagePath),
+      // Pokušaj pronaći datoteku po obrascu imena
+      const filePattern = `fuelop-*-*${document.id}*`;
+      const cmd = `find ${path.join(process.cwd(), '..')} -name "${filePattern}" | head -n 1`;
+      console.log(`Executing command: ${cmd}`);
       
-      // Path 3: Assuming storagePath starts with '/uploads'
-      path.join(basePath, 'public', document.storagePath.replace(/^\/uploads/, '')),
-      
-      // Path 4: Try with project root
-      path.join(path.resolve(__dirname, '..', '..', '..'), document.storagePath),
-      
-      // Path 5: Assuming it's in the fueling_documents directory
-      path.join(basePath, 'public/uploads/fueling_documents', path.basename(document.storagePath))
-    ];
-    
-    // Log all paths we're trying
-    console.log('Trying paths:', possiblePaths);
-    
-    // Find the first path that exists
-    let filePath = null;
-    for (const tryPath of possiblePaths) {
-      if (fs.existsSync(tryPath)) {
-        filePath = tryPath;
-        console.log('Found file at:', filePath);
-        break;
+      try {
+        const { execSync } = require('child_process');
+        const foundFile = execSync(cmd).toString().trim();
+        
+        if (foundFile) {
+          console.log(`Found file by pattern: ${foundFile}`);
+          if (fs.existsSync(foundFile)) {
+            console.log('File exists, using this path');
+            return res.sendFile(foundFile);
+          }
+        }
+      } catch (err) {
+        console.error('Error finding file by pattern:', err);
       }
-    }
-    
-    if (!filePath) {
-      console.error('File not found at any of the tried paths');
+      
       res.status(404).json({ message: 'Physical document file not found on server.' });
       return;
     }

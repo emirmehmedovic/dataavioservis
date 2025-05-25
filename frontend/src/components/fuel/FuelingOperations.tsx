@@ -22,7 +22,8 @@ import {
   fetchOperations, 
   fetchTanks, 
   fetchAirlines, 
-  addFuelingOperation 
+  addFuelingOperation,
+  deleteFuelingOperation
 } from './services/fuelingOperationsService';
 import { formatDate, generatePDFInvoice } from './utils/helpers';
 import { generateConsolidatedPDFInvoice } from './utils/consolidatedInvoice';
@@ -63,6 +64,7 @@ export default function FuelingOperations() {
     specific_density: 0.8,
     quantity_kg: 0,
     price_per_kg: 0,
+    discount_percentage: 0, // Inicijalno nema rabata
     currency: 'BAM',
     total_amount: 0,
     tankId: '',
@@ -70,6 +72,7 @@ export default function FuelingOperations() {
     operator_name: '',
     notes: '',
     tip_saobracaja: 'Izvoz',
+    delivery_note_number: '', // Dodano polje za broj dostavnice
   });
   
   // Dodatno stanje za tekstualni prikaz polja
@@ -77,7 +80,10 @@ export default function FuelingOperations() {
     quantity_liters: '',
     quantity_kg: '',
     price_per_kg: '',
+    discount_percentage: '',
   });
+
+  // Reset form funkcija je definirana kasnije
 
   // Fetch operations with filters
   const loadOperations = useCallback(async () => {
@@ -155,6 +161,14 @@ export default function FuelingOperations() {
     loadAirlines();
   }, [loadOperations, loadTanks, loadAirlines]);
 
+  // Debug: Log operations data to check for delivery_note_number field
+  useEffect(() => {
+    if (operations.length > 0) {
+      console.log('Operations data:', operations);
+      console.log('First operation fields:', Object.keys(operations[0]));
+    }
+  }, [operations]);
+
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -188,12 +202,13 @@ export default function FuelingOperations() {
     const formKey = name as keyof typeof formData;
 
     // Handle numeric inputs that are now text inputs
-    if (['quantity_liters', 'quantity_kg', 'price_per_kg'].includes(formKey)) {
+    if (['quantity_liters', 'quantity_kg', 'price_per_kg', 'discount_percentage'].includes(formKey)) {
       // Provjera valjanosti unosa za sva tekstualna polja s brojevima
       const validationPatterns = {
         'quantity_liters': /^\d*(\.\d{0,2})?$/,
         'quantity_kg': /^\d*(\.\d{0,2})?$/,
-        'price_per_kg': /^\d*(\.\d{0,4})?$/
+        'price_per_kg': /^\d*(\.\d{0,5})?$/,
+        'discount_percentage': /^\d*(\.\d{0,2})?$/
       };
       
       // Ažuriraj tekstualno stanje za prikaz u poljima
@@ -235,14 +250,19 @@ export default function FuelingOperations() {
           }
         } else if (formKey === 'price_per_kg') {
           newFormData.price_per_kg = numValue;
+        } else if (formKey === 'discount_percentage') {
+          // Ograniči rabat na raspon 0-100%
+          newFormData.discount_percentage = Math.min(Math.max(numValue, 0), 100);
         }
       } else {
         // Ako nije validan format, zadrži prethodnu vrijednost
         return;
       }
       
-      // Izračunaj ukupan iznos plaćanja nakon promjene količine ili cijene
-      newFormData.total_amount = +(newFormData.quantity_kg * newFormData.price_per_kg).toFixed(2);
+      // Izračunaj ukupan iznos plaćanja nakon promjene količine, cijene ili rabata
+      const baseAmount = newFormData.quantity_kg * newFormData.price_per_kg;
+      const discountAmount = baseAmount * (newFormData.discount_percentage / 100);
+      newFormData.total_amount = +(baseAmount - discountAmount).toFixed(5); // 5 decimalnih mjesta za precizniji izračun
     } else {
       // Type-safe assignment for string fields
       if (formKey === 'dateTime') newFormData.dateTime = value;
@@ -254,6 +274,7 @@ export default function FuelingOperations() {
       else if (formKey === 'operator_name') newFormData.operator_name = value;
       else if (formKey === 'notes') newFormData.notes = value;
       else if (formKey === 'tip_saobracaja') newFormData.tip_saobracaja = value;
+      else if (formKey === 'delivery_note_number') newFormData.delivery_note_number = value;
       else if (formKey === 'currency') newFormData.currency = value;
     }
 
@@ -298,6 +319,7 @@ export default function FuelingOperations() {
       specific_density: 0.8,
       quantity_kg: 0,
       price_per_kg: 0,
+      discount_percentage: 0,
       currency: 'BAM',
       total_amount: 0,
       tankId: (tanks || []).length > 0 ? tanks[0].id.toString() : '',
@@ -305,9 +327,16 @@ export default function FuelingOperations() {
       operator_name: '',
       notes: '',
       tip_saobracaja: 'Izvoz',
+      delivery_note_number: '', // Dodano polje za broj dostavnice
     });
     setModalAvailableDestinations(initialDestinations);
     setSelectedFiles([]);
+    setTextInputs({
+      quantity_liters: '',
+      quantity_kg: '',
+      price_per_kg: '',
+      discount_percentage: ''
+    });
   };
 
   // Handle adding a new operation
@@ -364,6 +393,7 @@ export default function FuelingOperations() {
       submissionFormData.append('specific_density', formData.specific_density.toString());
       submissionFormData.append('quantity_kg', formData.quantity_kg.toString());
       submissionFormData.append('price_per_kg', formData.price_per_kg.toString());
+      submissionFormData.append('discount_percentage', formData.discount_percentage.toString());
       submissionFormData.append('currency', formData.currency);
       submissionFormData.append('total_amount', formData.total_amount.toString());
       submissionFormData.append('tankId', tankIdNum.toString());
@@ -371,6 +401,7 @@ export default function FuelingOperations() {
       submissionFormData.append('operator_name', formData.operator_name);
       submissionFormData.append('notes', formData.notes || '');
       submissionFormData.append('tip_saobracaja', formData.tip_saobracaja || '');
+      submissionFormData.append('delivery_note_number', formData.delivery_note_number || '');
       
       // Add documents if any
       if ((selectedFiles || []).length > 0) {
@@ -396,6 +427,26 @@ export default function FuelingOperations() {
   const handleRowClick = (operation: FuelingOperation) => {
     setSelectedOperationForDetails(operation);
     setShowDetailsModal(true);
+  };
+  
+  // Handle delete operation
+  const handleDeleteOperation = async (operation: FuelingOperation, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click event
+    
+    // Confirm deletion
+    if (!confirm(`Jeste li sigurni da želite obrisati operaciju točenja za ${operation.airline.name} (${operation.aircraft_registration})? \n\nOva akcija će vratiti ${operation.quantity_liters.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} litara goriva u cisternu ${operation.tank?.name || 'N/A'}.`)) {
+      return;
+    }
+    
+    try {
+      await deleteFuelingOperation(operation.id);
+      toast.success('Operacija točenja uspješno obrisana');
+      // Refresh operations list
+      loadOperations();
+    } catch (error) {
+      console.error('Error deleting fueling operation:', error);
+      toast.error('Greška pri brisanju operacije točenja');
+    }
   };
 
   return (
@@ -489,7 +540,8 @@ export default function FuelingOperations() {
           <div>
             <OperationsTable 
               operations={operations} 
-              handleRowClick={handleRowClick} 
+              handleRowClick={handleRowClick}
+              handleDeleteOperation={handleDeleteOperation}
             />
             
             {/* Consolidated Invoice Button */}

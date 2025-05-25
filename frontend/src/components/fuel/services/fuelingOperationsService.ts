@@ -52,15 +52,29 @@ export const fetchOperations = async (
     // Check if the response is an array (direct operations) or has an operations property
     if (Array.isArray(responseData)) {
       console.log('Response is an array with', responseData.length, 'operations');
+      
+      // Ensure all operations have the delivery_note_number field
+      const processedOperations = responseData.map(op => ({
+        ...op,
+        delivery_note_number: op.delivery_note_number || null
+      }));
+      
       // Calculate total liters from operations
-      const total = responseData.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
-      return { operations: responseData, totalLiters: total };
+      const total = processedOperations.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
+      return { operations: processedOperations, totalLiters: total };
     } else if (responseData && typeof responseData === 'object' && 'operations' in responseData) {
       // Handle the case where the response matches FuelingOperationsApiResponse
       console.log('Response has operations property');
       const typedResponse = responseData as FuelingOperationsApiResponse;
+      
+      // Ensure all operations have the delivery_note_number field
+      const processedOperations = typedResponse.operations.map(op => ({
+        ...op,
+        delivery_note_number: op.delivery_note_number || null
+      }));
+      
       return { 
-        operations: typedResponse.operations, 
+        operations: processedOperations, 
         totalLiters: typedResponse.totalLiters 
       };
     } else {
@@ -102,12 +116,46 @@ export const fetchAirlines = async (): Promise<AirlineFE[]> => {
  */
 export const addFuelingOperation = async (formData: FormData): Promise<FuelingOperation> => {
   try {
+    // Log the form data being sent for debugging purposes
+    console.log('Form data being sent:');
+    for (const pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+    
     return await fetchWithAuth<FuelingOperation>('/api/fuel/fueling-operations', {
       method: 'POST',
       body: formData,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error adding fueling operation:', error);
+    
+    // Try to extract more detailed error information
+    if (error.responseBody && error.responseBody.errors) {
+      console.error('Validation errors:', error.responseBody.errors);
+      const errorMessages = error.responseBody.errors.map((err: any) => {
+        if (typeof err === 'object') {
+          return Object.values(err).join(', ');
+        }
+        return err;
+      }).join('; ');
+      
+      throw new Error(`Greška pri kreiranju operacije točenja: ${errorMessages}`);
+    }
+    
+    throw error;
+  }
+};
+
+/**
+ * Delete a fueling operation
+ */
+export const deleteFuelingOperation = async (id: number): Promise<void> => {
+  try {
+    await fetchWithAuth<{ message: string }>(`/api/fuel/fueling-operations/${id}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error(`Error deleting fueling operation with ID ${id}:`, error);
     throw error;
   }
 };

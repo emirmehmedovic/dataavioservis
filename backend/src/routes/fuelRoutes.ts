@@ -17,6 +17,14 @@ router.post('/tanks', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), 
 router.put('/tanks/:id', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), fuelTankController.updateFuelTank);
 router.delete('/tanks/:id', authenticateToken, checkRole(['ADMIN']), fuelTankController.deleteFuelTank);
 
+// Fuel Tank Image Upload route
+router.post('/tanks/:id/image', 
+  authenticateToken, 
+  checkRole(['ADMIN', 'FUEL_OPERATOR']), 
+  fuelTankController.uploadTankImage, 
+  fuelTankController.handleTankImageUpload
+);
+
 // Fuel Tank Refill routes
 router.get('/tanks/:id/refills', authenticateToken, fuelTankRefillController.getTankRefills);
 router.post('/tanks/:id/refills', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), fuelTankRefillController.createTankRefill);

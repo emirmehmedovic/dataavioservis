@@ -1,13 +1,15 @@
 import React from 'react';
 import { FuelingOperation } from '../types';
 import { formatDate } from '../utils/helpers';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 interface OperationsTableProps {
   operations: FuelingOperation[];
   handleRowClick: (operation: FuelingOperation) => void;
+  handleDeleteOperation?: (operation: FuelingOperation, e: React.MouseEvent) => void;
 }
 
-const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRowClick }) => {
+const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRowClick, handleDeleteOperation }) => {
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
       <table className="min-w-full divide-y divide-gray-300">
@@ -22,10 +24,13 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
             <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Gustoća</th>
             <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Količina (kg)</th>
             <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Cijena/kg</th>
+            <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Rabat (%)</th>
             <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Valuta</th>
             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Avio cisterna</th>
+            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Broj dostavnice</th>
             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Tip saobraćaja</th>
             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Operater</th>
+            <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Akcije</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
@@ -74,7 +79,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
                 {(operation.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} kg
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900 text-right">
-                {(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                {(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })}
+              </td>
+              <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900 text-right">
+                {operation.discount_percentage ? (
+                  <span className="text-indigo-600">{operation.discount_percentage}%</span>
+                ) : (
+                  <span className="text-gray-400">0%</span>
+                )}
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900 text-center">
                 {operation.currency || 'BAM'}
@@ -91,6 +103,19 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
                 </div>
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                {operation.delivery_note_number ? (
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 text-gray-400 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M13 3V9H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    {operation.delivery_note_number}
+                  </div>
+                ) : (
+                  <span className="text-gray-400 italic">N/A</span>
+                )}
+              </td>
+              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                 {operation.tip_saobracaja ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {operation.tip_saobracaja}
@@ -100,6 +125,20 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
                 )}
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{operation.operator_name}</td>
+              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 text-center">
+                {handleDeleteOperation && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent row click
+                      handleDeleteOperation(operation, e);
+                    }}
+                    className="p-1.5 bg-red-50 text-red-700 rounded-full hover:bg-red-100 transition-colors inline-flex items-center justify-center"
+                    title="Obriši operaciju točenja"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

@@ -60,6 +60,7 @@ export const createFuelingOperationRules = [
     .withMessage('Operator name must be a string.'),
   body('notes').optional().trim().isString().withMessage('Notes must be a string if provided.'),
   body('tip_saobracaja').optional().trim().isString().withMessage('Tip saobraćaja must be a string if provided.'),
+  body('delivery_note_number').optional().trim().isString().withMessage('Broj dostavnice must be a string if provided.'),
 ];
 
 export const updateFuelingOperationRules = [
@@ -115,6 +116,13 @@ export const updateFuelingOperationRules = [
     .trim()
     .isString()
     .withMessage('Notes must be a string if provided.'),
+  body('delivery_note_number')
+    .optional({ values: 'null' })
+    .customSanitizer(value => (value === '' || value === null) ? null : value)
+    .if(value => value !== null)
+    .trim()
+    .isString()
+    .withMessage('Broj dostavnice must be a string if provided.'),
   // Ensure that tankId and quantity_liters are not part of the update request
   body('tankId').not().exists().withMessage('tankId cannot be updated.'),
   body('quantity_liters').not().exists().withMessage('quantity_liters cannot be updated.'),

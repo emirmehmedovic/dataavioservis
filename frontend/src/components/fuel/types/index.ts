@@ -59,6 +59,7 @@ export interface FuelingOperation {
   specific_density?: number;
   quantity_kg?: number;
   price_per_kg?: number;
+  discount_percentage?: number; // Rabat u postotku
   currency?: string;
   total_amount?: number;
   tankId: number;
@@ -79,6 +80,7 @@ export interface FuelingOperation {
   createdAt: string;
   updatedAt: string;
   tip_saobracaja?: string | null;
+  delivery_note_number?: string | null;
   documents?: FuelingOperationDocument[];
   aircraftId?: number | null;
   aircraft?: VehicleFE | null;
@@ -98,6 +100,7 @@ export interface FuelingOperationFormData {
   specific_density: number;
   quantity_kg: number;
   price_per_kg: number;
+  discount_percentage: number; // Rabat u postotku
   currency: string;
   total_amount: number;
   tankId: string;
@@ -105,4 +108,5 @@ export interface FuelingOperationFormData {
   operator_name: string;
   notes: string;
   tip_saobracaja: string;
+  delivery_note_number: string; // Broj dostavnice
 }

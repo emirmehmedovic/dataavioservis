@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as z from 'zod';
 import * as path from 'path';
+import { logActivity } from './activity.controller';
+import { AuthRequest } from '../middleware/auth';
 
 const prisma = new PrismaClient();
 
@@ -15,6 +17,7 @@ const fuelingOperationSchema = z.object({
   specific_density: z.number().positive('Specifična gustoća mora biti pozitivan broj').default(0.8),
   quantity_kg: z.number().positive('Količina u kilogramima mora biti pozitivan broj').optional(),
   price_per_kg: z.number().positive('Cijena po kilogramu mora biti pozitivan broj').optional(),
+  discount_percentage: z.number().min(0, 'Rabat ne može biti negativan').max(100, 'Rabat ne može biti veći od 100%').optional(),
   currency: z.enum(['BAM', 'EUR', 'USD']).optional(),
   total_amount: z.number().positive('Ukupan iznos mora biti pozitivan broj').optional(),
   tankId: z.number().int().positive('ID tankera mora biti pozitivan broj'),
@@ -22,6 +25,7 @@ const fuelingOperationSchema = z.object({
   operator_name: z.string().min(1, 'Ime operatera je obavezno'),
   notes: z.string().optional(),
   tip_saobracaja: z.string().optional(),
+  delivery_note_number: z.string().optional(),
 });
 
 export const getAllFuelingOperations = async (req: Request, res: Response): Promise<void> => {
@@ -98,6 +102,8 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
   try {
     console.log('Request body:', req.body);
     console.log('Request files:', req.files);
+    console.log('Request headers:', req.headers);
+    console.log('Request method:', req.method);
     
     // Parse numeric fields from strings to numbers
     const parsedBody = {
@@ -108,18 +114,23 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
       specific_density: req.body.specific_density ? parseFloat(req.body.specific_density) : undefined,
       quantity_kg: req.body.quantity_kg ? parseFloat(req.body.quantity_kg) : undefined,
       price_per_kg: req.body.price_per_kg ? parseFloat(req.body.price_per_kg) : undefined,
+      discount_percentage: req.body.discount_percentage ? parseFloat(req.body.discount_percentage) : 0,
       total_amount: req.body.total_amount ? parseFloat(req.body.total_amount) : undefined
     };
     
     const validationResult = fuelingOperationSchema.safeParse(parsedBody);
     
     if (!validationResult.success) {
+      console.error('Validation error:', JSON.stringify(validationResult.error, null, 2));
+      console.error('Parsed body:', JSON.stringify(parsedBody, null, 2));
       res.status(400).json({
         message: 'Validacijska greška',
         errors: validationResult.error.errors,
       });
       return;
     }
+    
+    console.log('Validation successful, parsed data:', validationResult.data);
     
     const { 
       dateTime, 
@@ -130,13 +141,15 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
       specific_density = 0.8, // Default value if not provided
       quantity_kg: providedQuantityKg, 
       price_per_kg, 
+      discount_percentage = 0, // Default value if not provided
       currency, 
       total_amount: providedTotalAmount, 
       tankId, 
       flight_number, 
       operator_name, 
       notes, 
-      tip_saobracaja
+      tip_saobracaja,
+      delivery_note_number
     } = validationResult.data;
     
     // Calculate quantity_kg if not provided
@@ -163,6 +176,7 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
     
     console.log('Price and total calculations:', {
       price_per_kg,
+      discount_percentage,
       providedTotalAmount,
       total_amount
     });
@@ -210,6 +224,7 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
           specific_density,
           quantity_kg,
           price_per_kg,
+          discount_percentage,
           currency,
           total_amount,
           tank: { connect: { id: tankId } },
@@ -217,6 +232,7 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
           operator_name,
           notes,
           tip_saobracaja,
+          delivery_note_number,
         },
         include: {
           airline: true,
@@ -319,7 +335,7 @@ export const updateFuelingOperation = async (req: Request, res: Response): Promi
 };
 
 // DELETE /api/fuel/fueling-operations/:id - Brisanje zapisa o točenju
-export const deleteFuelingOperation = async (req: Request, res: Response): Promise<void> => {
+export const deleteFuelingOperation = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   
   try {
@@ -328,6 +344,8 @@ export const deleteFuelingOperation = async (req: Request, res: Response): Promi
       where: { id: Number(id) },
       include: {
         documents: true,
+        airline: true,
+        tank: true,
       },
     });
     
@@ -378,6 +396,52 @@ export const deleteFuelingOperation = async (req: Request, res: Response): Promi
         console.warn(`Source FuelTank with ID ${operationToDelete.tankId} not found when trying to revert quantity for deleted FuelingOperation ID ${id}.`);
       }
     });
+    
+    // Log the activity
+    console.log('Attempting to log activity, req.user:', req.user);
+    
+    if (req.user) {
+      try {
+        const metadata = {
+          operationId: operationToDelete.id,
+          dateTime: operationToDelete.dateTime,
+          aircraft_registration: operationToDelete.aircraft_registration,
+          airline: operationToDelete.airline?.name,
+          destination: operationToDelete.destination,
+          quantity_liters: operationToDelete.quantity_liters,
+          tank: operationToDelete.tank?.name || `ID: ${operationToDelete.tankId}`,
+          returnedFuel: true
+        };
+
+        const description = `Korisnik ${req.user.username} je obrisao operaciju točenja ${operationToDelete.quantity_liters.toFixed(2)} litara goriva za ${operationToDelete.airline?.name || 'nepoznatu kompaniju'} (${operationToDelete.aircraft_registration || 'nepoznata registracija'}) i vratio gorivo u cisternu ${operationToDelete.tank?.name || `ID: ${operationToDelete.tankId}`}.`;
+
+        console.log('Activity logging details:', {
+          userId: req.user.id,
+          username: req.user.username,
+          actionType: 'DELETE_FUELING_OPERATION',
+          resourceType: 'FuelingOperation',
+          resourceId: operationToDelete.id,
+          description: description,
+        });
+
+        await logActivity(
+          req.user.id,
+          req.user.username,
+          'DELETE_FUELING_OPERATION',
+          'FuelingOperation',
+          operationToDelete.id,
+          description,
+          metadata,
+          req
+        );
+        
+        console.log('Activity logged successfully');
+      } catch (activityError) {
+        console.error('Error logging activity:', activityError);
+      }
+    } else {
+      console.error('Cannot log activity: req.user is undefined');
+    }
     
     res.status(200).json({ message: 'Operacija točenja uspješno izbrisana' });
   } catch (error) {

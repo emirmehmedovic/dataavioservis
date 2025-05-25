@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { resolveDocumentPath } from '../config/paths';
 
 const prisma = new PrismaClient();
 
@@ -141,8 +142,8 @@ export const deleteFuelIntakeDocument: RequestHandler = async (req, res, next) =
       return;
     }
 
-    // Delete file from filesystem
-    const filePath = path.join(__dirname, '../../../public', document.document_path);
+    // Delete file from filesystem using our path resolver
+    const filePath = resolveDocumentPath(document.document_path);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -180,11 +181,10 @@ export const downloadFuelIntakeDocument: RequestHandler = async (req, res, next)
       return;
     }
 
-    // document_path is stored like /uploads/fuel_documents/filename.pdf
-    // Files are in project_root/public/uploads/fuel_documents/filename.pdf
-    // __dirname is backend/src/controllers
-    const filePath = path.join(__dirname, '../../../public', document.document_path);
-
+    // Koristi novu funkciju za rješavanje putanja dokumenata koja radi na svim okruženjima
+    const filePath = resolveDocumentPath(document.document_path);
+    
+    // Provjeri postoji li datoteka
     if (!fs.existsSync(filePath)) {
       console.error(`Physical document file not found on server at: ${filePath}`);
       res.status(404).json({ message: 'Physical document file not found on server.' });
