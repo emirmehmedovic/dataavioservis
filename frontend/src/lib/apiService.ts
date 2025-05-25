@@ -583,3 +583,61 @@ export const createServiceRecordWithDocument = async (
     body: formData,
   });
 };
+
+// Function to download fuel operation documents with proper authentication
+export const downloadFuelOperationDocument = async (documentId: number): Promise<void> => {
+  try {
+    // Get token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || localStorage.getItem('token') : null;
+    
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    
+    // Create URL with API endpoint
+    const url = `${API_BASE_URL}/uploads/fueling_documents/fuelop-${documentId}.pdf`;
+    
+    // Fetch the document with authentication headers
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to download document: ${response.statusText}`);
+    }
+    
+    // Get the blob from the response
+    const blob = await response.blob();
+    
+    // Get filename from Content-Disposition header or use a default name
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = 'document.pdf';
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*)\2|[^;\n]*/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]*/g, '');
+      }
+    }
+    
+    // Create a download link and trigger the download
+    const url_to_download = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url_to_download;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    window.URL.revokeObjectURL(url_to_download);
+    document.body.removeChild(a);
+    
+    return;
+  } catch (error) {
+    console.error('Error downloading document:', error);
+    throw error;
+  }
+};

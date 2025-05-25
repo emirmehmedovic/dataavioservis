@@ -31,6 +31,7 @@ import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 import { notoSansRegularBase64 } from '@/lib/fonts';
 import { notoSansBoldBase64 } from '@/lib/notoSansBoldBase64';
+import { downloadFuelOperationDocument } from '@/lib/apiService';
 
 // Import invoice generation utilities
 import { generatePDFInvoice } from '@/components/fuel/utils/helpers';
@@ -788,7 +789,7 @@ export default function FuelOperationsReport() {
                                 {op.documents.map((doc, index) => (
                                   <a 
                                     key={doc.id}
-                                    href={`${API_URL}/api/fuel/operations/documents/${doc.id}`} 
+                                    href={`${API_URL}/uploads/fueling_documents/${doc.storagePath.split('/').pop()}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline"

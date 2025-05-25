@@ -3,6 +3,8 @@ import { FuelingOperation } from '../types';
 import { formatDate, API_BASE_URL, generatePDFInvoice } from '../utils/helpers';
 import { generateXMLInvoice, downloadXML } from '../utils/xmlInvoice';
 import { generateDomesticPDFInvoice } from '../utils/domesticInvoice';
+import { downloadFuelOperationDocument } from '@/lib/apiService';
+import { toast } from 'react-hot-toast';
 
 interface OperationDetailsModalProps {
   operation: FuelingOperation;
@@ -193,7 +195,7 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                           </div>
                         </div>
                         <a 
-                          href={`${API_BASE_URL}/api/fuel/operations/documents/${doc.id}`} 
+                          href={`${API_BASE_URL}/uploads/fueling_documents/${doc.storagePath.split('/').pop()}`} 
                           download={doc.originalFilename}
                           target="_blank" 
                           rel="noopener noreferrer"
