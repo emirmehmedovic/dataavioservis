@@ -193,7 +193,7 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                           </div>
                         </div>
                         <a 
-                          href={`${API_BASE_URL}/uploads/fueling_documents/${doc.storagePath.split('/').pop()}`} 
+                          href={`${API_BASE_URL}/api/fuel/operations/documents/${doc.id}`} 
                           download={doc.originalFilename}
                           target="_blank" 
                           rel="noopener noreferrer"

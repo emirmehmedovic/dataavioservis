@@ -788,7 +788,7 @@ export default function FuelOperationsReport() {
                                 {op.documents.map((doc, index) => (
                                   <a 
                                     key={doc.id}
-                                    href={`${API_URL}/uploads/fueling_documents/${doc.storagePath.split('/').pop()}`} 
+                                    href={`${API_URL}/api/fuel/operations/documents/${doc.id}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline"

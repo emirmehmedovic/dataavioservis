@@ -131,7 +131,7 @@ export default function FixedTanksReport() {
       )
     );
     // Optionally, re-fetch or re-filter history if it's already loaded
-    // For simplicity, we'll rely on the user clicking "Prikaži/Osvježi Povijest" or applying date filters again
+    // For simplicity, we'll rely on the user clicking "Prikaži/Osvježi Historiju" or applying date filters again
     // or we can automatically trigger a refresh if history is shown
     const currentTank = tanks.find(t => t.id === tankId);
     if (currentTank?.showHistory) {
@@ -173,8 +173,8 @@ export default function FixedTanksReport() {
         
         setTanks(prev => prev.map(t => t.id === tankId ? { ...t, history: historyData, showHistory: true, historyLoading: false } : t));
       } catch (err: any) {
-        console.error(`Greška pri dohvatu povijesti za tank ${tankId}:`, err);
-        setTanks(prev => prev.map(t => t.id === tankId ? { ...t, showHistory: true, historyLoading: false, errorHistory: err.message || 'Greška pri dohvatu povijesti.' } : t));
+        console.error(`Greška pri dohvatu historije za tank ${tankId}:`, err);
+        setTanks(prev => prev.map(t => t.id === tankId ? { ...t, showHistory: true, historyLoading: false, errorHistory: err.message || 'Greška pri dohvatu historije.' } : t));
       }
     } else {
       console.log(`FixedTanksReport - Hiding history for tank ID ${tankId}`);
@@ -412,7 +412,7 @@ export default function FixedTanksReport() {
         <div className="flex items-center justify-between relative z-10">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Izvještaj o Fiksnim Rezervoarima Goriva</h2>
-            <p className="mt-1 text-indigo-100 text-sm">Pregled stanja i povijesti transakcija fiksnih rezervoara</p>
+            <p className="mt-1 text-indigo-100 text-sm">Pregled stanja i historije transakcija fiksnih rezervoara</p>
           </div>
           <div className="bg-white/10 p-3 rounded-full">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -506,7 +506,7 @@ export default function FixedTanksReport() {
                         }
                         {tank.historyLoading 
                           ? 'Učitavanje...' 
-                          : (tank.showHistory ? 'Sakrij Povijest' : 'Prikaži Povijest')
+                          : (tank.showHistory ? 'Sakrij Historiju' : 'Prikaži Historiju')
                         }
                       </Button>
                     </div>
@@ -545,7 +545,7 @@ export default function FixedTanksReport() {
                     {tank.historyLoading && (
                       <div className="p-8 flex justify-center items-center">
                         <Loader2 className="h-8 w-8 animate-spin text-indigo-600 dark:text-indigo-400" />
-                        <span className="ml-3 text-gray-600 dark:text-gray-400">Učitavanje povijesti...</span>
+                        <span className="ml-3 text-gray-600 dark:text-gray-400">Učitavanje historije...</span>
                       </div>
                     )}
                     
@@ -639,7 +639,7 @@ export default function FixedTanksReport() {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <p className="mt-4 text-gray-600 dark:text-gray-400">Nema povijesti transakcija za odabrani period.</p>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">Nema historije transakcija za odabrani period.</p>
                           </div>
                         ) : (
                           <div className="overflow-x-auto">
