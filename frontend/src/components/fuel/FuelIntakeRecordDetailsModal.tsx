@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/badge';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { toast } from 'react-hot-toast';
 // import { formatDate } from '@/lib/utils'; // Privremeno komentarisano
 
 // Privremena formatDate funkcija (idealno bi bilo koristiti onu iz @/lib/utils)
@@ -254,20 +253,23 @@ export default function FuelIntakeRecordDetailsModal({
                           <TableCell>{doc.document_type}</TableCell>
                           <TableCell className="text-right">{(doc.file_size_bytes / (1024*1024)).toFixed(2)} MB</TableCell>
                           <TableCell className="text-center">
-                            <a 
-                              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/fuel/documents/${doc.id}/download`}
-                              download={doc.document_name}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors rounded px-3 py-1.5 text-sm font-medium inline-flex items-center"
-                            >
-                              <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 10V17M12 17L9 14M12 17L15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M17 17V19C17 20.1046 16.1046 21 15 21H9C7.89543 21 7 20.1046 7 19V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M12 3V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Preuzmi
-                            </a>
+                            {onDownloadDocument ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => onDownloadDocument(doc)}
+                                className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors"
+                              >
+                                <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 10V17M12 17L9 14M12 17L15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M17 17V19C17 20.1046 16.1046 21 15 21H9C7.89543 21 7 20.1046 7 19V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M12 3V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                Preuzmi
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Preuzimanje nije aktivno</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
