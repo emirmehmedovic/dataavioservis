@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { downloadDocument } from '../controllers/document.controller';
+import { downloadDocument, downloadFuelingOperationDocument } from '../controllers/document.controller';
 import { authenticateToken } from '../middleware/auth'; // Corrected import path
 
 const router = Router();
 
-// Protect the download route with authentication
+// Protect the download routes with authentication
 router.get('/download/:documentId', authenticateToken, downloadDocument);
+router.get('/fueling-operations/:documentId', authenticateToken, downloadFuelingOperationDocument);
 
 export default router;

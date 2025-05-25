@@ -92,3 +92,102 @@ export const downloadDocument = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+// New function to download fueling operation documents
+export const downloadFuelingOperationDocument = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { documentId } = req.params;
+
+  if (!documentId || isNaN(parseInt(documentId))) {
+    res.status(400).json({ message: 'Invalid document ID provided.' });
+    return;
+  }
+
+  try {
+    const id = parseInt(documentId);
+    
+    // Find the fueling operation document by ID using the AttachedDocument model
+    const document = await prisma.attachedDocument.findUnique({
+      where: { id },
+      include: { fuelingOperation: true } // Include the related fueling operation
+    });
+
+    if (!document || !document.storagePath) {
+      res.status(404).json({ message: 'Document not found.' });
+      return;
+    }
+
+    // Verify this is a fueling operation document
+    if (!document.fuelingOperationId) {
+      res.status(400).json({ message: 'The requested document is not associated with a fueling operation.' });
+      return;
+    }
+
+    // Log the document details for debugging
+    console.log('Document details:', {
+      id: document.id,
+      storagePath: document.storagePath,
+      originalFilename: document.originalFilename,
+      fuelingOperationId: document.fuelingOperationId
+    });
+
+    // Construct the absolute path to the document
+    const basePath = path.join(__dirname, '..', '..'); // Points to backend directory
+    
+    // Try different path combinations to find the file
+    const possiblePaths = [
+      // Path 1: Direct storage path from database
+      path.join(basePath, document.storagePath),
+      
+      // Path 2: Assuming storagePath is relative to public directory
+      path.join(basePath, 'public', document.storagePath),
+      
+      // Path 3: Assuming storagePath starts with '/uploads'
+      path.join(basePath, 'public', document.storagePath.replace(/^\/uploads/, '')),
+      
+      // Path 4: Try with project root
+      path.join(path.resolve(__dirname, '..', '..', '..'), document.storagePath),
+      
+      // Path 5: Assuming it's in the fueling_documents directory
+      path.join(basePath, 'public/uploads/fueling_documents', path.basename(document.storagePath))
+    ];
+    
+    // Log all paths we're trying
+    console.log('Trying paths:', possiblePaths);
+    
+    // Find the first path that exists
+    let filePath = null;
+    for (const tryPath of possiblePaths) {
+      if (fs.existsSync(tryPath)) {
+        filePath = tryPath;
+        console.log('Found file at:', filePath);
+        break;
+      }
+    }
+    
+    if (!filePath) {
+      console.error('File not found at any of the tried paths');
+      res.status(404).json({ message: 'Physical document file not found on server.' });
+      return;
+    }
+
+    // Set headers for download
+    res.setHeader('Content-Disposition', `attachment; filename="${document.originalFilename || path.basename(filePath)}"`);
+    res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    fileStream.on('error', (err) => {
+      console.error('Error streaming file:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Error streaming file.' });
+      }
+      next(err);
+    });
+
+  } catch (error) {
+    console.error('Error in downloadFuelingOperationDocument:', error);
+    next(error);
+  }
+};

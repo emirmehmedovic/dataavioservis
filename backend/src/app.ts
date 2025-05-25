@@ -19,6 +19,7 @@ import fuelReceiptRoutes from './routes/fuelReceipt.routes';
 import fuelTransferToTankerRoutes from './routes/fuelTransferToTanker.routes'; // Nove rute
 import fuelDrainRoutes from './routes/fuelDrain.routes'; // Rute za istakanje goriva
 import airlineRoutes from './routes/airline.routes'; // Import airline routes
+import documentRoutes from './routes/document.routes'; // Import document routes
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -60,6 +61,7 @@ app.use('/api/fuel-receipts', fuelReceiptRoutes);
 app.use('/api/fuel-transfers-to-tanker', fuelTransferToTankerRoutes); // Registracija novih ruta
 app.use('/api/fuel/drains', fuelDrainRoutes); // Registracija ruta za istakanje goriva
 app.use('/api/airlines', airlineRoutes); // Mount airline routes
+app.use('/api/documents', documentRoutes); // Mount document routes for authenticated document access
 
 app.get('/', (req, res) => {
   res.send('Backend radi!');

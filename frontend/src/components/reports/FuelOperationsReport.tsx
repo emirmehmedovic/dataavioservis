@@ -31,7 +31,7 @@ import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 import { notoSansRegularBase64 } from '@/lib/fonts';
 import { notoSansBoldBase64 } from '@/lib/notoSansBoldBase64';
-import { downloadFuelOperationDocument } from '@/lib/apiService';
+import { downloadDocument } from '@/lib/apiService';
 
 // Import invoice generation utilities
 import { generatePDFInvoice } from '@/components/fuel/utils/helpers';
@@ -787,16 +787,23 @@ export default function FuelOperationsReport() {
                             {op.documents && op.documents.length > 0 ? (
                               <div className="flex flex-col space-y-1">
                                 {op.documents.map((doc, index) => (
-                                  <a 
+                                  <button 
                                     key={doc.id}
-                                    href={`${API_URL}/uploads/fueling_documents/${doc.storagePath ? doc.storagePath.split('/').pop() : `fuelop-${doc.id}.pdf`}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
+                                    onClick={() => {
+                                      toast.promise(
+                                        downloadDocument(`/api/documents/fueling-operations/${doc.id}`, doc.originalFilename),
+                                        {
+                                          loading: 'Preuzimanje dokumenta...',
+                                          success: 'Dokument preuzet uspješno',
+                                          error: 'Greška pri preuzimanju dokumenta'
+                                        }
+                                      );
+                                    }}
                                     className="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline"
                                     title={doc.originalFilename}
                                   >
                                     <EyeIcon className="h-4 w-4 mr-1" /> Dokument {index + 1}
-                                  </a>
+                                  </button>
                                 ))}
                               </div>
                             ) : (

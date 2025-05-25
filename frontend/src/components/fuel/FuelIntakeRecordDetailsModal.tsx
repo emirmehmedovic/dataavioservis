@@ -255,7 +255,7 @@ export default function FuelIntakeRecordDetailsModal({
                           <TableCell className="text-right">{(doc.file_size_bytes / (1024*1024)).toFixed(2)} MB</TableCell>
                           <TableCell className="text-center">
                             <a 
-                              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/fixed_tank_documents/${doc.document_path.split('/').pop()}`}
+                              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/fuel/documents/${doc.id}/download`}
                               download={doc.document_name}
                               target="_blank" 
                               rel="noopener noreferrer"

@@ -3,7 +3,7 @@ import { FuelingOperation } from '../types';
 import { formatDate, API_BASE_URL, generatePDFInvoice } from '../utils/helpers';
 import { generateXMLInvoice, downloadXML } from '../utils/xmlInvoice';
 import { generateDomesticPDFInvoice } from '../utils/domesticInvoice';
-import { downloadFuelOperationDocument } from '@/lib/apiService';
+import { downloadDocument } from '@/lib/apiService';
 import { toast } from 'react-hot-toast';
 
 interface OperationDetailsModalProps {
@@ -194,11 +194,17 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                             </p>
                           </div>
                         </div>
-                        <a 
-                          href={`${API_BASE_URL}/uploads/fueling_documents/${doc.storagePath ? doc.storagePath.split('/').pop() : `fuelop-${doc.id}.pdf`}`} 
-                          download={doc.originalFilename}
-                          target="_blank" 
-                          rel="noopener noreferrer"
+                        <button 
+                          onClick={() => {
+                            toast.promise(
+                              downloadDocument(`/api/documents/fueling-operations/${doc.id}`, doc.originalFilename),
+                              {
+                                loading: 'Preuzimanje dokumenta...',
+                                success: 'Dokument preuzet uspješno',
+                                error: 'Greška pri preuzimanju dokumenta'
+                              }
+                            );
+                          }}
                           className="p-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors rounded-md flex items-center justify-center shadow-sm self-center sm:self-end" 
                           title="Preuzmi dokument"
                         >
@@ -207,7 +213,7 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                             <path d="M17 17V19C17 20.1046 16.1046 21 15 21H9C7.89543 21 7 20.1046 7 19V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M12 3V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
-                        </a>
+                        </button>
                       </div>
                     </div>
                   ))}
