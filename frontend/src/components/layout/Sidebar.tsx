@@ -102,7 +102,7 @@ export default function Sidebar() {
           'fixed top-0 left-0 z-40 h-screen hope-gradient text-white shadow-xl flex flex-col',
           'md:relative md:z-0 backdrop-blur-lg bg-black/20 border-r border-white/10',
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          'group md:hover:w-[18rem] transition-all duration-300'
+          'group'
         )}
         variants={sidebarVariants}
         initial={false}

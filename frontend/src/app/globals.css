@@ -228,6 +228,13 @@ html, body {
   overflow: auto;
 }
 
+/* Fix for FuelingOperations tab overflow issue */
+.fuel-operations-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

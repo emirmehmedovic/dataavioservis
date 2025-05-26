@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dayjs from 'dayjs';
 import {
   FuelIntakeRecord,
   FuelIntakeFilters,
@@ -39,10 +40,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleString('bs-BA', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit'
-  });
+  return dayjs(dateString).format('DD.MM.YYYY');
 };
 
 export default function FuelIntakeDisplay() {
@@ -53,8 +51,8 @@ export default function FuelIntakeDisplay() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Partial<FuelIntakeFilters>>({
     fuel_type: 'all',
-    startDate: '',
-    endDate: '',
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
   });
 
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);

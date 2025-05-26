@@ -94,3 +94,33 @@ export interface FuelIntakeFilters {
   endDate?: string;   // ISO date string or YYYY-MM-DD
   // Add other potential filters like customs_declaration_number if needed
 }
+
+// --- Airline and Fuel Price Rules --- //
+
+export interface Airline {
+  id: number;
+  name: string;
+  // Add other airline-specific fields if they exist or become necessary
+  // e.g., iata_code, icao_code
+}
+
+export interface FuelPriceRule {
+  id: number;
+  airlineId: number;
+  price: number; // Assuming price is a number
+  currency: string; // e.g., "USD", "EUR", "BAM"
+  createdAt: string; // ISO date-time string
+  updatedAt: string; // ISO date-time string
+  airline?: Airline; // Optional: if the backend joins airline data
+}
+
+export interface CreateFuelPriceRulePayload {
+  airlineId: number;
+  price: number;
+  currency: string;
+}
+
+export interface UpdateFuelPriceRulePayload {
+  price?: number; // Price is optional for update
+  currency?: string; // Currency is optional for update
+}

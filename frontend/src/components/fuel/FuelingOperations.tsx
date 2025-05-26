@@ -10,6 +10,7 @@ import {
   AirlineFE, 
   FuelingOperationFormData 
 } from './types';
+import { FuelPriceRule } from '@/types/fuel'; // Corrected import path for FuelPriceRule
 
 // Import components
 import FilterSection from './components/FilterSection';
@@ -25,6 +26,7 @@ import {
   addFuelingOperation,
   deleteFuelingOperation
 } from './services/fuelingOperationsService';
+import { getFuelPriceRules } from '@/lib/apiService'; // Added import for fetching rules
 import { formatDate, generatePDFInvoice } from './utils/helpers';
 import { generateConsolidatedPDFInvoice } from './utils/consolidatedInvoice';
 import { generateConsolidatedXMLInvoice, downloadXML } from './utils/xmlInvoice';
@@ -37,6 +39,7 @@ export default function FuelingOperations() {
   const [airlines, setAirlines] = useState<AirlineFE[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalLiters, setTotalLiters] = useState<number>(0);
+  const [fuelPriceRules, setFuelPriceRules] = useState<FuelPriceRule[]>([]); // Added state for fuel price rules
   
   // State for UI controls
   const [showAddModal, setShowAddModal] = useState(false);
@@ -44,8 +47,8 @@ export default function FuelingOperations() {
   const [selectedOperationForDetails, setSelectedOperationForDetails] = useState<FuelingOperation | null>(null);
   
   // State for filters
-  const [startDate, setStartDate] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string | null>(dayjs().startOf('month').format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState<string | null>(dayjs().endOf('month').format('YYYY-MM-DD'));
   const [selectedAirline, setSelectedAirline] = useState<string>('');
   const [selectedDestination, setSelectedDestination] = useState<string>('');
   const [selectedTank, setSelectedTank] = useState<string>('');
@@ -161,6 +164,21 @@ export default function FuelingOperations() {
     loadAirlines();
   }, [loadOperations, loadTanks, loadAirlines]);
 
+  // Fetch fuel price rules on component mount
+  useEffect(() => {
+    const loadFuelPriceRules = async () => {
+      try {
+        const rules = await getFuelPriceRules();
+        setFuelPriceRules(rules || []);
+      } catch (error) {
+        console.error("Failed to fetch fuel price rules:", error);
+        toast.error("Greška pri učitavanju pravila o cijenama goriva.");
+        setFuelPriceRules([]); // Set to empty array on error
+      }
+    };
+    loadFuelPriceRules();
+  }, []); // Empty dependency array ensures this runs once on mount
+
   // Debug: Log operations data to check for delivery_note_number field
   useEffect(() => {
     if (operations.length > 0) {
@@ -170,7 +188,7 @@ export default function FuelingOperations() {
   }, [operations]);
 
   // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
     // Start with current form data
@@ -294,7 +312,7 @@ export default function FuelingOperations() {
     }
     
     setFormData(newFormData);
-  };
+  }, [formData, setFormData, setSelectedFiles, setTextInputs]);
 
   // Reset form to default values
   const resetForm = () => {
@@ -755,6 +773,7 @@ export default function FuelingOperations() {
                 modalAvailableDestinations={modalAvailableDestinations}
                 airlines={airlines}
                 tanks={tanks}
+                fuelPriceRules={fuelPriceRules} // Pass fuelPriceRules to the form
                 onCancel={() => { setShowAddModal(false); resetForm(); }}
               />
             </div>

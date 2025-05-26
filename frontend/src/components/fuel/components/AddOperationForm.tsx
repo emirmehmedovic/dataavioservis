@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { FuelPriceRule } from '@/types/fuel'; // Assuming global type
 import { AirlineFE, FuelTankFE, FuelingOperationFormData } from '../types';
 
 interface AddOperationFormProps {
+  fuelPriceRules: FuelPriceRule[];
   formData: FuelingOperationFormData;
   textInputs?: {
     quantity_liters: string;
@@ -34,8 +36,50 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
   modalAvailableDestinations,
   airlines,
   tanks,
-  onCancel
+  onCancel,
+  fuelPriceRules // Destructure new prop
 }) => {
+  const [suggestedPrice, setSuggestedPrice] = useState<string | null>(null);
+  const [isPriceManuallySet, setIsPriceManuallySet] = useState<boolean>(false);
+  const [priceRuleMessage, setPriceRuleMessage] = useState<string | null>(null);
+
+  // useEffect for price suggestion
+  useEffect(() => {
+    if (formData.airlineId && formData.currency && !isPriceManuallySet && fuelPriceRules && fuelPriceRules.length > 0) {
+      const rule = fuelPriceRules.find(
+        (r: FuelPriceRule) => r.airlineId === parseInt(formData.airlineId) && r.currency.toUpperCase() === formData.currency.toUpperCase()
+      );
+      if (rule) {
+        const priceFromRule = rule.price.toString(); // Assuming price is Decimal or number
+        setSuggestedPrice(priceFromRule);
+        handleInputChange({
+          target: {
+            name: 'price_per_kg',
+            value: priceFromRule,
+          },
+        } as React.ChangeEvent<HTMLInputElement>); 
+        setPriceRuleMessage(`Automatska cijena: ${priceFromRule} ${formData.currency} (prema pravilu).`);
+      } else {
+        setSuggestedPrice(null);
+        setPriceRuleMessage('Nema pravila za odabranu avio-kompaniju i valutu. Unesite cijenu ručno.');
+      }
+    } else if (formData.airlineId && formData.currency && !isPriceManuallySet && (!fuelPriceRules || fuelPriceRules.length === 0)) {
+      // This case handles when airline and currency are selected, but rules are missing or empty
+      setSuggestedPrice(null);
+      setPriceRuleMessage('Pravila o cijenama nisu dostupna ili su prazna. Unesite cijenu ručno.');
+    } else if (!formData.airlineId || !formData.currency) {
+      setSuggestedPrice(null);
+      setPriceRuleMessage('Odaberite avio-kompaniju i valutu za prijedlog cijene.');
+    }
+  }, [formData.airlineId, formData.currency, fuelPriceRules || [], isPriceManuallySet]); // Removed handleInputChange to break potential loop
+
+  // Reset manual flag if airline or currency changes
+  useEffect(() => {
+    setIsPriceManuallySet(false);
+    // When airline/currency changes, if a price was manually set, it might be good to clear the message
+    // or re-evaluate. The main useEffect will handle re-evaluation.
+  }, [formData.airlineId, formData.currency]);
+
   return (
     <form onSubmit={handleAddOperation} className="bg-white rounded-xl shadow-md overflow-hidden">
       <div className="p-6 border-b border-gray-100">
@@ -178,7 +222,6 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
               </div>
             </div>
           </div>
-
           {/* Fuel Information Section */}
           <div className="bg-gray-50 p-5 rounded-lg border border-gray-100">
             <h3 className="text-md font-medium text-gray-700 mb-4 flex items-center">
@@ -277,6 +320,77 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
               </div>
             </div>
           </div>
+          {/* Currency and Price Section - Highlighted */}
+          <div className="bg-yellow-100 p-4 rounded-md my-4">
+           
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Currency */}
+              <div>
+                <label htmlFor="currency" className="block text-sm font-medium text-gray-700">Valuta</label>
+                <select
+                  id="currency"
+                  name="currency"
+                  value={formData.currency} // Assumes formData.currency exists
+                  onChange={(e) => {
+                    handleInputChange(e);
+                    setIsPriceManuallySet(false); // Reset manual flag on currency change
+                  }}
+                  className="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  required
+                >
+                  <option value="">Odaberite valutu</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="BAM">BAM</option>
+                  {/* Add other currencies as needed */}
+                </select>
+              </div>
+              {/* Price Rule Message Display */}
+              {priceRuleMessage && (
+                <div className="mt-3 text-sm col-span-1 md:col-span-2"> 
+                  {!suggestedPrice && priceRuleMessage.includes("Nema pravila") ? (
+                    <p className="text-orange-600 p-2 bg-orange-50 rounded-md flex items-center">
+                      <svg className="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.216 3.031-1.742 3.031H4.42c-1.526 0-2.492-1.697-1.742-3.031l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1.75-5.75a.75.75 0 00-1.5 0v3a.75.75 0 001.5 0v-3z" clipRule="evenodd"></path></svg>
+                      {priceRuleMessage}
+                    </p>
+                  ) : priceRuleMessage.includes("Pravila o cijenama nisu dostupna") ? (
+                    <p className="text-gray-600 p-2 bg-gray-100 rounded-md flex items-center">
+                      <svg className="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path></svg>
+                      {priceRuleMessage}
+                    </p>
+                  ) : suggestedPrice ? (
+                    <p className="text-green-600 p-2 bg-green-50 rounded-md flex items-center">
+                        <svg className="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
+                      {priceRuleMessage}
+                    </p>
+                  ) : (
+                    <p className="text-blue-600 p-2 bg-blue-50 rounded-md flex items-center">
+                      <svg className="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path></svg>
+                      {priceRuleMessage} 
+                    </p>
+                  )}
+                </div>
+              )}
+              {isPriceManuallySet && suggestedPrice && suggestedPrice !== textInputs.price_per_kg && (
+                <div className="mt-2 col-span-1 md:col-span-2"> 
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleInputChange({ target: { name: 'price_per_kg', value: suggestedPrice } } as React.ChangeEvent<HTMLInputElement>);
+                        setIsPriceManuallySet(false);
+                        setPriceRuleMessage(`Automatska cijena: ${suggestedPrice} ${formData.currency} (vraćeno na pravilo).`);
+                      }}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium p-2 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors w-full text-left flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      Koristi automatsku cijenu ({suggestedPrice} {formData.currency})
+                    </button>
+              </div>
+              )}
+            </div>
+          </div>
+
+
 
           {/* Payment Information Section */}
           <div className="bg-gray-50 p-5 rounded-lg border border-gray-100">
@@ -307,6 +421,7 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                     <span className="text-gray-500 sm:text-sm">{formData.currency}</span>
                   </div>
                 </div>
+
               </div>
 
               <div>

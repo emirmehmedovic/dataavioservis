@@ -291,9 +291,22 @@ export const generateConsolidatedPDFInvoice = (operations: FuelingOperation[], f
     doc.setTextColor(0, 0, 0);
     doc.text('Payment Method: Bank Transfer', 14, paymentInfoY);
     doc.text('Payment Due: 15 days from invoice issue date', 14, paymentInfoY + 7);
+
+    // VAT Note - New Position
+    let yPosForVatNote = paymentInfoY + 7 + 9; // After "Payment Due" text (approx 7pt height) + 9pt spacing
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100); // Grey color for the note
+    const vatNoteText = "VAT is not included in accordance with Article 27, act 1, paragraph 1 of the Law of Value Added Taxation and article 39, act 1 of the Value Added Tax application requirements.";
+    const vatNoteLines = doc.splitTextToSize(vatNoteText, pageWidth - 28); // pageWidth - leftMargin - rightMargin
+    doc.text(vatNoteLines, 14, yPosForVatNote);
     
-    // Dodaj bankovne podatke - pozicionirane nakon informacija o plaćanju
-    const bankInfoY = paymentInfoY + 15;
+    // Estimate height of VAT note text block
+    const heightOfVatNoteBlock = vatNoteLines.length * (doc.getFontSize() * 0.5 + 1); // Adjusted for tighter packing of small font
+    let yPosAfterVatNote = yPosForVatNote + heightOfVatNoteBlock;
+    doc.setTextColor(0, 0, 0); // Reset text color
+
+    // Dodaj bankovne podatke - pozicionirane nakon VAT note
+    const bankInfoY = yPosAfterVatNote + 10; // 10pt spacing before bank details box
     doc.setFontSize(9);
     doc.setFillColor(245, 245, 255);
     doc.rect(14, bankInfoY, pageWidth - 28, 25, 'F');
@@ -321,9 +334,8 @@ export const generateConsolidatedPDFInvoice = (operations: FuelingOperation[], f
     doc.text('Međunarodni aerodrom Sarajevo', pageWidth / 2, footerY + 10, { align: 'center' });
     doc.text('Phone: +387 33 289 100 | www.avioservis.ba | info@avioservis.ba', pageWidth / 2, footerY + 15, { align: 'center' });
     
-    // Dodaj napomenu o PDV-u
-    doc.setFontSize(7);
-    doc.text('Note: Prices are shown without VAT. VAT is calculated according to applicable regulations.', 14, footerY + 15);
+    // Stara napomena o PDV-u je uklonjena odavde i premještena gore.
+    doc.setFontSize(7); // Font size for generation date
     doc.text(`Invoice generated: ${new Date().toLocaleString('en-US')}`, pageWidth / 2, footerY + 20, { align: 'center' });
     
     // Sačuvaj PDF

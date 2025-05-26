@@ -21,7 +21,11 @@ import {
   FuelIntakeDocument,    // Added FuelIntakeDocument (proactively, might be needed soon)
   FixedTankTransfer,      // Added FixedTankTransfer (proactively)
   FuelType,              // Ensure FuelType is imported for the payload type
-  FixedTankStatus        // Added FixedTankStatus
+  FixedTankStatus,        // Added FixedTankStatus
+  Airline,                // Added Airline type
+  FuelPriceRule,          // Added FuelPriceRule type
+  CreateFuelPriceRulePayload, // Added CreateFuelPriceRulePayload type
+  UpdateFuelPriceRulePayload // Added UpdateFuelPriceRulePayload type
 } from '@/types/fuel';
 
 // Re-export the types needed by other components
@@ -84,6 +88,22 @@ interface FetchWithAuthOptions extends RequestInit {
   returnRawResponse?: boolean;
 }
 
+// Function to handle automatic logout when token expires
+const handleTokenExpiration = () => {
+  if (typeof window !== 'undefined') {
+    // Clear local storage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
+    localStorage.removeItem('token'); // Clear fallback token location too
+    
+    // Display a message to the user
+    alert('Vaša sesija je istekla. Molimo prijavite se ponovo.');
+    
+    // Redirect to login page
+    window.location.href = '/login';
+  }
+};
+
 export async function fetchWithAuth<T>(urlPath: string, options: FetchWithAuthOptions = {}): Promise<T> {
   // Check both possible token storage locations
   let token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -123,6 +143,13 @@ export async function fetchWithAuth<T>(urlPath: string, options: FetchWithAuthOp
   };
 
   const response = await fetch(fullUrl, { ...nativeFetchOptions, headers }); // Use fullUrl
+
+  // Check for token expiration (401 Unauthorized)
+  if (response.status === 401) {
+    console.warn('Token expired or invalid. Logging out user.');
+    handleTokenExpiration();
+    throw new Error('Vaša sesija je istekla. Molimo prijavite se ponovo.');
+  }
 
   if (!response.ok) {
     let errorData;
@@ -693,4 +720,28 @@ export interface FuelTank {
   last_refill_date?: string;
   last_maintenance_date?: string;
   image_url?: string; // URL to the tank image
+}
+
+// --- Airline API --- //
+export async function getAirlines(): Promise<Airline[]> {
+  return fetchWithAuth<Airline[]>(`${API_BASE_URL}/api/airlines`);
+}
+
+// --- Fuel Price Rules API --- //
+export async function getFuelPriceRules(): Promise<FuelPriceRule[]> {
+  return fetchWithAuth<FuelPriceRule[]>(`${API_BASE_URL}/api/fuel-price-rules`);
+}
+
+export async function createFuelPriceRule(payload: CreateFuelPriceRulePayload): Promise<FuelPriceRule> {
+  return fetchWithAuth<FuelPriceRule>(`${API_BASE_URL}/api/fuel-price-rules`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateFuelPriceRule(id: number, payload: UpdateFuelPriceRulePayload): Promise<FuelPriceRule> {
+  return fetchWithAuth<FuelPriceRule>(`${API_BASE_URL}/api/fuel-price-rules/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 }

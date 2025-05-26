@@ -39,10 +39,10 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   tanks,
 }) => {
   return (
-    <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+    <div className="w-full mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
       <div className="flex flex-wrap items-end gap-2">
         {/* Date Range Filters */}
-        <div className="flex-1 min-w-[140px]">
+        <div className="flex-1 min-w-[120px]">
           <label htmlFor="startDate" className="block text-xs font-medium text-white mb-1">Od datuma:</label>
           <input
             type="date"
@@ -54,7 +54,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
           />
         </div>
         
-        <div className="flex-1 min-w-[140px]">
+        <div className="flex-1 min-w-[120px]">
           <label htmlFor="endDate" className="block text-xs font-medium text-white mb-1">Do datuma:</label>
           <input
             type="date"
@@ -67,7 +67,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         </div>
 
         {/* Airline Filter */}
-        <div className="flex-1 min-w-[160px]">
+        <div className="flex-1 min-w-[130px]">
           <label htmlFor="selectedAirline" className="block text-xs font-medium text-white mb-1">Avio Kompanija:</label>
           <select
             id="selectedAirline"
@@ -84,7 +84,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         </div>
 
         {/* Destination Filter */}
-        <div className="flex-1 min-w-[140px]">
+        <div className="flex-1 min-w-[120px]">
           <label htmlFor="selectedDestination" className="block text-xs font-medium text-white mb-1">Destinacija:</label>
           <input
             type="text"
@@ -98,7 +98,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         </div>
 
         {/* Tank Filter */}
-        <div className="flex-1 min-w-[160px]">
+        <div className="flex-1 min-w-[130px]">
           <label htmlFor="selectedTank" className="block text-xs font-medium text-white mb-1">Avio cisterna:</label>
           <select
             id="selectedTank"
@@ -115,7 +115,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         </div>
 
         {/* Traffic Type Filter */}
-        <div className="flex-1 min-w-[140px]">
+        <div className="flex-1 min-w-[120px]">
           <label htmlFor="selectedTrafficType" className="block text-xs font-medium text-white mb-1">Tip saobraćaja:</label>
           <select
             id="selectedTrafficType"
@@ -131,7 +131,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         </div>
 
         {/* Currency Filter */}
-        <div className="flex-1 min-w-[100px]">
+        <div className="flex-1 min-w-[90px]">
           <label htmlFor="selectedCurrency" className="block text-xs font-medium text-white mb-1">Valuta:</label>
           <select
             id="selectedCurrency"

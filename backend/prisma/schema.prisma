@@ -169,6 +169,8 @@ model FixedStorageTanks {
   mobileTankRefills         MobileTankRefills[]    @relation("SourceFixedTankForMobileRefill")
 
   @@index([fuel_type])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model FuelIntakeRecords {
@@ -224,6 +226,8 @@ model FixedTankTransfers {
   @@index([affected_fixed_tank_id])
   @@index([counterparty_fixed_tank_id])
   @@index([internal_transfer_pair_id])
+  @@index([transfer_datetime])
+  @@index([activity_type])
 }
 
 model MobileTankRefills {
@@ -309,6 +313,7 @@ model Airline {
   operatingDestinations String[]
   taxId                 String?
   fuelingOperations     FuelingOperation[]
+  fuelPriceRules        FuelPriceRule[] // Dodano polje
 }
 
 model FuelReceipt {
@@ -408,6 +413,16 @@ model FuelingOperation {
   aircraft              Vehicle?           @relation(fields: [aircraftId], references: [id])
   airline               Airline            @relation(fields: [airlineId], references: [id])
   tank                  FuelTank           @relation(fields: [tankId], references: [id])
+
+  @@index([dateTime])
+  @@index([airlineId])
+  @@index([aircraft_registration])
+  @@index([tankId])
+  @@index([operator_name])
+  @@index([tip_saobracaja])
+  @@index([flight_number])
+  @@index([delivery_note_number])
+  @@index([createdAt])
 }
 
 model Activity {
@@ -428,6 +443,19 @@ model Activity {
   @@index([actionType])
   @@index([resourceType, resourceId])
   @@index([timestamp])
+}
+
+model FuelPriceRule {
+  id          Int      @id @default(autoincrement())
+  price       Decimal  @db.Decimal(12, 5) // Cijena s 5 decimala
+  currency    String   // Valuta, npr. "BAM", "EUR", "USD"
+  airlineId   Int      // Strani ključ za Airline model
+  airline     Airline  @relation(fields: [airlineId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([airlineId])
+  @@unique([airlineId, currency])
 }
 
 enum Role {
