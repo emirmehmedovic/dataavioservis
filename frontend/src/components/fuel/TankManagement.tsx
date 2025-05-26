@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import TankRefillForm from './TankRefillForm';
-import { fetchWithAuth, uploadTankImage } from '@/lib/apiService';
+import { fetchWithAuth, uploadTankImage, getTotalFuelSummary } from '@/lib/apiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import TankFormWithImageUpload from './TankFormWithImageUpload';
 import TankImageDisplay from './TankImageDisplay';
@@ -30,6 +30,14 @@ export default function TankManagement() {
   const [showRefillModal, setShowRefillModal] = useState(false);
   const [currentTank, setCurrentTank] = useState<FuelTank | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Fuel summary state
+  const [fuelSummary, setFuelSummary] = useState<{
+    fixedTanksTotal: number;
+    mobileTanksTotal: number;
+    grandTotal: number;
+  } | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -46,6 +54,7 @@ export default function TankManagement() {
 
   useEffect(() => {
     fetchTanks();
+    fetchFuelSummary();
   }, []);
 
   const fetchTanks = async () => {
@@ -58,6 +67,20 @@ export default function TankManagement() {
       toast.error('Greška pri učitavanju tankera');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Function to fetch fuel summary data
+  const fetchFuelSummary = async () => {
+    try {
+      setSummaryLoading(true);
+      const summaryData = await getTotalFuelSummary();
+      setFuelSummary(summaryData);
+    } catch (error) {
+      console.error('Error fetching fuel summary:', error);
+      toast.error('Greška pri učitavanju ukupnog stanja goriva');
+    } finally {
+      setSummaryLoading(false);
     }
   };
 
@@ -126,6 +149,8 @@ export default function TankManagement() {
       }
       
       toast.success('Tanker uspješno dodan');
+      fetchTanks();
+      fetchFuelSummary(); // Refresh fuel summary after adding a tank
       setShowAddModal(false);
       resetForm();
       fetchTanks();
@@ -156,6 +181,8 @@ export default function TankManagement() {
       // Image upload is handled by TankFormWithImageUpload component
       
       toast.success('Tanker uspješno ažuriran');
+      fetchTanks();
+      fetchFuelSummary(); // Refresh fuel summary after updating a tank
       setShowEditModal(false);
       resetForm();
       fetchTanks();
@@ -175,6 +202,7 @@ export default function TankManagement() {
       
       toast.success('Tanker uspješno obrisan');
       fetchTanks();
+      fetchFuelSummary(); // Refresh fuel summary after deleting a tank
     } catch (error) {
       console.error('Error deleting tank:', error);
       toast.error('Greška pri brisanju tankera');
@@ -234,55 +262,70 @@ export default function TankManagement() {
   });
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden">
-      {/* Header with title and action buttons */}
-      <div className="p-5 rounded-t-lg text-white relative overflow-hidden">
-        {/* Black glassmorphism background - exactly matching tab header */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-        {/* Glass highlight effect - matching tab header */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-          <div className="relative z-10">
-            <h2 className="text-2xl font-bold flex items-center">
-              <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 8H21L19 16H5L3 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M7 8V6C7 4.89543 7.89543 4 9 4H15C16.1046 4 17 4.89543 17 6V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="7" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
-                <circle cx="17" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Upravljanje Tankerima</h1>
+        <button
+          onClick={() => {
+            resetForm();
+            setShowAddModal(true);
+          }}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+          Dodaj Novi Tank
+        </button>
+      </div>
+      
+      {/* Fuel Summary Component */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+        <div className="px-4 py-5 sm:px-6 bg-gray-50">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+            <BeakerIcon className="h-5 w-5 mr-2 text-indigo-600" />
+            Ukupno Stanje Goriva
+            <button 
+              onClick={fetchFuelSummary} 
+              className="ml-2 text-indigo-600 hover:text-indigo-800"
+              disabled={summaryLoading}
+              title="Osvježi podatke"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Avio Cisterne
-            </h2>
-            <p className="text-sm opacity-80 mt-1">Pregled i upravljanje mobilnim cisternama za gorivo</p>
-          </div>
-          <button
-            onClick={() => {
-              resetForm();
-              setShowAddModal(true);
-            }}
-            className="mt-4 sm:mt-0 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md backdrop-blur-sm border border-white/20 transition-colors flex items-center font-medium shadow-sm"
-          >
-            <PlusIcon className="-ml-0.5 mr-2 h-5 w-5" />
-            Dodaj Novu Cisternu
-          </button>
+            </button>
+          </h3>
         </div>
-        
-        {/* Search and filter bar */}
-        <div className="mt-4 relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-white/60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2.5 border border-white/20 rounded-lg leading-5 bg-white/10 backdrop-blur-sm placeholder-white/60 focus:outline-none focus:bg-white/20 focus:border-white/30 transition duration-150 ease-in-out text-sm text-white shadow-inner"
-            placeholder="Pretraži cisterne po nazivu, identifikatoru, lokaciji..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-white/40 text-xs">
-            {filteredTanks.length} {filteredTanks.length === 1 ? 'rezultat' : 'rezultata'}
-          </div>
+        <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
+          {summaryLoading ? (
+            <div className="flex justify-center items-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : fuelSummary ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg shadow-sm">
+                <div className="text-sm font-medium text-gray-500">Fiksni Tankovi</div>
+                <div className="mt-1 text-2xl font-semibold text-gray-900">
+                  {fuelSummary.fixedTanksTotal.toLocaleString('bs-BA')} L
+                </div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg shadow-sm">
+                <div className="text-sm font-medium text-gray-500">Mobilni Tankovi</div>
+                <div className="mt-1 text-2xl font-semibold text-gray-900">
+                  {fuelSummary.mobileTanksTotal.toLocaleString('bs-BA')} L
+                </div>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg shadow-sm">
+                <div className="text-sm font-medium text-gray-500">Ukupno</div>
+                <div className="mt-1 text-2xl font-semibold text-gray-900">
+                  {fuelSummary.grandTotal.toLocaleString('bs-BA')} L
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-500 text-center py-4">
+              Nije moguće učitati podatke o ukupnom stanju goriva.
+            </div>
+          )}
         </div>
       </div>
 
@@ -512,6 +555,7 @@ export default function TankManagement() {
                 onSuccess={() => {
                   setShowRefillModal(false);
                   fetchTanks();
+                  fetchFuelSummary(); // Refresh fuel summary after refill
                 }}
                 onCancel={() => setShowRefillModal(false)}
               />

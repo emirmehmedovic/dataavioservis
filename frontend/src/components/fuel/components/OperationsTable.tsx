@@ -11,8 +11,34 @@ interface OperationsTableProps {
 
 const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRowClick, handleDeleteOperation }) => {
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-300">
+    <div className="relative border border-gray-200 rounded-lg">
+      {/* Custom scrollbar styling */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 10px;
+          background-color: #f5f5f5;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #888;
+          border-radius: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #555;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background-color: #f1f1f1;
+          border-radius: 5px;
+        }
+      `}</style>
+      <div className="overflow-x-auto custom-scrollbar pb-4" style={{ 
+        maxWidth: '100%',
+        overflowX: 'scroll',
+        overflowY: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'auto',
+        scrollbarColor: '#888 #f1f1f1'
+      }}>
+        <table className="w-full divide-y divide-gray-300" style={{ minWidth: '1500px' }}>
         <thead className="bg-gray-50">
           <tr>
             <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Datum i Vrijeme</th>
@@ -142,7 +168,8 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 };

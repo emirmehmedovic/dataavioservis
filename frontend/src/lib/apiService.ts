@@ -648,3 +648,49 @@ export const createServiceRecordWithDocument = async (
     body: formData,
   });
 };
+
+// --- Total Fuel Summary API --- //
+
+// Function to get total fuel amount from both fixed tanks and mobile tankers
+export const getTotalFuelSummary = async (): Promise<{ fixedTanksTotal: number; mobileTanksTotal: number; grandTotal: number }> => {
+  try {
+    // Get fixed tanks data
+    const fixedTanks = await getFixedTanks();
+    
+    // Get mobile tanks data
+    const mobileTanks = await fetchWithAuth<FuelTank[]>('/api/fuel/tanks');
+    
+    // Calculate totals
+    const fixedTanksTotal = fixedTanks.reduce((sum, tank) => sum + tank.current_quantity_liters, 0);
+    const mobileTanksTotal = mobileTanks.reduce((sum, tank) => {
+      // Use current_quantity_liters if available, otherwise use current_liters
+      const tankAmount = tank.current_quantity_liters !== undefined ? tank.current_quantity_liters : tank.current_liters;
+      return sum + tankAmount;
+    }, 0);
+    
+    return {
+      fixedTanksTotal,
+      mobileTanksTotal,
+      grandTotal: fixedTanksTotal + mobileTanksTotal
+    };
+  } catch (error) {
+    console.error('Error fetching fuel summary:', error);
+    throw error;
+  }
+};
+
+// Interface for mobile tanks (tankers)
+export interface FuelTank {
+  id: number;
+  identifier: string;
+  name: string;
+  location: string;
+  location_description?: string;
+  capacity_liters: number;
+  current_liters: number;
+  current_quantity_liters?: number; // Added for compatibility
+  fuel_type: string;
+  last_refill_date?: string;
+  last_maintenance_date?: string;
+  image_url?: string; // URL to the tank image
+}

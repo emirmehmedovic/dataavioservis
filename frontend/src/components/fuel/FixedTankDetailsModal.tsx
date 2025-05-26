@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/Button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/badge";
+import { BeakerIcon } from '@heroicons/react/24/outline';
 
 interface FixedTankDetailsModalProps {
   tank: FixedStorageTank | null;
@@ -77,6 +78,8 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
   const [isSaving, setIsSaving] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
   const [removeCurrentDocument, setRemoveCurrentDocument] = useState(false);
+  
+
 
   useEffect(() => {
     if (isOpen && tank) {
@@ -85,21 +88,35 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
       setRemoveCurrentDocument(false); // Reset document removal flag
       setIsEditing(false); 
       setUpdateError(null); 
-      setLoadingHistory(true);
-      setHistoryError(null);
+      
+      // Reset history state
       setHistory([]);
-      getFixedTankHistory(tank.id)
-        .then(data => {
-          setHistory(data);
-        })
-        .catch(err => {
-          setHistoryError(err.message || 'Greška pri učitavanju istorije.');
-        })
-        .finally(() => {
-          setLoadingHistory(false);
-        });
     }
   }, [isOpen, tank]);
+
+  // Function to fetch tank history
+  const fetchHistory = async () => {
+    if (!tank) return;
+    
+    setLoadingHistory(true);
+    setHistoryError(null);
+    try {
+      const data = await getFixedTankHistory(tank.id);
+      setHistory(data);
+    } catch (err: any) {
+      setHistoryError(err.message || 'Greška pri učitavanju istorije.');
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (isOpen && tank && activeTab === 'history') {
+      fetchHistory();
+    }
+  }, [isOpen, tank, activeTab]);
+  
+
 
   useEffect(() => {
     if (isOpen) {
@@ -351,6 +368,8 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
         </div>
 
         <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+          {/* Fuel Summary Section */}
+
           {activeTab === 'info' && (
             <div className="p-6 space-y-6">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Osnovne Informacije</h3>
