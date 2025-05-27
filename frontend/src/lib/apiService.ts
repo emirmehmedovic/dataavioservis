@@ -78,6 +78,11 @@ export async function downloadDocument(endpoint: string, filename: string): Prom
       window.URL.revokeObjectURL(url);
     }, 100);
   } catch (error) {
+    // If already redirecting due to an auth error, suppress further errors for this fetch chain
+    if (isRedirecting) {
+        console.log("Redirecting due to auth error, suppressing further errors for this fetch.");
+        return new Promise(() => {}); // Suppress further processing if redirecting
+    }
     console.error('Error downloading document:', error);
     throw error;
   }
@@ -88,19 +93,25 @@ interface FetchWithAuthOptions extends RequestInit {
   returnRawResponse?: boolean;
 }
 
+// Flag to prevent multiple redirects
+let isRedirecting = false;
+
 // Function to handle automatic logout when token expires
 const handleTokenExpiration = () => {
   if (typeof window !== 'undefined') {
+    if (isRedirecting) {
+      return; // Already handling a redirect
+    }
+    isRedirecting = true; // Set flag
+
+    console.log('Session expired. Clearing token and redirecting to login.');
     // Clear local storage
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUser');
     localStorage.removeItem('token'); // Clear fallback token location too
     
-    // Display a message to the user
-    alert('Vaša sesija je istekla. Molimo prijavite se ponovo.');
-    
-    // Redirect to login page
-    window.location.href = '/login';
+    // Redirect to login page with a query parameter
+    window.location.href = '/login?sessionExpired=true';
   }
 };
 
@@ -145,10 +156,11 @@ export async function fetchWithAuth<T>(urlPath: string, options: FetchWithAuthOp
   const response = await fetch(fullUrl, { ...nativeFetchOptions, headers }); // Use fullUrl
 
   // Check for token expiration (401 Unauthorized)
-  if (response.status === 401) {
-    console.warn('Token expired or invalid. Logging out user.');
-    handleTokenExpiration();
-    throw new Error('Vaša sesija je istekla. Molimo prijavite se ponovo.');
+  if (response.status === 401 || response.status === 403) {
+    // Token is invalid or expired, or user is not authorized
+    console.error(`Authentication error: ${response.status} for ${urlPath}`);
+    handleTokenExpiration(); // This function handles logout and redirection
+    return new Promise(() => {}); 
   }
 
   if (!response.ok) {
@@ -386,6 +398,11 @@ export const getFixedTanks = async (): Promise<FixedStorageTank[]> => {
     const data = await fetchWithAuth<FixedStorageTank[]>(url);
     return data;
   } catch (error) {
+    // If already redirecting due to an auth error, suppress further errors for this fetch chain
+    if (isRedirecting) {
+        console.log("Redirecting due to auth error, suppressing further errors for this fetch.");
+        return new Promise(() => {}); // Suppress further processing if redirecting
+    }
     console.error('Error fetching fixed tanks:', error);
     // Rethrowing the error so the calling component can handle it (e.g., display an error message)
     throw error;
@@ -701,8 +718,13 @@ export const getTotalFuelSummary = async (): Promise<{ fixedTanksTotal: number; 
       grandTotal: fixedTanksTotal + mobileTanksTotal
     };
   } catch (error) {
+    // If already redirecting due to an auth error, suppress further errors for this fetch chain
+    if (isRedirecting) {
+        console.log("Redirecting due to auth error, suppressing further errors for this fetch.");
+        return new Promise(() => {}); // Suppress further processing if redirecting
+    }
     console.error('Error fetching fuel summary:', error);
-    throw error;
+    throw error; // Re-throw other errors
   }
 };
 

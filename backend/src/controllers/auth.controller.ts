@@ -47,7 +47,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       res.status(401).json({ message: 'Pogrešan username ili password.' });
       return;
     }
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
     const { passwordHash: _, ...userWithoutPassword } = user;
     res.json({ token, user: userWithoutPassword });
   } catch (err) {

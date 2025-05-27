@@ -92,6 +92,11 @@ const registerFont = (doc: jsPDF) => {
 export default function FuelOperationsReport() {
   const [operations, setOperations] = useState<FuelOperation[]>([]);
   const [totalLiters, setTotalLiters] = useState<number>(0);
+  const [totalKg, setTotalKg] = useState<number>(0);
+  const [averageDensity, setAverageDensity] = useState<number>(0);
+  
+  // Track revenue by currency
+  const [revenueByCurrency, setRevenueByCurrency] = useState<{[key: string]: number}>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { authUser, authToken } = useAuth();
@@ -99,10 +104,16 @@ export default function FuelOperationsReport() {
   const [airlines, setAirlines] = useState<{ id: number; name: string }[]>([]); // For airline dropdown
   const [filterAirline, setFilterAirline] = useState<string>('__ALL__'); // Stores airline ID or '__ALL__'
   const [filterTrafficType, setFilterTrafficType] = useState<string>('__ALL__');
-  const [filterDateFrom, setFilterDateFrom] = useState<Date | undefined>(undefined);
-  const [filterDateTo, setFilterDateTo] = useState<Date | undefined>(undefined);
-  const [destinationInput, setDestinationInput] = useState<string>('');
-  const [filterDestination, setFilterDestination] = useState<string>('');
+  // Set default date range to current month
+  const [filterDateFrom, setFilterDateFrom] = useState<Date | undefined>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
+  });
+  const [filterDateTo, setFilterDateTo] = useState<Date | undefined>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
+  });
+  const [filterDestination, setFilterDestination] = useState<string>('__ALL__');
   // Debounce timeout reference
   const destinationDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [filterCurrency, setFilterCurrency] = useState<string>('__ALL__');
@@ -227,7 +238,7 @@ export default function FuelOperationsReport() {
       if (filterAirline && filterAirline !== '__ALL__' && filterAirline !== '-1') { // -1 is 'Sve Kompanije'
         queryParams.append('airlineId', filterAirline);
       }
-      if (filterDestination) {
+      if (filterDestination && filterDestination !== '__ALL__') {
         queryParams.append('destination', filterDestination);
       }
       if (filterCurrency && filterCurrency !== '__ALL__') {
@@ -260,16 +271,62 @@ export default function FuelOperationsReport() {
           console.log('Response is an array with', responseData.length, 'operations');
           setOperations(responseData);
           // Calculate total liters from operations
-          const total = responseData.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
-          setTotalLiters(total);
+          const totalLitersValue = responseData.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
+          // Calculate total kg from operations
+          const totalKgValue = responseData.reduce((sum, op) => sum + (op.quantity_kg || 0), 0);
+          // Calculate average density (kg/L)
+          const avgDensity = totalLitersValue > 0 ? totalKgValue / totalLitersValue : 0;
+          
+          // Calculate revenue by currency
+          const currencyTotals: {[key: string]: number} = {};
+          responseData.forEach(op => {
+            const currency = op.currency || 'BAM';
+            const revenue = (op.quantity_kg || 0) * (op.price_per_kg || 0);
+            if (!currencyTotals[currency]) {
+              currencyTotals[currency] = 0;
+            }
+            currencyTotals[currency] += revenue;
+          });
+          
+          setTotalLiters(totalLitersValue);
+          setTotalKg(totalKgValue);
+          setAverageDensity(avgDensity);
+          setRevenueByCurrency(currencyTotals);
         } else if (responseData && typeof responseData === 'object' && 'operations' in responseData) {
           console.log('Response has operations property');
-          setOperations(responseData.operations as FuelOperation[]);
-          setTotalLiters(responseData.totalLiters as number);
+          const operations = responseData.operations as FuelOperation[];
+          setOperations(operations);
+          
+          // If totalLiters is provided in the response, use it; otherwise calculate
+          const totalLitersValue = responseData.totalLiters as number || 
+            operations.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
+          
+          // Calculate total kg from operations
+          const totalKgValue = operations.reduce((sum, op) => sum + (op.quantity_kg || 0), 0);
+          // Calculate average density (kg/L)
+          const avgDensity = totalLitersValue > 0 ? totalKgValue / totalLitersValue : 0;
+          
+          // Calculate revenue by currency
+          const currencyTotals: {[key: string]: number} = {};
+          operations.forEach(op => {
+            const currency = op.currency || 'BAM';
+            const revenue = (op.quantity_kg || 0) * (op.price_per_kg || 0);
+            if (!currencyTotals[currency]) {
+              currencyTotals[currency] = 0;
+            }
+            currencyTotals[currency] += revenue;
+          });
+          
+          setTotalLiters(totalLitersValue);
+          setTotalKg(totalKgValue);
+          setAverageDensity(avgDensity);
+          setRevenueByCurrency(currencyTotals);
         } else {
           console.error('Unexpected response format:', responseData);
           setOperations([]);
           setTotalLiters(0);
+          setTotalKg(0);
+          setAverageDensity(0);
         }
         setError(null);
       } catch (e) {
@@ -303,6 +360,21 @@ export default function FuelOperationsReport() {
     return [{ value: '__ALL__', label: 'Svi tipovi' }, ...Array.from(types).sort().map(name => ({ value: name, label: name }))];
   }, [operations]);
 
+  const destinationOptions = useMemo(() => {
+    // Extract unique destinations from operations
+    const destinations = new Set<string>();
+    
+    if (operations && Array.isArray(operations)) {
+      operations.forEach(op => {
+        if (op && op.destination && op.destination.trim() !== '') {
+          destinations.add(op.destination);
+        }
+      });
+    }
+    
+    return [{ value: '__ALL__', label: 'Sve destinacije' }, ...Array.from(destinations).sort().map(dest => ({ value: dest, label: dest }))];  
+  }, [operations]);
+  
   const currencyOptions = useMemo(() => {
     // Extract unique currencies from operations
     const currencies = new Set<string>();
@@ -443,12 +515,44 @@ export default function FuelOperationsReport() {
         // Add footer with total information
         doc.setFont(FONT_NAME, 'bold');
         doc.setFontSize(10);
-        doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA')} L`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+        
+        // Display totals in the footer
+        const footerY = doc.internal.pageSize.height - 20; // Increased space for more lines
+        doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA')} L`, data.settings.margin.left, footerY - 8);
+        doc.text(`Ukupno Kilograma: ${totalKg.toLocaleString('bs-BA')} kg`, data.settings.margin.left, footerY - 4);
+        doc.text(`Prosječna Gustoća: ${averageDensity.toLocaleString('bs-BA', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg/L`, data.settings.margin.left, footerY);
+        
+        // Display revenue by currency
+        const currencyKeys = Object.keys(revenueByCurrency);
+        if (currencyKeys.length > 0) {
+          doc.text('Ukupan promet po valuti:', data.settings.margin.left + 90, footerY - 8);
+          
+          currencyKeys.forEach((currency, index) => {
+            const amount = revenueByCurrency[currency];
+            const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM';
+            doc.text(`${currency}: ${currencySymbol} ${amount.toLocaleString('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+              data.settings.margin.left + 90, footerY - 4 + (index * 4));
+          });
+          
+          // Add empty entries for missing currencies
+          const missingCurrencies = ['USD', 'EUR', 'BAM'].filter(c => !currencyKeys.includes(c));
+          missingCurrencies.forEach((currency, index) => {
+            const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM';
+            doc.text(`${currency}: ${currencySymbol} 0.00`, 
+              data.settings.margin.left + 90, footerY - 4 + ((currencyKeys.length + index) * 4));
+          });
+        } else {
+          // If no revenue data, show zeros for all currencies
+          doc.text('Ukupan promet po valuti:', data.settings.margin.left + 90, footerY - 8);
+          doc.text('USD: $ 0.00', data.settings.margin.left + 90, footerY - 4);
+          doc.text('EUR: € 0.00', data.settings.margin.left + 90, footerY);
+          doc.text('BAM: KM 0.00', data.settings.margin.left + 90, footerY + 4);
+        }
         
         // Add page number
         doc.setFont(FONT_NAME, 'normal');
         doc.setFontSize(8);
-        doc.text(`Stranica ${data.pageNumber}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+        doc.text(`Stranica ${data.pageNumber}`, doc.internal.pageSize.width - 20, footerY + 8);
       }
     });
 
@@ -629,27 +733,20 @@ export default function FuelOperationsReport() {
                   </Popover>
                 </div>
                 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label htmlFor="destination" className="text-sm font-medium text-gray-700 dark:text-gray-300">Destinacija</label>
-                  <Input 
-                    id="destination" 
-                    placeholder="Unesite destinaciju"
-                    value={destinationInput} 
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setDestinationInput(value);
-                      
-                      // Clear any existing timeout
-                      if (destinationDebounceRef.current) {
-                        clearTimeout(destinationDebounceRef.current);
-                      }
-                      
-                      // Set new timeout to update filter after typing stops
-                      destinationDebounceRef.current = setTimeout(() => {
-                        setFilterDestination(value);
-                      }, 500); // 500ms delay
-                    }} 
-                  />
+                  <Select value={filterDestination} onValueChange={setFilterDestination}>
+                    <SelectTrigger id="destination">
+                      <SelectValue placeholder="Sve destinacije" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {destinationOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -676,8 +773,7 @@ export default function FuelOperationsReport() {
                       setFilterTrafficType('__ALL__');
                       setFilterDateFrom(undefined);
                       setFilterDateTo(undefined);
-                      setDestinationInput(''); // Reset input field
-                      setFilterDestination(''); // Reset filter value
+                      setFilterDestination('__ALL__'); // Reset to all destinations
                       setFilterCurrency('__ALL__');
                     }} 
                     variant="outline"
@@ -713,25 +809,25 @@ export default function FuelOperationsReport() {
 
             {operations && operations.length > 0 && (
               <>
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full table-auto divide-y divide-gray-200 dark:divide-gray-700">
+                <div style={{ width: '100%', overflowX: 'auto', overflowY: 'auto', maxHeight: '60vh', position: 'relative' }}>
+                  <table style={{ width: '100%', tableLayout: 'fixed', minWidth: '1200px', fontSize: '0.7rem' }} className="divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Datum i Vrijeme</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avion</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aviokompanija</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destinacija</th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Količina (L)</th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gustoća</th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Količina (kg)</th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cijena/kg</th>
-                        <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valuta</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tip Goriva</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tank</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Let</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Operator</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tip Saobraćaja</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dokument</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '8%' }}>Datum</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Reg.</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '8%' }}>Avio Komp.</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Dest.</th>
+                        <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Kol. (L)</th>
+                        <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Spec. Gust.</th>
+                        <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Kol. (kg)</th>
+                        <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Cijena/kg</th>
+                        <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '5%' }}>Val.</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Tip Goriva</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Cisterna</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Br. Leta</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Operater</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Tip Saob.</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '9%' }}>Dokumenti</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -741,49 +837,49 @@ export default function FuelOperationsReport() {
                           className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer" 
                           onClick={() => handleRowClick(op)}
                         >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{formatDate(op.dateTime)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{formatDate(op.dateTime)}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">
                             {op.aircraft_registration ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium text-[0.65rem] bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
                                 {op.aircraft_registration}
                               </span>
                             ) : (
-                              <Badge variant="outline">N/A</Badge>
+                              <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{op.airline?.name || <Badge variant="outline">N/A</Badge>}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{op.destination || <Badge variant="outline">N/A</Badge>}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium text-right">{op.quantity_liters.toLocaleString('hr-HR')} L</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium text-right">{(op.specific_density || 0).toLocaleString('hr-HR', { minimumFractionDigits: 3 })}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium text-right">{(op.quantity_kg || 0).toLocaleString('hr-HR')} kg</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium text-right">{(op.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium text-center">{op.currency || 'BAM'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.airline?.name || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.destination || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 font-medium text-right table-cell-wrap">{op.quantity_liters.toLocaleString('hr-HR')} L</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 font-medium text-right table-cell-wrap">{(op.specific_density || 0).toLocaleString('hr-HR', { minimumFractionDigits: 3 })}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 font-medium text-right table-cell-wrap">{(op.quantity_kg || 0).toLocaleString('hr-HR')} kg</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 font-medium text-right table-cell-wrap">{(op.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 font-medium text-center table-cell-wrap">{op.currency || 'BAM'}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">
                             {op.tank?.fuel_type ? (
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${op.tank.fuel_type === 'Jet A-1' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' : 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'}`}>
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium text-[0.65rem] ${op.tank.fuel_type === 'Jet A-1' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' : 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'}`}>
                                 {op.tank.fuel_type}
                               </span>
                             ) : (
-                              <Badge variant="outline">N/A</Badge>
+                              <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{op.tank ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
-                              {op.tank.identifier || 'N/A'} {op.tank.name ? `(${op.tank.name})` : ''}
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.tank ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium text-[0.65rem] bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
+                              {op.tank.identifier || 'N/A'}
                             </span>
-                          ) : <Badge variant="outline">N/A</Badge>}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{op.flight_number || <Badge variant="outline">N/A</Badge>}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{op.operator_name || <Badge variant="outline">N/A</Badge>}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          ) : <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.flight_number || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.operator_name || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">
                             {op.tip_saobracaja ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium text-[0.65rem] bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                                 {op.tip_saobracaja}
                               </span>
                             ) : (
-                              <Badge variant="outline">N/A</Badge>
+                              <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">
                             {op.documents && op.documents.length > 0 ? (
                               <div className="flex flex-col space-y-1">
                                 {op.documents.map((doc, index) => (
@@ -807,7 +903,7 @@ export default function FuelOperationsReport() {
                                 ))}
                               </div>
                             ) : (
-                              <Badge variant="outline">Nema</Badge>
+                              <Badge variant="outline" className="text-[0.65rem] py-0 h-4">Nema</Badge>
                             )}
                           </td>
                         </tr>
@@ -816,160 +912,254 @@ export default function FuelOperationsReport() {
                   </table>
                 </div>
                 
-                <div className="bg-gray-50 dark:bg-gray-800/50 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Prikazano <span className="font-medium text-gray-700 dark:text-gray-300">{operations ? operations.length : 0}</span> operacija
+                <div className="bg-gray-50 dark:bg-gray-800/50 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-4">
+                  <div className="flex flex-col">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                      Prikazano <span className="font-medium text-gray-700 dark:text-gray-300">{operations ? operations.length : 0}</span> operacija
+                    </div>
+                    
+                    {/* Totals Summary - Inline */}
+                    <div className="flex items-center gap-4 mt-1">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Ukupno litara</span>
+                        <div className="flex items-center px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800">
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            {totalLiters.toLocaleString('hr-HR')} L
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Ukupno kilograma</span>
+                        <div className="flex items-center px-3 py-1 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-100 dark:border-green-800">
+                          <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                            {totalKg.toLocaleString('hr-HR')} kg
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Prosječna gustoća</span>
+                        <div className="flex items-center px-3 py-1 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-100 dark:border-purple-800">
+                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                            {averageDensity.toLocaleString('hr-HR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg/L
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <Button 
-                    onClick={generatePdf} 
-                    variant="outline" 
-                    className="border-indigo-500 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
-                  >
-                    <FileText className="h-4 w-4 mr-1" />
-                    Izvezi u PDF
-                  </Button>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      onClick={generatePdf} 
+                      variant="outline" 
+                      className="border-indigo-500 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-900/20 whitespace-nowrap"
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Izvezi u PDF
+                    </Button>
+                    
+                    {/* Invoice generation buttons */}
+                    <Button
+                      onClick={() => {
+                        // Prepare filter description
+                        const filterDesc: string[] = [];
+                        if (filterDateFrom) filterDesc.push(`Od: ${formatDate(filterDateFrom.toISOString())}`);
+                        if (filterDateTo) filterDesc.push(`Do: ${formatDate(filterDateTo.toISOString())}`);
+                        if (filterAirline && filterAirline !== '__ALL__') {
+                          const airline = airlines.find(a => a.id.toString() === filterAirline);
+                          if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
+                        }
+                        if (filterDestination) filterDesc.push(`Destinacija: ${filterDestination}`);
+                        if (filterTrafficType && filterTrafficType !== '__ALL__') filterDesc.push(`Tip saobraćaja: ${filterTrafficType}`);
+                        if (filterCurrency && filterCurrency !== '__ALL__') filterDesc.push(`Valuta: ${filterCurrency}`);
+                        
+                        const filterDescription = filterDesc.length > 0 
+                          ? filterDesc.join(', ') 
+                          : 'Sve operacije';
+                        
+                        try {
+                          // Convert operations to FuelingOperation type
+                          const convertedOperations = operations.map(op => convertToFuelingOperation(op));
+                          generateConsolidatedPDFInvoice(convertedOperations, filterDescription);
+                          toast.success('Zbirna PDF faktura je uspješno generisana!');
+                        } catch (error) {
+                          console.error('Error generating consolidated PDF invoice:', error);
+                          toast.error('Došlo je do greške prilikom generisanja zbirne PDF fakture.');
+                        }
+                      }}
+                      variant="outline"
+                      className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-900/20 whitespace-nowrap"
+                      disabled={operations.length === 0}
+                      title="Standardna faktura za izvoz"
+                    >
+                      <svg className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 21H17C18.1046 21 19 20.1046 19 19V9.41421C19 9.149 18.8946 8.89464 18.7071 8.70711L13.2929 3.29289C13.1054 3.10536 12.851 3 12.5858 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="rgba(0, 0, 0, 0)"/>
+                        <path d="M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M9 13H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      Zbirna INO Faktura
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        // Prepare filter description
+                        const filterDesc: string[] = [];
+                        if (filterDateFrom) filterDesc.push(`Od: ${formatDate(filterDateFrom.toISOString())}`);
+                        if (filterDateTo) filterDesc.push(`Do: ${formatDate(filterDateTo.toISOString())}`);
+                        if (filterAirline && filterAirline !== '__ALL__') {
+                          const airline = airlines.find(a => a.id.toString() === filterAirline);
+                          if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
+                        }
+                        if (filterDestination) filterDesc.push(`Destinacija: ${filterDestination}`);
+                        if (filterTrafficType && filterTrafficType !== '__ALL__') filterDesc.push(`Tip saobraćaja: ${filterTrafficType}`);
+                        if (filterCurrency && filterCurrency !== '__ALL__') filterDesc.push(`Valuta: ${filterCurrency}`);
+                        
+                        const filterDescription = filterDesc.length > 0 
+                          ? filterDesc.join(', ') 
+                          : 'Sve operacije';
+                        
+                        try {
+                          // Convert operations to FuelingOperation type
+                          const convertedOperations = operations.map(op => convertToFuelingOperation(op));
+                          generateConsolidatedDomesticPDFInvoice(convertedOperations, filterDescription);
+                          toast.success('Domaća PDF faktura je uspješno generisana!');
+                        } catch (error) {
+                          console.error('Error generating domestic PDF invoice:', error);
+                          toast.error('Došlo je do greške prilikom generisanja domaće PDF fakture.');
+                        }
+                      }}
+                      variant="outline"
+                      className="border-purple-500 text-purple-600 hover:bg-purple-50 dark:border-purple-400 dark:text-purple-400 dark:hover:bg-purple-900/20 whitespace-nowrap"
+                      disabled={operations.length === 0}
+                      title="Faktura za unutarnji saobraćaj sa PDV-om"
+                    >
+                      <svg className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 21H17C18.1046 21 19 20.1046 19 19V9.41421C19 9.149 18.8946 8.89464 18.7071 8.70711L13.2929 3.29289C13.1054 3.10536 12.851 3 12.5858 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="rgba(0, 0, 0, 0)"/>
+                        <path d="M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                      Zbirna domaća faktura 
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        // Prepare filter description
+                        const filterDesc: string[] = [];
+                        if (filterDateFrom) filterDesc.push(`Od: ${formatDate(filterDateFrom.toISOString())}`);
+                        if (filterDateTo) filterDesc.push(`Do: ${formatDate(filterDateTo.toISOString())}`);
+                        if (filterAirline && filterAirline !== '__ALL__') {
+                          const airline = airlines.find(a => a.id.toString() === filterAirline);
+                          if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
+                        }
+                        if (filterDestination) filterDesc.push(`Destinacija: ${filterDestination}`);
+                        if (filterTrafficType && filterTrafficType !== '__ALL__') filterDesc.push(`Tip saobraćaja: ${filterTrafficType}`);
+                        if (filterCurrency && filterCurrency !== '__ALL__') filterDesc.push(`Valuta: ${filterCurrency}`);
+                        
+                        const filterDescription = filterDesc.length > 0 
+                          ? filterDesc.join(', ') 
+                          : 'Sve operacije';
+                        
+                        try {
+                          // Convert operations to FuelingOperation type
+                          const convertedOperations = operations.map(op => convertToFuelingOperation(op));
+                          const xmlContent = generateConsolidatedXMLInvoice(convertedOperations, filterDescription);
+                          downloadXML(xmlContent, `Zbirna-Faktura-XML-${dayjs().format('YYYYMMDD')}.xml`);
+                          toast.success('Zbirna XML faktura je uspješno generisana!');
+                        } catch (error) {
+                          console.error('Error generating consolidated XML invoice:', error);
+                          toast.error('Došlo je do greške prilikom generisanja zbirne XML fakture.');
+                        }
+                      }}
+                      variant="outline"
+                      className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20 whitespace-nowrap"
+                      disabled={operations.length === 0}
+                      title="XML faktura za sistemsku integraciju"
+                    >
+                      <svg className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 5h14v14H5V5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="rgba(0, 0, 0, 0)"/>
+                        <path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Zbirni XML
+                    </Button>
+                  </div>
                 </div>
               </>
             )}
           </div>
         </div>
         
-        {/* Total Liters Display */}
-        {!loading && !error && operations && operations.length > 0 && (
-          <div className="p-4 text-right font-semibold text-lg text-gray-700 dark:text-gray-200 border-t border-gray-200 dark:border-gray-700">
-            Ukupno Istakanja: {totalLiters.toLocaleString('hr-HR')} L
-          </div>
-        )}
+        {/* All buttons are now displayed inline in the table footer */}
         
-        {/* Invoice Generation Section */}
+        {/* Revenue by Currency Report */}
         {!loading && !error && operations && operations.length > 0 && (
           <div className="mt-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Generisanje Faktura</h3>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  // Prepare filter description
-                  const filterDesc: string[] = [];
-                  if (filterDateFrom) filterDesc.push(`Od: ${formatDate(filterDateFrom.toISOString())}`);
-                  if (filterDateTo) filterDesc.push(`Do: ${formatDate(filterDateTo.toISOString())}`);
-                  if (filterAirline && filterAirline !== '__ALL__') {
-                    const airline = airlines.find(a => a.id.toString() === filterAirline);
-                    if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
-                  }
-                  if (filterDestination) filterDesc.push(`Destinacija: ${filterDestination}`);
-                  if (filterTrafficType && filterTrafficType !== '__ALL__') filterDesc.push(`Tip saobraćaja: ${filterTrafficType}`);
-                  if (filterCurrency && filterCurrency !== '__ALL__') filterDesc.push(`Valuta: ${filterCurrency}`);
-                  
-                  const filterDescription = filterDesc.length > 0 
-                    ? filterDesc.join(', ') 
-                    : 'Sve operacije';
-                  
-                  try {
-                    // Convert operations to FuelingOperation type
-                    const convertedOperations = operations.map(op => convertToFuelingOperation(op));
-                    generateConsolidatedPDFInvoice(convertedOperations, filterDescription);
-                    toast.success('Zbirna PDF faktura je uspješno generisana!');
-                  } catch (error) {
-                    console.error('Error generating consolidated PDF invoice:', error);
-                    toast.error('Došlo je do greške prilikom generisanja zbirne PDF fakture.');
-                  }
-                }}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center font-medium shadow-sm"
-                disabled={operations.length === 0}
-                title="Standardna faktura za izvoz"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 21H17C18.1046 21 19 20.1046 19 19V9.41421C19 9.149 18.8946 8.89464 18.7071 8.70711L13.2929 3.29289C13.1054 3.10536 12.851 3 12.5858 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="rgba(255, 255, 255, 0.1)"/>
-                  <path d="M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M9 13H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M9 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M9 9H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Generiši PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // Prepare filter description
-                  const filterDesc: string[] = [];
-                  if (filterDateFrom) filterDesc.push(`Od: ${formatDate(filterDateFrom.toISOString())}`);
-                  if (filterDateTo) filterDesc.push(`Do: ${formatDate(filterDateTo.toISOString())}`);
-                  if (filterAirline && filterAirline !== '__ALL__') {
-                    const airline = airlines.find(a => a.id.toString() === filterAirline);
-                    if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
-                  }
-                  if (filterDestination) filterDesc.push(`Destinacija: ${filterDestination}`);
-                  if (filterTrafficType && filterTrafficType !== '__ALL__') filterDesc.push(`Tip saobraćaja: ${filterTrafficType}`);
-                  if (filterCurrency && filterCurrency !== '__ALL__') filterDesc.push(`Valuta: ${filterCurrency}`);
-                  
-                  const filterDescription = filterDesc.length > 0 
-                    ? filterDesc.join(', ') 
-                    : 'Sve operacije';
-                  
-                  try {
-                    // Convert operations to FuelingOperation type
-                    const convertedOperations = operations.map(op => convertToFuelingOperation(op));
-                    generateConsolidatedDomesticPDFInvoice(convertedOperations, filterDescription);
-                    toast.success('Zbirna domaća faktura je uspješno generisana!');
-                  } catch (error) {
-                    console.error('Error generating consolidated domestic invoice:', error);
-                    toast.error('Došlo je do greške prilikom generisanja zbirne domaće fakture.');
-                  }
-                }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center font-medium shadow-sm"
-                disabled={operations.length === 0}
-                title="Faktura za unutarnji saobraćaj sa PDV-om"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 21H17C18.1046 21 19 20.1046 19 19V9.41421C19 9.149 18.8946 8.89464 18.7071 8.70711L13.2929 3.29289C13.1054 3.10536 12.851 3 12.5858 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="rgba(255, 255, 255, 0.1)"/>
-                  <path d="M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M9 13H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M9 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Generiši Domaću Fakturu
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // Prepare filter description
-                  const filterDesc: string[] = [];
-                  if (filterDateFrom) filterDesc.push(`Od: ${formatDate(filterDateFrom.toISOString())}`);
-                  if (filterDateTo) filterDesc.push(`Do: ${formatDate(filterDateTo.toISOString())}`);
-                  if (filterAirline && filterAirline !== '__ALL__') {
-                    const airline = airlines.find(a => a.id.toString() === filterAirline);
-                    if (airline) filterDesc.push(`Kompanija: ${airline.name}`);
-                  }
-                  if (filterDestination) filterDesc.push(`Destinacija: ${filterDestination}`);
-                  if (filterTrafficType && filterTrafficType !== '__ALL__') filterDesc.push(`Tip saobraćaja: ${filterTrafficType}`);
-                  if (filterCurrency && filterCurrency !== '__ALL__') filterDesc.push(`Valuta: ${filterCurrency}`);
-                  
-                  const filterDescription = filterDesc.length > 0 
-                    ? filterDesc.join(', ') 
-                    : 'Sve operacije';
-                  
-                  try {
-                    // Convert operations to FuelingOperation type
-                    const convertedOperations = operations.map(op => convertToFuelingOperation(op));
-                    const xmlContent = generateConsolidatedXMLInvoice(convertedOperations, filterDescription);
-                    downloadXML(xmlContent, `Zbirna-Faktura-XML-${dayjs().format('YYYYMMDD')}.xml`);
-                    toast.success('Zbirna XML faktura je uspješno generisana!');
-                  } catch (error) {
-                    console.error('Error generating consolidated XML invoice:', error);
-                    toast.error('Došlo je do greške prilikom generisanja zbirne XML fakture.');
-                  }
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center font-medium shadow-sm"
-                disabled={operations.length === 0}
-                title="XML faktura za sistemsku integraciju"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 8l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 13V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20 18H4M4 18v1a2 2 0 002 2h12a2 2 0 002-2v-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Generiši XML
-              </button>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+              Ukupan promet po valuti
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.entries(revenueByCurrency).map(([currency, amount]) => (
+                <div key={currency} className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+                        currency === 'USD' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
+                        currency === 'EUR' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' :
+                        'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+                      }`}>
+                        {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM'}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Ukupan promet</p>
+                        <p className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                          {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM'} {amount.toLocaleString('bs', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                      currency === 'USD' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                      currency === 'EUR' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                      'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                    }`}>
+                      {currency}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {/* If no data for a specific currency, show empty state */}
+              {!revenueByCurrency['USD'] && (
+                <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 flex items-center justify-center mr-3">$</div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Ukupan promet</p>
+                      <p className="text-xl font-bold text-gray-800 dark:text-gray-200">$ 0.00</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {!revenueByCurrency['EUR'] && (
+                <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center mr-3">€</div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Ukupan promet</p>
+                      <p className="text-xl font-bold text-gray-800 dark:text-gray-200">€ 0.00</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {!revenueByCurrency['BAM'] && (
+                <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 flex items-center justify-center mr-3">KM</div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Ukupan promet</p>
+                      <p className="text-xl font-bold text-gray-800 dark:text-gray-200">KM 0.00</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

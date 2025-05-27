@@ -101,40 +101,36 @@ export default function FuelManagement() {
     description: string;
   };
 
-  const categories: Record<string, CategoryDetails> = {
-    'Rezervoari': { id: 'fixed-tanks', description: 'Upravljanje fiksnim rezervoarima za gorivo' },
-    'Avio cisterne': { id: 'tanks', description: 'Pregled i upravljanje mobilnim cisternama' },
-    'Ulaz Goriva': { id: 'fuel-intake', description: 'Evidencija ulaza goriva u skladište' },
-    'Izlaz goriva': { id: 'fueling', description: 'Operacije točenja goriva u avione' },
-    'Drenirano gorivo': { id: 'drained-fuel', description: 'Istakanja goriva iz fiksnih rezervoara i mobilnih aviocisternih' },
-    'Avio Kompanije': { id: 'airlines', description: 'Upravljanje podacima avio kompanija' },
-    'Statistika': { id: 'reports', description: 'Izvještaji i analitika potrošnje' },
-    'Cijene goriva': { id: 'fuel-prices', description: 'Praćenje cijena nafte i tečajeva' },
-  };
-
-  // No animated background elements
+  const categories: CategoryDetails[] = [
+    { id: 'fixed-tanks', description: 'Rezervoari' },
+    { id: 'tanks', description: 'Avio Cisterne' },
+    { id: 'fuel-intake', description: 'Unos Goriva' },
+    { id: 'fueling', description: 'Operacije Točenja' },
+    { id: 'drained-fuel', description: 'Drenirano Gorivo' },
+    { id: 'airlines', description: 'Avio Kompanije' },
+    { id: 'reports', description: 'Izvještaji' },
+    { id: 'fuel-prices', description: 'Cijene Goriva' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      {/* Main content */}
-      <div className="px-6 py-8 max-w-7xl mx-auto">
-        {/* Header section removed as requested */}
-
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-12 w-full overflow-x-hidden">
+      <div className="px-2 sm:px-4 md:px-6 py-6 fuel-fixed-container">
         {/* Main Tab Interface */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100"
-        >
+        <div className="fuel-fixed-container mx-auto" style={{ maxWidth: '1400px' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden"
+          >
           <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
             <div className="bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 p-1 rounded-t-xl shadow-inner overflow-hidden relative">
               {/* Glass reflection effect */}
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
               <Tab.List className="flex gap-1 overflow-x-auto">
-                {Object.entries(categories).map(([category, { id }], idx) => (
+                {categories.map((category, idx) => (
                   <Tab
-                    key={id}
+                    key={category.id}
                     className={({ selected }) =>
                       classNames(
                         'px-6 py-4 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2',
@@ -145,8 +141,8 @@ export default function FuelManagement() {
                       )
                     }
                   >
-                    <span className="text-current">{CategoryIcons[id as CategoryId]}</span>
-                    <span>{category}</span>
+                    <span className="text-current">{CategoryIcons[category.id as CategoryId]}</span>
+                    <span>{category.description}</span>
                   </Tab>
                 ))}
               </Tab.List>
@@ -194,6 +190,7 @@ export default function FuelManagement() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
+                    className="fuel-content-wrapper"
                   >
                     <FuelingOperations />
                   </motion.div>
@@ -245,9 +242,8 @@ export default function FuelManagement() {
               </AnimatePresence>
             </Tab.Panels>
           </Tab.Group>
-        </motion.div>
-
-        {/* Footer removed */}
+          </motion.div>
+        </div>
       </div>
     </div>
   );

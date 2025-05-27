@@ -83,6 +83,11 @@ const FuelIntakeReport: React.FC = () => {
   const [records, setRecords] = useState<FuelIntakeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track totals for reporting
+  const [totalLiters, setTotalLiters] = useState<number>(0);
+  const [totalKg, setTotalKg] = useState<number>(0);
+  const [averageDensity, setAverageDensity] = useState<number>(0);
   const [filters, setFilters] = useState<FuelIntakeReportFilters>({
     fuel_type: 'all',
     startDate: '',
@@ -111,6 +116,37 @@ const FuelIntakeReport: React.FC = () => {
       const url = `/api/fuel/intake-records${queryParams ? `?${queryParams}` : ''}`;
       const data = await fetchWithAuth<FuelIntakeRecord[]>(url);
       setRecords(data);
+      
+      // Calculate totals
+      if (data && data.length > 0) {
+        // Calculate total liters
+        const totalLitersValue = data.reduce((sum, record) => sum + (record.quantity_liters_received || 0), 0);
+        
+        // Calculate total kg
+        const totalKgValue = data.reduce((sum, record) => {
+          // If kg is directly available
+          if (record.quantity_kg_received) {
+            return sum + record.quantity_kg_received;
+          }
+          // Otherwise calculate from liters and specific gravity
+          else if (record.quantity_liters_received && record.specific_gravity) {
+            return sum + (record.quantity_liters_received * record.specific_gravity);
+          }
+          return sum;
+        }, 0);
+        
+        // Calculate average density
+        const avgDensity = totalLitersValue > 0 ? totalKgValue / totalLitersValue : 0;
+        
+        setTotalLiters(totalLitersValue);
+        setTotalKg(totalKgValue);
+        setAverageDensity(avgDensity);
+      } else {
+        // Reset totals if no data
+        setTotalLiters(0);
+        setTotalKg(0);
+        setAverageDensity(0);
+      }
     } catch (err) {
       console.error('Error fetching fuel intake records:', err);
       const errorMessage = err instanceof Error ? err.message : 'Nepoznata greška.';
@@ -342,17 +378,38 @@ const FuelIntakeReport: React.FC = () => {
       record.delivery_note_number || 'N/A'
     ]);
 
+    // Calculate totals from records
+    const totalLiters = records.reduce((sum, record) => sum + (record.quantity_liters_received || 0), 0);
+    const totalKg = records.reduce((sum, record) => sum + (record.quantity_kg_received || 0), 0);
+    const averageDensity = totalLiters > 0 ? totalKg / totalLiters : 0;
+
     autoTable(doc, {
       startY: 40,
       head: [['Datum', 'Tip Goriva', 'Količina', 'Dobavljač', 'Br. Otpremnice']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [22, 160, 133], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 }, 
-      styles: { font: FONT_NAME, fontSize: 9 } 
+      styles: { font: FONT_NAME, fontSize: 9 },
+      didDrawPage: function(data) {
+        // Add footer with total information
+        doc.setFont(FONT_NAME, 'bold');
+        doc.setFontSize(10);
+        
+        // Display totals in the footer
+        const footerY = doc.internal.pageSize.height - 20;
+        doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA')} L`, data.settings.margin.left, footerY - 8);
+        doc.text(`Ukupno Kilograma: ${totalKg.toLocaleString('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, data.settings.margin.left, footerY - 4);
+        doc.text(`Prosječna Gustoća: ${averageDensity.toLocaleString('bs-BA', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg/L`, data.settings.margin.left, footerY);
+        
+        // Add page number
+        doc.setFont(FONT_NAME, 'normal');
+        doc.setFontSize(8);
+        doc.text(`Stranica ${data.pageNumber}`, doc.internal.pageSize.width - 20, footerY);
+      }
     });
 
     doc.save(`Izvjestaj_Ulaz_Goriva_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success('PDF izvještaj uspješno generisan.');
+    toast.success('PDF izvještaj uspješno generisan sa ukupnim količinama.');
   };
 
   return (

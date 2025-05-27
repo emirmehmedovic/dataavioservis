@@ -48,107 +48,228 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
         
         <div className="p-6 space-y-6">
           {/* Osnovni Podaci */}
-          <section className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <h3 className="text-lg font-semibold flex items-center text-gray-800">
-                <svg className="w-5 h-5 mr-2 text-indigo-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-750 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold flex items-center text-gray-800 dark:text-gray-200">
+                <svg className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M9 12H15M9 16H15M9 8H15M5 21H19C20.1046 21 21 20.1046 21 19V9.41421C21 9.149 20.8946 8.89464 20.7071 8.70711L13.2929 3.29289C13.1054 3.10536 12.851 3 12.5858 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 Osnovni Podaci
               </h3>
             </div>
-            <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Datum i Vrijeme:</span>
-                  <span className="font-medium text-gray-900">{formatDate(operation.dateTime)}</span>
+            <div className="p-5">
+              {/* Flight Information Card */}
+              <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                  <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.55 19.09L12 13.5L20.45 19.09C20.2726 19.3176 20.0216 19.4726 19.7341 19.5348C19.4466 19.597 19.1468 19.5626 18.88 19.44L12 16.24L5.12 19.44C4.85323 19.5626 4.55336 19.597 4.26588 19.5348C3.97839 19.4726 3.72736 19.3176 3.55 19.09ZM12 3C10.9 3 9.9 3.9 9.9 5L9.9 5.1L3 10.46V14.5H5V11.58L12 6.5L19 11.58V14.5H21V10.46L14.1 5.1C14.1 3.9 13.1 3 12 3Z" fill="currentColor"/>
+                  </svg>
+                  Informacije o letu
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avio Kompanija</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.airline.name}</div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Registracija Aviona</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.aircraft_registration || 'N/A'}</div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Broj Leta</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.flight_number || 'N/A'}</div>
+                  </div>
                 </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Registracija Aviona:</span>
-                  <span className="font-medium text-gray-900">{operation.aircraft_registration || 'N/A (Sistemska letjelica)'}</span>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Destinacija</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                      <svg className="w-4 h-4 mr-1 text-gray-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                      </svg>
+                      {operation.destination}
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Datum i Vrijeme</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                      <svg className="w-4 h-4 mr-1 text-gray-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2ZM16.2 16.2L11 13V7H12.5V12.2L17 14.9L16.2 16.2Z" fill="currentColor"/>
+                      </svg>
+                      {formatDate(operation.dateTime)}
+                    </div>
+                  </div>
                 </div>
                 {operation.aircraft && (
-                  <div className="flex items-start">
-                    <span className="text-gray-500 w-40 flex-shrink-0">Sistemska Letjelica:</span>
-                    <span className="font-medium text-gray-900">{operation.aircraft.vehicle_name} ({operation.aircraft.license_plate})</span>
+                  <div className="mt-3 bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sistemska Letjelica</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.aircraft.vehicle_name} ({operation.aircraft.license_plate})</div>
                   </div>
                 )}
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Avio Kompanija:</span>
-                  <span className="font-medium text-gray-900">{operation.airline.name}</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Destinacija:</span>
-                  <span className="font-medium text-gray-900">{operation.destination}</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Broj dostavnice:</span>
-                  <span className="font-medium text-gray-900">{operation.delivery_note_number || 'N/A'}</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Tip Goriva:</span>
-                  <span className="font-medium text-gray-900 flex items-center">
-                    {operation.tank?.fuel_type?.toLowerCase() === 'jet a-1'.toLowerCase() ? (
-                      <>
-                        <img 
-                          src="/JET A-1.svg" 
-                          alt="JET A-1" 
-                          className="w-12 h-12 object-contain mr-2" 
-                        />
-                        JET A-1
-                      </>
-                    ) : (
-                      operation.tank?.fuel_type || 'N/A'
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Broj Leta:</span>
-                  <span className="font-medium text-gray-900">{operation.flight_number || 'N/A'}</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Količina (L):</span>
-                  <span className="font-medium text-gray-900">{(operation.quantity_liters || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Gustoća:</span>
-                  <span className="font-medium text-gray-900">{(operation.specific_density || 0).toLocaleString('hr-HR', { minimumFractionDigits: 3 })}</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Količina (kg):</span>
-                  <span className="font-medium text-gray-900">{(operation.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} kg</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Cijena po kg:</span>
-                  <span className="font-medium text-gray-900">{(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })} {operation.currency || 'BAM'}</span>
-                </div>
-                {operation.discount_percentage !== undefined && operation.discount_percentage > 0 && (
-                  <div className="flex items-start">
-                    <span className="text-gray-500 w-40 flex-shrink-0">Rabat:</span>
-                    <span className="font-medium text-indigo-600">{operation.discount_percentage}%</span>
+              </div>
+              
+              {/* Fueling Information Card */}
+              <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                  <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.77 7.23L19.78 7.22L16.06 3.5L15 4.56L17.11 6.67C16.17 7.03 15.5 7.93 15.5 9C15.5 10.38 16.62 11.5 18 11.5C18.36 11.5 18.69 11.42 19 11.29V18.5C19 19.05 18.55 19.5 18 19.5C17.45 19.5 17 19.05 17 18.5V14C17 12.9 16.1 12 15 12H14V5C14 3.9 13.1 3 12 3H6C4.9 3 4 3.9 4 5V21H14V13.5H15.5V18.5C15.5 19.88 16.62 21 18 21C19.38 21 20.5 19.88 20.5 18.5V9C20.5 8.31 20.22 7.68 19.77 7.23ZM12 10H6V5H12V10Z" fill="currentColor"/>
+                  </svg>
+                  Informacije o točenju
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tip Goriva</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                      {operation.tank?.fuel_type?.toLowerCase() === 'jet a-1'.toLowerCase() ? (
+                        <>
+                          <img 
+                            src="/JET A-1.svg" 
+                            alt="JET A-1" 
+                            className="w-8 h-8 object-contain mr-2" 
+                          />
+                          JET A-1
+                        </>
+                      ) : (
+                        operation.tank?.fuel_type || 'N/A'
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Ukupan iznos:</span>
-                  <span className="font-medium text-gray-900">{(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })} {operation.currency || 'BAM'}</span>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Količina (L)</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      {(operation.quantity_liters || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Količina (kg)</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      {(operation.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} kg
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Avio Cisterna:</span>
-                  <span className="font-medium text-gray-900">{operation.tank?.identifier || 'N/A'} - {operation.tank?.name || 'N/A'}</span>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Gustoća</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      {(operation.specific_density || 0).toLocaleString('hr-HR', { minimumFractionDigits: 3 })} kg/L
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Cijena po kg</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      {(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avio Cisterna</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      {operation.tank?.identifier || 'N/A'} {operation.tank?.name ? `(${operation.tank.name})` : ''}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Tip Saobraćaja:</span>
-                  {operation.tip_saobracaja ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {operation.tip_saobracaja}
-                    </span>
-                  ) : (
-                    <span className="text-gray-400 italic">N/A</span>
+              </div>
+              
+              {/* Additional Information Card */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                  <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 7H13V9H11V7ZM12 17C12.55 17 13 16.55 13 16V12C13 11.45 12.55 11 12 11C11.45 11 11 11.45 11 12V16C11 16.55 11.45 17 12 17ZM12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="currentColor"/>
+                  </svg>
+                  Dodatne informacije
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tip Saobraćaja</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                      {operation.tip_saobracaja ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          {operation.tip_saobracaja === 'domestic' ? 'DOMAĆI' : 'MEĐUNARODNI'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 italic">N/A</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Broj dostavnice</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.delivery_note_number || 'N/A'}</div>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Operater</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.operator_name}</div>
+                  </div>
+                  {operation.discount_percentage !== undefined && operation.discount_percentage > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rabat</div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{operation.discount_percentage}%</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <ul className="space-y-1">
+                          <li>Cijena prije rabata: <span className="font-medium">{((operation.total_amount || 0) / (1 - operation.discount_percentage / 100)).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span></li>
+                          <li>Iznos rabata: <span className="font-medium">{(((operation.total_amount || 0) / (1 - operation.discount_percentage / 100)) * (operation.discount_percentage / 100)).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span></li>
+                          <li>Konačna cijena: <span className="font-medium">{(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span></li>
+                        </ul>
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Operater:</span>
-                  <span className="font-medium text-gray-900">{operation.operator_name}</span>
+              </div>
+            </div>
+          </section>
+          
+          {/* Total Price Calculation Section */}
+          <section className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div className="bg-gray-100 dark:bg-gray-700/50 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold flex items-center text-gray-700 dark:text-gray-300">
+                <svg className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Detalji Obračuna
+              </h3>
+            </div>
+            <div className="p-5">
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-col space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-indigo-100 dark:border-indigo-800 shadow-sm">
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Obračun po formuli</h4>
+                      <div className="flex items-center space-x-2 text-lg font-semibold text-gray-800 dark:text-gray-200">
+                        <span>{(operation.quantity_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} kg</span>
+                        <span>×</span>
+                        <span>{(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })} {operation.currency || 'BAM'}</span>
+                        {operation.discount_percentage && operation.discount_percentage > 0 && (
+                          <>
+                            <span>×</span>
+                            <span>(1 - {operation.discount_percentage}%)</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-4 border border-gray-600 dark:border-gray-700 shadow-sm text-white">
+                      <h4 className="text-sm font-medium text-gray-200 mb-2">Ukupna cijena</h4>
+                      <div className="flex items-center justify-between">
+                        <div className="text-2xl font-bold">
+                          {(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}
+                        </div>
+                        <div className="text-xs bg-gray-600 dark:bg-gray-700 px-2 py-1 rounded-full">
+                          {operation.tip_saobracaja || 'Standardni saobraćaj'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Additional pricing information */}
+                <div className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                  <p className="flex items-center mb-2">
+                    <svg className="w-4 h-4 mr-1 text-gray-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Cijena je obračunata na osnovu količine u kilogramima i cijene po kilogramu{operation.discount_percentage && operation.discount_percentage > 0 ? ', uz primijenjeni rabat' : ''}.
+                  </p>
+                  
+
                 </div>
               </div>
             </div>
