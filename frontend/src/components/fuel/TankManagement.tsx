@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon, PhotoIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import TankRefillForm from './TankRefillForm';
 import { fetchWithAuth, uploadTankImage, getTotalFuelSummary } from '@/lib/apiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import TankFormWithImageUpload from './TankFormWithImageUpload';
 import TankImageDisplay from './TankImageDisplay';
+import { format } from 'date-fns';
 
 interface FuelTank {
   id: number;
@@ -22,15 +23,43 @@ interface FuelTank {
   image_url?: string; // URL to the tank image
 }
 
+// Represents a single transaction in the history of a mobile tank (aircraft tanker)
+interface MobileTankTransaction {
+  id: number;
+  transaction_datetime: string; // ISO date-time string
+  type: 'supplier_refill' | 'fixed_tank_transfer' | 'aircraft_fueling' | 'adjustment' | string;
+  quantity_liters: number;
+  source_name?: string; // For fixed_tank_transfer: name of the fixed tank
+  source_id?: number;   // For fixed_tank_transfer: ID of the fixed tank
+  destination_name?: string; // For aircraft_fueling: aircraft registration or flight number
+  tankName?: string;    // Name of the tank this transaction belongs to
+  tankIdentifier?: string; // Identifier of the tank this transaction belongs to
+  destination_id?: number;   // For aircraft_fueling: operation ID
+  supplier_name?: string;    // For supplier_refill: name of the supplier
+  invoice_number?: string;   // For supplier_refill: invoice number
+  price_per_liter?: number;  // For supplier_refill: price per liter
+  notes?: string;
+  user?: string;             // User who performed the transaction
+}
+
 export default function TankManagement() {
   const [tanks, setTanks] = useState<FuelTank[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRefillModal, setShowRefillModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [currentTank, setCurrentTank] = useState<FuelTank | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [totalFuel, setTotalFuel] = useState({ liters: 0, kg: 0 });
+  const [transactions, setTransactions] = useState<MobileTankTransaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<MobileTankTransaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<MobileTankTransaction[]>([]);
+  const [dateFilter, setDateFilter] = useState<string>(format(new Date(), 'yyyy-MM'));
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+
   // Fuel summary state
   const [fuelSummary, setFuelSummary] = useState<{
     fixedTanksTotal: number;
@@ -56,6 +85,18 @@ export default function TankManagement() {
     fetchTanks();
     fetchFuelSummary();
   }, []);
+  
+  // Fetch all transactions when tanks are loaded
+  useEffect(() => {
+    if (tanks.length > 0) {
+      fetchAllTankTransactions();
+    }
+  }, [tanks]);
+  
+  // Apply filters whenever the filter values change
+  useEffect(() => {
+    applyFilters();
+  }, [dateFilter, typeFilter]);
 
   const fetchTanks = async () => {
     try {
@@ -96,6 +137,74 @@ export default function TankManagement() {
     setImagePreview(imageUrl);
     // Refresh the tanks data to get the updated image URL
     await fetchTanks();
+  };
+  
+  const fetchAllTankTransactions = async () => {
+    setLoadingTransactions(true);
+    try {
+      const tanksData = await Promise.all(tanks.map(tank => 
+        fetchWithAuth<MobileTankTransaction[]>(`/api/fuel/tanks/${tank.id}/transactions`)
+          .then(data => data.map(transaction => ({
+            ...transaction,
+            tankName: tank.name,
+            tankIdentifier: tank.identifier
+          })))
+          .catch(error => {
+            console.error(`Error fetching transactions for tank ${tank.id}:`, error);
+            return [];
+          })
+      ));
+      
+      const combinedTransactions = tanksData.flat();
+      setAllTransactions(combinedTransactions);
+      setTransactions(combinedTransactions);
+      applyFilters(combinedTransactions);
+    } catch (error) {
+      console.error('Error fetching all tank transactions:', error);
+      toast.error('Greška pri učitavanju historije transakcija');
+      setAllTransactions([]);
+      setTransactions([]);
+      setFilteredTransactions([]);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+  
+  const fetchTankTransactions = async (tankId: number) => {
+    setLoadingTransactions(true);
+    try {
+      const data = await fetchWithAuth<MobileTankTransaction[]>(`/api/fuel/tanks/${tankId}/transactions`);
+      setTransactions(data);
+      applyFilters(data);
+    } catch (error) {
+      console.error('Error fetching tank transactions:', error);
+      toast.error('Greška pri učitavanju historije transakcija');
+      setTransactions([]);
+      setFilteredTransactions([]);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+  
+  const applyFilters = (data: MobileTankTransaction[] = transactions) => {
+    let filtered = [...data];
+    
+    // Apply date filter (yyyy-MM format)
+    if (dateFilter) {
+      const [filterYear, filterMonth] = dateFilter.split('-').map(Number);
+      filtered = filtered.filter(transaction => {
+        const transactionDate = new Date(transaction.transaction_datetime);
+        return transactionDate.getFullYear() === filterYear && 
+               transactionDate.getMonth() + 1 === filterMonth; // +1 because getMonth() is 0-indexed
+      });
+    }
+    
+    // Apply transaction type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(transaction => transaction.type === typeFilter);
+    }
+    
+    setFilteredTransactions(filtered);
   };
   
   // Use the imported uploadTankImage function from apiService
@@ -460,30 +569,32 @@ export default function TankManagement() {
                     </div>
                     
                     {/* Action buttons */}
-                    <div className="mt-5 flex space-x-2">
-                      <button
-                        onClick={() => openRefillModal(tank)}
-                        className="flex-1 flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-[#E60026] to-[#800014] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
-                      >
-                        <ArrowUpCircleIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
-                        Dopuni
-                      </button>
-                      
-                      <button
-                        onClick={() => openEditModal(tank)}
-                        className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
-                      >
-                        <PencilIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
-                        Uredi
-                      </button>
-                      
-                      <button
-                        onClick={() => handleDeleteTank(tank.id)}
-                        className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors shadow-sm"
-                      >
-                        <TrashIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
-                        Obriši
-                      </button>
+                    <div className="mt-5 flex flex-col space-y-2">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => openRefillModal(tank)}
+                          className="flex-1 flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-[#E60026] to-[#800014] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
+                        >
+                          <ArrowUpCircleIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
+                          Dopuni
+                        </button>
+                        
+                        <button
+                          onClick={() => openEditModal(tank)}
+                          className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
+                        >
+                          <PencilIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
+                          Uredi
+                        </button>
+                        
+                        <button
+                          onClick={() => handleDeleteTank(tank.id)}
+                          className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors shadow-sm"
+                        >
+                          <TrashIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
+                          Obriši
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -563,6 +674,189 @@ export default function TankManagement() {
           </div>
         </div>
       )}
+      
+      {/* Transaction History Section */}
+      <div className="mt-10 bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:px-6 bg-gray-50">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+              <ClockIcon className="h-5 w-5 mr-2 text-indigo-600" />
+              Historija Transakcija
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500">
+              Pregled historije dopuna i transfera za sve cisterne
+            </p>
+          </div>
+          
+          <div className="p-6">
+            {/* Filters */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">Mjesec i godina</label>
+                <input
+                  type="month"
+                  id="date-filter"
+                  className="shadow-sm focus:ring-[#E60026] focus:border-[#E60026] block w-full sm:text-sm border-gray-300 rounded-md"
+                  value={dateFilter}
+                  onChange={(e) => {
+                    setDateFilter(e.target.value);
+                    applyFilters();
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="type-filter" className="block text-sm font-medium text-gray-700 mb-1">Tip transakcije</label>
+                <select
+                  id="type-filter"
+                  className="shadow-sm focus:ring-[#E60026] focus:border-[#E60026] block w-full sm:text-sm border-gray-300 rounded-md"
+                  value={typeFilter}
+                  onChange={(e) => {
+                    setTypeFilter(e.target.value);
+                    applyFilters();
+                  }}
+                >
+                  <option value="all">Sve transakcije</option>
+                  <option value="supplier_refill">Dopuna od dobavljača</option>
+                  <option value="fixed_tank_transfer">Transfer iz fiksnog tanka</option>
+                  <option value="aircraft_fueling">Točenje aviona</option>
+                  <option value="adjustment">Korekcija količine</option>
+                </select>
+              </div>
+              
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#E60026] hover:bg-[#C00020] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026]"
+                  onClick={() => {
+                    setDateFilter(format(new Date(), 'yyyy-MM'));
+                    setTypeFilter('all');
+                    applyFilters();
+                  }}
+                >
+                  Resetuj filtere
+                </button>
+              </div>
+            </div>
+            
+            {/* Transaction Table */}
+            {loadingTransactions ? (
+              <div className="flex justify-center py-6">
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    <div className="w-12 h-12 border-4 border-red-200 border-opacity-50 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-red-600 rounded-full animate-spin"></div>
+                  </div>
+                  <p className="mt-4 text-red-700 font-medium">Učitavanje transakcija...</p>
+                </div>
+              </div>
+            ) : filteredTransactions.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <DocumentTextIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">Nema transakcija</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {transactions.length > 0 
+                    ? 'Nema transakcija koje odgovaraju odabranim filterima.'
+                    : 'Za ovu cisternu još uvijek nema zabilježenih transakcija.'}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-lg font-medium text-gray-900">Transakcije</h4>
+                  <span className="text-sm text-gray-500">
+                    {filteredTransactions.length} {filteredTransactions.length === 1 ? 'transakcija' : 'transakcija'}
+                    {filteredTransactions.length !== allTransactions.length && ` (od ukupno ${allTransactions.length})`}
+                  </span>
+                </div>
+                
+                <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Datum i vrijeme</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Cisterna</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Tip transakcije</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Količina (L)</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Izvor/Destinacija</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Napomena</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {filteredTransactions.map((transaction) => {
+                        // Determine transaction type display and badge color
+                        let typeDisplay = '';
+                        let badgeColor = '';
+                        let sourceDestDisplay = '';
+                        
+                        switch(transaction.type) {
+                          case 'supplier_refill':
+                            typeDisplay = 'Dopuna od dobavljača';
+                            badgeColor = 'bg-green-100 text-green-800';
+                            sourceDestDisplay = transaction.supplier_name || 'N/A';
+                            break;
+                          case 'fixed_tank_transfer':
+                            typeDisplay = 'Transfer iz fiksnog tanka';
+                            badgeColor = 'bg-blue-100 text-blue-800';
+                            sourceDestDisplay = transaction.source_name || 'N/A';
+                            break;
+                          case 'aircraft_fueling':
+                            typeDisplay = 'Točenje aviona';
+                            badgeColor = 'bg-orange-100 text-orange-800';
+                            sourceDestDisplay = transaction.destination_name || 'N/A';
+                            break;
+                          case 'adjustment':
+                            typeDisplay = 'Korekcija količine';
+                            badgeColor = 'bg-gray-100 text-gray-800';
+                            sourceDestDisplay = 'Sistemska korekcija';
+                            break;
+                          default:
+                            typeDisplay = transaction.type;
+                            badgeColor = 'bg-gray-100 text-gray-800';
+                            sourceDestDisplay = 'N/A';
+                        }
+                        
+                        // Create a unique key by combining transaction ID with tank identifier
+                        const uniqueKey = `${transaction.id}-${transaction.tankIdentifier || 'unknown'}-${transaction.transaction_datetime}`;
+                        
+                        return (
+                          <tr key={uniqueKey}>
+                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                              {format(new Date(transaction.transaction_datetime), 'dd.MM.yyyy HH:mm')}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              {transaction.tankName} ({transaction.tankIdentifier})
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeColor}`}>
+                                {typeDisplay}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              {transaction.quantity_liters.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              {sourceDestDisplay}
+                              {transaction.invoice_number && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  Faktura: {transaction.invoice_number}
+                                </div>
+                              )}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              {transaction.notes || '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
     </div>
   );
 } 

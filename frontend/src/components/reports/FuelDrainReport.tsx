@@ -281,7 +281,13 @@ const FuelDrainReport = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
         <CardHeader className="flex flex-row items-center justify-between relative z-10 text-white">
           <CardTitle>Evidencija Dreniranog Goriva</CardTitle>
-        <Button onClick={handleExportAllToPdf} variant="outline" size="sm" disabled={filteredData.length === 0}>
+        <Button 
+          onClick={handleExportAllToPdf} 
+          variant="default" 
+          size="sm" 
+          disabled={filteredData.length === 0}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+        >
           <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
           Preuzmi PDF (filtrirano)
         </Button>

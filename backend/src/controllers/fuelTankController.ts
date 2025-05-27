@@ -51,6 +51,101 @@ export const getFuelTankById = async (req: Request, res: Response): Promise<void
   }
 };
 
+export const getTankTransactions = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  
+  try {
+    // Check if the tank exists
+    const tank = await (prisma as any).fuelTank.findUnique({
+      where: { id: Number(id) },
+    });
+    
+    if (!tank) {
+      res.status(404).json({ message: 'Tanker nije pronađen' });
+      return;
+    }
+    
+    // Get all transactions for this tank
+    const transactions = [];
+    
+    // 1. Get refills from suppliers
+    const supplierRefills = await (prisma as any).fuelTankRefill.findMany({
+      where: { tankId: Number(id) },
+      orderBy: { date: 'desc' },
+    });
+    
+    // Map supplier refills to our transaction format
+    const mappedSupplierRefills = supplierRefills.map((refill: any) => ({
+      id: refill.id,
+      transaction_datetime: refill.date,
+      type: 'supplier_refill',
+      quantity_liters: refill.quantity_liters,
+      supplier_name: refill.supplier,
+      invoice_number: refill.invoice_number,
+      price_per_liter: refill.price_per_liter,
+      notes: refill.notes,
+    }));
+    
+    // 2. Get transfers from fixed tanks
+    const fixedTankTransfers = await (prisma as any).fuelTransferToTanker.findMany({
+      where: { targetFuelTankId: Number(id) },
+      include: {
+        sourceFixedStorageTank: {
+          select: {
+            id: true,
+            tank_name: true,
+            tank_identifier: true,
+          },
+        },
+        user: {
+          select: {
+            username: true,
+          },
+        },
+      },
+      orderBy: { dateTime: 'desc' },
+    });
+    
+    // Map fixed tank transfers to our transaction format
+    const mappedFixedTankTransfers = fixedTankTransfers.map((transfer: any) => ({
+      id: transfer.id,
+      transaction_datetime: transfer.dateTime,
+      type: 'fixed_tank_transfer',
+      quantity_liters: transfer.quantityLiters,
+      source_name: transfer.sourceFixedStorageTank?.tank_name,
+      source_id: transfer.sourceFixedStorageTankId,
+      notes: transfer.notes,
+      user: transfer.user?.username,
+    }));
+    
+    // 3. Get fueling operations (where this tank was used to fuel aircraft)
+    const fuelingOperations = await (prisma as any).fuelingOperation.findMany({
+      where: { tankId: Number(id) },
+      orderBy: { dateTime: 'desc' },
+    });
+    
+    // Map fueling operations to our transaction format
+    const mappedFuelingOperations = fuelingOperations.map((operation: any) => ({
+      id: operation.id,
+      transaction_datetime: operation.dateTime,
+      type: 'aircraft_fueling',
+      quantity_liters: operation.quantity_liters,
+      destination_name: operation.aircraft_registration || operation.flight_number,
+      destination_id: operation.id,
+      notes: operation.notes,
+    }));
+    
+    // Combine all transactions and sort by date (newest first)
+    transactions.push(...mappedSupplierRefills, ...mappedFixedTankTransfers, ...mappedFuelingOperations);
+    transactions.sort((a, b) => new Date(b.transaction_datetime).getTime() - new Date(a.transaction_datetime).getTime());
+    
+    res.status(200).json(transactions);
+  } catch (error) {
+    console.error('Error fetching tank transactions:', error);
+    res.status(500).json({ message: 'Greška pri dohvaćanju historije transakcija' });
+  }
+};
+
 export const createFuelTank = async (req: Request, res: Response): Promise<void> => {
   try {
     const validationResult = fuelTankSchema.safeParse(req.body);

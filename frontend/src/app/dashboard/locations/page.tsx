@@ -71,6 +71,7 @@ const LocationsPage = () => {
           <Link href="/dashboard/locations/new">
             <Button 
               variant="default"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
             >
               <FaPlus className="mr-2" />
               Dodaj Novu Lokaciju

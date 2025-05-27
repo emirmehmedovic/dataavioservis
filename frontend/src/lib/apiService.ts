@@ -656,6 +656,19 @@ export async function deleteServiceRecord(vehicleId: number | string, recordId: 
   });
 }
 
+// --- Profile API --- //
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export async function changePassword(payload: ChangePasswordPayload): Promise<{ message: string }> {
+  return fetchWithAuth(`${API_BASE_URL}/api/profile/password`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 // Upload a PDF document for a service record
 export const uploadServiceRecordDocument = async (
   vehicleId: number | string, 

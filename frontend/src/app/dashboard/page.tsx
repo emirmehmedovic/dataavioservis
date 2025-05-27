@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { DataDisplay, DataGrid } from '@/components/ui/DataDisplay';
 import { 
   Table, 
   TableHeader, 
@@ -15,63 +14,146 @@ import {
 } from '@/components/ui/Table';
 import { motion } from 'framer-motion';
 import { 
-  Car, 
-  Users, 
-  Building2, 
-  MapPin, 
+  Droplet, 
+  TrendingUp, 
   AlertTriangle, 
-  Calendar, 
   BarChart3, 
-  TrendingUp,
+  Calendar, 
+  Truck, 
+  Fuel, 
+  RefreshCw, 
+  ArrowRight, 
+  ChevronRight,
   Clock,
   Activity,
-  ChevronRight
+  DropletIcon
 } from 'lucide-react';
+import { getTotalFuelSummary, getTotalFixedTankIntake, getFixedTanks } from '@/lib/apiService';
+import { FixedStorageTank } from '@/types/fuel';
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
+  const [fuelSummary, setFuelSummary] = useState<{
+    fixedTanksTotal: number;
+    mobileTanksTotal: number;
+    grandTotal: number;
+  } | null>(null);
+  const [monthlyIntake, setMonthlyIntake] = useState<number | null>(null);
+  const [fixedTanks, setFixedTanks] = useState<FixedStorageTank[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch fuel summary
+        const summary = await getTotalFuelSummary();
+        setFuelSummary(summary);
+        
+        // Get current month's start and end dates
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+        
+        // Fetch monthly intake
+        const intakeData = await getTotalFixedTankIntake(startOfMonth, endOfMonth);
+        setMonthlyIntake(intakeData.totalIntake);
+        
+        // Fetch fixed tanks
+        const tanks = await getFixedTanks();
+        setFixedTanks(tanks);
+        
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.message || 'Greška prilikom dohvatanja podataka');
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    return () => clearTimeout(timer);
+    fetchDashboardData();
   }, []);
 
-  const stats = [
-    { title: 'Ukupno vozila', value: '24', icon: <Car size={20} />, trend: { value: 12, isPositive: true } },
-    { title: 'Aktivni korisnici', value: '8', icon: <Users size={20} /> },
-    { title: 'Partnerske firme', value: '5', icon: <Building2 size={20} /> },
-    { title: 'Lokacije', value: '3', icon: <MapPin size={20} /> },
+  // Mock data for recent activities
+  const recentFuelActivities = [
+    { 
+      id: 1, 
+      type: 'Unos goriva', 
+      details: 'Unos 5000L JET A-1 u tank T-101', 
+      timestamp: '27.05.2025 09:15', 
+      user: 'admin',
+      status: 'success'
+    },
+    { 
+      id: 2, 
+      type: 'Transfer goriva', 
+      details: 'Transfer 1200L JET A-1 iz tanka T-101 u mobilnu cisternu C-01', 
+      timestamp: '26.05.2025 14:30', 
+      user: 'operator1',
+      status: 'success'
+    },
+    { 
+      id: 3, 
+      type: 'Točenje goriva', 
+      details: 'Točenje 800L JET A-1 u avion A320 (JA-123)', 
+      timestamp: '26.05.2025 11:45', 
+      user: 'operator2',
+      status: 'success'
+    },
+    { 
+      id: 4, 
+      type: 'Drenaža goriva', 
+      details: 'Drenaža 50L JET A-1 iz tanka T-102', 
+      timestamp: '25.05.2025 16:20', 
+      user: 'admin',
+      status: 'warning'
+    },
   ];
 
-  const upcomingEvents = [
-    { id: 1, type: 'Servis', vehicle: 'Mercedes Sprinter', date: '18.05.2025', status: 'Zakazano' },
-    { id: 2, type: 'Registracija', vehicle: 'BMW X5', date: '22.05.2025', status: 'Uskoro' },
-    { id: 3, type: 'Inspekcija', vehicle: 'Audi A6', date: '01.06.2025', status: 'Zakazano' },
-  ];
-
-  const alerts = [
-    { id: 1, title: 'Ističe registracija', description: 'BMW X5 - registracija ističe za 7 dana', severity: 'high' },
-    { id: 2, title: 'Potreban servis', description: 'Mercedes Sprinter - 2000km do redovnog servisa', severity: 'medium' },
-    { id: 3, title: 'Inspekcija zakazana', description: 'Audi A6 - inspekcija zakazana za 01.06.2025', severity: 'low' },
-  ];
-
-  const recentActivities = [
-    { id: 1, action: 'Dodano vozilo', user: 'admin', timestamp: 'Prije 2 sata', details: 'Dodano novo vozilo: Audi A6' },
-    { id: 2, action: 'Ažuriran servis', user: 'marko', timestamp: 'Prije 1 dan', details: 'Ažuriran servisni zapis za Mercedes Sprinter' },
-    { id: 3, action: 'Dodana slika', user: 'admin', timestamp: 'Prije 2 dana', details: 'Dodana nova slika za BMW X5' },
+  // Mock data for alerts
+  const fuelAlerts = [
+    { 
+      id: 1, 
+      title: 'Nizak nivo goriva', 
+      description: 'Tank T-103 ima manje od 20% kapaciteta', 
+      severity: 'high' 
+    },
+    { 
+      id: 2, 
+      title: 'Potrebna kalibracija', 
+      description: 'Mobilna cisterna C-02 zahtijeva kalibraciju u narednih 7 dana', 
+      severity: 'medium' 
+    },
+    { 
+      id: 3, 
+      title: 'Zakazana isporuka goriva', 
+      description: 'Isporuka 10000L JET A-1 zakazana za 30.05.2025', 
+      severity: 'low' 
+    },
   ];
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[80vh]">
         <motion.div 
-          className="h-16 w-16 rounded-full border-t-4 border-b-4 border-blue-500"
+          className="h-16 w-16 rounded-full border-t-4 border-b-4 border-indigo-500"
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-[80vh] flex-col">
+        <AlertTriangle size={48} className="text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Greška prilikom učitavanja podataka</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>
+          Pokušaj ponovo
+        </Button>
       </div>
     );
   }
@@ -92,6 +174,23 @@ export default function DashboardPage() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
 
+  // Format number with thousand separator
+  const formatNumber = (num: number) => {
+    return num.toLocaleString('bs-BA');
+  };
+
+  // Calculate fill percentage
+  const calculateFillPercentage = (current: number, capacity: number) => {
+    return Math.min(Math.round((current / capacity) * 100), 100);
+  };
+
+  // Get color based on fill percentage
+  const getFillColor = (percentage: number) => {
+    if (percentage < 20) return 'bg-red-500';
+    if (percentage < 50) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
   return (
     <motion.div 
       className="space-y-6"
@@ -104,129 +203,206 @@ export default function DashboardPage() {
         <Card className="border border-white/10 overflow-hidden backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg">
           <CardContent className="p-6 relative">
             <div className="absolute top-0 left-0 w-full h-full bg-white/5 z-0"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/4"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/4"></div>
             
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 relative z-10">
               <div>
-                <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                  Dobrodošli na AvioServis Dashboard
+                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">
+                  Dobrodošli u AvioServis Dashboard
                 </h1>
-                <p className="text-muted-foreground">Pregled ključnih informacija i aktivnosti u sistemu</p>
+                <p className="text-muted-foreground mt-1">
+                  Pregled stanja goriva i operacija
+                </p>
               </div>
-              <div className="flex space-x-3">
-                <Link href="/dashboard/vehicles/new">
-                  <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border border-white/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2">
-                    <Car size={16} /> Dodaj vozilo
-                  </Button>
-                </Link>
-                <Link href="/dashboard/users/new">
-                  <Button className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center gap-2">
-                    <Users size={16} /> Dodaj korisnika
-                  </Button>
-                </Link>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex items-center gap-1">
+                  <RefreshCw size={14} />
+                  <span>Osvježi</span>
+                </Button>
+                <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center gap-1">
+                  <Fuel size={14} />
+                  <span>Unos Goriva</span>
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Stats section */}
+      {/* Fuel summary section */}
       <motion.div variants={itemVariants}>
-        <DataGrid>
-          {stats.map((stat, index) => (
-            <motion.div 
-              key={stat.title}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="transform transition-all duration-300"
-            >
-              <DataDisplay 
-                title={stat.title} 
-                value={stat.value} 
-                icon={stat.icon} 
-                trend={stat.trend}
-                className="backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 border border-white/10 shadow-md hover:shadow-lg transition-all duration-300"
-              />
-            </motion.div>
-          ))}
-        </DataGrid>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-gradient-to-br from-white/60 to-white/20 shadow-sm border border-white/10 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                    <Droplet className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Fiksni Tankovi</h3>
+                    <p className="text-2xl font-bold">{fuelSummary ? formatNumber(fuelSummary.fixedTanksTotal) : 0} L</p>
+                  </div>
+                </div>
+                <Link href="/dashboard/fuel" className="text-xs text-blue-600 flex items-center hover:underline">
+                  Detalji <ChevronRight size={14} />
+                </Link>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-600 rounded-full" 
+                  style={{ width: '65%' }} 
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">65% ukupnog kapaciteta</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-white/60 to-white/20 shadow-sm border border-white/10 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                    <Truck className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Mobilne Cisterne</h3>
+                    <p className="text-2xl font-bold">{fuelSummary ? formatNumber(fuelSummary.mobileTanksTotal) : 0} L</p>
+                  </div>
+                </div>
+                <Link href="/dashboard/vehicles" className="text-xs text-indigo-600 flex items-center hover:underline">
+                  Detalji <ChevronRight size={14} />
+                </Link>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-indigo-600 rounded-full" 
+                  style={{ width: '40%' }} 
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">40% ukupnog kapaciteta</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-white/60 to-white/20 shadow-sm border border-white/10 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Mjesečni Unos</h3>
+                    <p className="text-2xl font-bold">{monthlyIntake ? formatNumber(monthlyIntake) : 0} L</p>
+                  </div>
+                </div>
+                <Link href="/dashboard/reports" className="text-xs text-green-600 flex items-center hover:underline">
+                  Izvještaji <ChevronRight size={14} />
+                </Link>
+              </div>
+              <div className="flex items-center text-sm">
+                <span className="inline-flex items-center text-green-600 mr-2">
+                  <TrendingUp size={14} className="mr-1" /> +12%
+                </span>
+                <span className="text-xs text-muted-foreground">u odnosu na prethodni mjesec</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </motion.div>
 
-      {/* Main content section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column - Upcoming events */}
-        <motion.div className="lg:col-span-2" variants={itemVariants}>
+      {/* Tank status section */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
           <Card className="border border-white/10 overflow-hidden backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg">
             <CardHeader className="pb-3 relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400 rounded-full filter blur-3xl opacity-5"></div>
-              <div className="flex items-center justify-between relative z-10">
-                <CardTitle className="text-lg font-medium flex items-center">
-                  <div className="flex items-center justify-center p-2 rounded-full bg-gradient-to-r from-blue-500/20 to-indigo-500/20 mr-3">
-                    <Calendar className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                    Nadolazeći događaji
-                  </span>
-                </CardTitle>
-                <Link href="/dashboard/events">
-                  <Button className="text-sm bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/10 flex items-center gap-1 transition-all duration-300">
-                    Vidi sve <ChevronRight size={14} />
-                  </Button>
-                </Link>
-              </div>
+              <CardTitle className="text-lg font-medium flex items-center">
+                <div className="flex items-center justify-center p-2 rounded-full bg-gradient-to-r from-blue-500/20 to-indigo-500/20 mr-3">
+                  <Droplet className="h-5 w-5 text-blue-500" />
+                </div>
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                  Status Fiksnih Tankova
+                </span>
+              </CardTitle>
             </CardHeader>
             <CardContent className="relative z-10">
-              <div className="rounded-xl overflow-hidden backdrop-blur-md border border-white/10">
+              <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10">
+                  <TableHeader>
                     <TableRow>
-                      <TableHead>Tip</TableHead>
-                      <TableHead>Vozilo</TableHead>
-                      <TableHead>Datum</TableHead>
+                      <TableHead>Tank</TableHead>
+                      <TableHead>Tip Goriva</TableHead>
+                      <TableHead>Kapacitet</TableHead>
+                      <TableHead>Trenutno</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {upcomingEvents.map((event, index) => (
-                      <TableRow key={event.id} className="hover:bg-white/5 transition-colors duration-200">
-                        <TableCell>{event.type}</TableCell>
-                        <TableCell className="font-medium">{event.vehicle}</TableCell>
-                        <TableCell>{event.date}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                            event.status === 'Zakazano' ? 'bg-blue-500/20 text-blue-600 border border-blue-500/30' :
-                            event.status === 'Uskoro' ? 'bg-amber-500/20 text-amber-600 border border-amber-500/30' :
-                            'bg-green-500/20 text-green-600 border border-green-500/30'
-                          }`}>
-                            {event.status}
-                          </span>
+                    {fixedTanks.length > 0 ? (
+                      fixedTanks.map((tank) => {
+                        const fillPercentage = calculateFillPercentage(
+                          tank.current_quantity_liters || 0, 
+                          tank.capacity_liters || 1
+                        );
+                        const fillColor = getFillColor(fillPercentage);
+                        
+                        return (
+                          <TableRow key={tank.id}>
+                            <TableCell className="font-medium">{tank.tank_name} ({tank.tank_identifier})</TableCell>
+                            <TableCell>{tank.fuel_type || 'N/A'}</TableCell>
+                            <TableCell>{formatNumber(tank.capacity_liters || 0)} L</TableCell>
+                            <TableCell>{formatNumber(tank.current_quantity_liters || 0)} L</TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2 dark:bg-gray-700">
+                                  <div className={`${fillColor} h-2.5 rounded-full`} style={{ width: `${fillPercentage}%` }}></div>
+                                </div>
+                                <span className="text-xs font-medium">{fillPercentage}%</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                          Nema dostupnih podataka o tankovima
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
+              <div className="mt-4 flex justify-end">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/dashboard/fuel" className="flex items-center gap-1">
+                    <span>Upravljanje Tankovima</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
-        {/* Right column - Alerts */}
-        <motion.div variants={itemVariants}>
+        <div>
           <Card className="border border-white/10 overflow-hidden backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg">
             <CardHeader className="pb-3 relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-400 rounded-full filter blur-3xl opacity-5"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400 rounded-full filter blur-3xl opacity-5"></div>
               <CardTitle className="text-lg font-medium flex items-center">
-                <div className="flex items-center justify-center p-2 rounded-full bg-gradient-to-r from-red-500/20 to-pink-500/20 mr-3">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                <div className="flex items-center justify-center p-2 rounded-full bg-gradient-to-r from-amber-500/20 to-red-500/20 mr-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
                 </div>
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-pink-600">
-                  Upozorenja i obavijesti
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-red-600">
+                  Upozorenja
                 </span>
               </CardTitle>
             </CardHeader>
             <CardContent className="relative z-10">
               <div className="space-y-4">
-                {alerts.map((alert) => (
+                {fuelAlerts.map((alert) => (
                   <motion.div 
                     key={alert.id} 
                     className={`p-4 rounded-xl backdrop-blur-sm border ${
@@ -247,26 +423,26 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
-      {/* Activity section */}
+      {/* Recent fuel activities */}
       <motion.div variants={itemVariants}>
         <Card className="border border-white/10 overflow-hidden backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg">
           <CardHeader className="pb-3 relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-400 rounded-full filter blur-3xl opacity-5"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-400 rounded-full filter blur-3xl opacity-5"></div>
             <CardTitle className="text-lg font-medium flex items-center">
-              <div className="flex items-center justify-center p-2 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 mr-3">
-                <Activity className="h-5 w-5 text-purple-500" />
+              <div className="flex items-center justify-center p-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-blue-500/20 mr-3">
+                <Activity className="h-5 w-5 text-indigo-500" />
               </div>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">
-                Nedavne aktivnosti
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">
+                Nedavne Aktivnosti s Gorivom
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="space-y-4">
-              {recentActivities.map((activity, index) => (
+              {recentFuelActivities.map((activity, index) => (
                 <motion.div 
                   key={activity.id} 
                   className="flex items-start pb-4 border-b border-white/10 last:border-0 last:pb-0"
@@ -274,22 +450,34 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + index * 0.1 }}
                 >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center mr-3 border border-white/10">
-                    <Clock className="h-5 w-5 text-purple-500" />
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-blue-500/20 flex items-center justify-center mr-3 border border-white/10">
+                    <DropletIcon className="h-5 w-5 text-indigo-500" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-medium text-purple-600">{activity.action}</h4>
+                      <h4 className="font-medium text-indigo-600">{activity.type}</h4>
                       <span className="text-xs bg-white/10 backdrop-blur-sm px-2 py-1 rounded-full border border-white/10">{activity.timestamp}</span>
                     </div>
                     <p className="text-sm">{activity.details}</p>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                      <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                      <span className={`inline-block w-2 h-2 rounded-full ${
+                        activity.status === 'success' ? 'bg-green-500' : 
+                        activity.status === 'warning' ? 'bg-amber-500' : 
+                        'bg-red-500'
+                      } mr-1`}></span>
                       Korisnik: {activity.user}
                     </p>
                   </div>
                 </motion.div>
               ))}
+            </div>
+            <div className="mt-4 flex justify-center">
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/dashboard/reports" className="flex items-center gap-1">
+                  <span>Pogledaj sve aktivnosti</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>

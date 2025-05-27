@@ -8,6 +8,7 @@ import companyRoutes from './routes/company';
 import locationRoutes from './routes/location';
 import vehicleRoutes from './routes/vehicle';
 import usersRoutes from './routes/users';
+import profileRoutes from './routes/profile';
 import serviceRecordRoutes from './routes/serviceRecords';
 import fuelRoutes from './routes/fuelRoutes';
 import fixedStorageTankRoutes from './routes/fixedStorageTank.routes';
@@ -48,6 +49,7 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/profile', profileRoutes); // Register profile routes
 app.use('/api', serviceRecordRoutes);
 app.use('/api/fuel', fuelRoutes);
 app.use('/api/fuel/fixed-tanks', fixedStorageTankRoutes);

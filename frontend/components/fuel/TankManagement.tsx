@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import TankRefillForm from './TankRefillForm';
 import { fetchWithAuth } from '@/lib/apiService';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MobileTankTransaction } from '@/types/fuel';
+import { format } from 'date-fns';
 
 interface FuelTank {
   id: number;
@@ -25,8 +27,11 @@ export default function TankManagement() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRefillModal, setShowRefillModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [currentTank, setCurrentTank] = useState<FuelTank | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [transactions, setTransactions] = useState<MobileTankTransaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -160,6 +165,26 @@ export default function TankManagement() {
   const openRefillModal = (tank: FuelTank) => {
     setCurrentTank(tank);
     setShowRefillModal(true);
+  };
+  
+  const openHistoryModal = async (tank: FuelTank) => {
+    setCurrentTank(tank);
+    setShowHistoryModal(true);
+    await fetchTankTransactions(tank.id);
+  };
+  
+  const fetchTankTransactions = async (tankId: number) => {
+    setLoadingTransactions(true);
+    try {
+      const data = await fetchWithAuth<MobileTankTransaction[]>(`/api/fuel/tanks/${tankId}/transactions`);
+      setTransactions(data);
+    } catch (error) {
+      console.error('Error fetching tank transactions:', error);
+      toast.error('Greška pri učitavanju historije transakcija');
+      setTransactions([]);
+    } finally {
+      setLoadingTransactions(false);
+    }
   };
   
   // Calculate fill percentage
@@ -399,29 +424,39 @@ export default function TankManagement() {
                     </div>
                     
                     {/* Action buttons */}
-                    <div className="mt-5 flex space-x-2">
-                      <button
-                        onClick={() => openRefillModal(tank)}
-                        className="flex-1 flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white hope-gradient focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
-                      >
-                        <ArrowUpCircleIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
-                        Dopuni
-                      </button>
+                    <div className="mt-5 flex flex-col space-y-2">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => openRefillModal(tank)}
+                          className="flex-1 flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white hope-gradient focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                        >
+                          <ArrowUpCircleIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
+                          Dopuni
+                        </button>
+                        
+                        <button
+                          onClick={() => openEditModal(tank)}
+                          className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                        >
+                          <PencilIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
+                          Uredi
+                        </button>
+                        
+                        <button
+                          onClick={() => handleDeleteTank(tank.id)}
+                          className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors shadow-sm"
+                        >
+                          <TrashIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
+                          Obriši
+                        </button>
+                      </div>
                       
                       <button
-                        onClick={() => openEditModal(tank)}
+                        onClick={() => openHistoryModal(tank)}
                         className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
                       >
-                        <PencilIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
-                        Uredi
-                      </button>
-                      
-                      <button
-                        onClick={() => handleDeleteTank(tank.id)}
-                        className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors shadow-sm"
-                      >
-                        <TrashIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
-                        Obriši
+                        <ClockIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
+                        Historija Transakcija
                       </button>
                     </div>
                   </div>
@@ -895,6 +930,156 @@ export default function TankManagement() {
           </div>
         </div>
       )}
+      
+      {/* Transaction History Modal */}
+      {showHistoryModal && currentTank && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+              <div className="hope-gradient p-5 rounded-t-lg text-white relative overflow-hidden">
+                {/* Abstract background pattern */}
+                <div className="absolute inset-0 opacity-20">
+                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#history-pattern)" />
+                    <defs>
+                      <pattern id="history-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M0 20 L40 20 M20 0 L20 40" stroke="currentColor" strokeWidth="1" fill="none" />
+                      </pattern>
+                    </defs>
+                  </svg>
+                </div>
+                
+                <h3 className="text-xl font-bold flex items-center relative z-10">
+                  <ClockIcon className="w-6 h-6 mr-2" />
+                  Historija Transakcija
+                </h3>
+                <p className="mt-1 text-sm opacity-90 relative z-10">
+                  Pregled historije dopuna i transfera za cisternu {currentTank.name} ({currentTank.identifier})
+                </p>
+              </div>
+              
+              <div className="p-6 max-h-[70vh] overflow-y-auto">
+                {loadingTransactions ? (
+                  <div className="flex justify-center py-6">
+                    <div className="flex flex-col items-center">
+                      <div className="relative">
+                        <div className="w-12 h-12 border-4 border-indigo-200 border-opacity-50 rounded-full"></div>
+                        <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-indigo-600 rounded-full animate-spin"></div>
+                      </div>
+                      <p className="mt-4 text-indigo-700 font-medium">Učitavanje transakcija...</p>
+                    </div>
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <DocumentTextIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900">Nema transakcija</h3>
+                    <p className="mt-1 text-sm text-gray-500">Za ovu cisternu još uvijek nema zabilježenih transakcija.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-lg font-medium text-gray-900">Transakcije</h4>
+                      <span className="text-sm text-gray-500">{transactions.length} {transactions.length === 1 ? 'transakcija' : 'transakcija'}</span>
+                    </div>
+                    
+                    <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                      <table className="min-w-full divide-y divide-gray-300">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Datum i vrijeme</th>
+                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Tip transakcije</th>
+                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Količina (L)</th>
+                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Izvor/Destinacija</th>
+                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Napomena</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                          {transactions.map((transaction) => {
+                            // Determine transaction type display and badge color
+                            let typeDisplay = '';
+                            let badgeColor = '';
+                            let sourceDestDisplay = '';
+                            
+                            switch(transaction.type) {
+                              case 'supplier_refill':
+                                typeDisplay = 'Dopuna od dobavljača';
+                                badgeColor = 'bg-green-100 text-green-800';
+                                sourceDestDisplay = transaction.supplier_name || 'N/A';
+                                break;
+                              case 'fixed_tank_transfer':
+                                typeDisplay = 'Transfer iz fiksnog tanka';
+                                badgeColor = 'bg-blue-100 text-blue-800';
+                                sourceDestDisplay = transaction.source_name || 'N/A';
+                                break;
+                              case 'aircraft_fueling':
+                                typeDisplay = 'Točenje aviona';
+                                badgeColor = 'bg-orange-100 text-orange-800';
+                                sourceDestDisplay = transaction.destination_name || 'N/A';
+                                break;
+                              case 'adjustment':
+                                typeDisplay = 'Korekcija količine';
+                                badgeColor = 'bg-gray-100 text-gray-800';
+                                sourceDestDisplay = 'Sistemska korekcija';
+                                break;
+                              default:
+                                typeDisplay = transaction.type;
+                                badgeColor = 'bg-gray-100 text-gray-800';
+                                sourceDestDisplay = 'N/A';
+                            }
+                            
+                            return (
+                              <tr key={transaction.id}>
+                                <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                  {format(new Date(transaction.transaction_datetime), 'dd.MM.yyyy HH:mm')}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeColor}`}>
+                                    {typeDisplay}
+                                  </span>
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {transaction.quantity_liters.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {sourceDestDisplay}
+                                  {transaction.invoice_number && (
+                                    <div className="text-xs text-gray-400 mt-1">
+                                      Faktura: {transaction.invoice_number}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {transaction.notes || '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowHistoryModal(false)}
+                >
+                  Zatvori
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* End of Modals */}
     </div>
   );
-} 
+}

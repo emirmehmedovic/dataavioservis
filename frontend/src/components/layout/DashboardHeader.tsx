@@ -134,15 +134,15 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
           
           <div className="relative">
             <Button 
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
             >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-medium text-white shadow-sm">
                 {authUser ? getInitials(authUser.username) : 'U'}
               </div>
-              <span className="hidden md:inline text-sm">{authUser?.username}</span>
+              <span className="hidden md:inline text-sm font-medium">{authUser?.username}</span>
             </Button>
             
             {showProfile && (
@@ -157,17 +157,10 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
                   <p className="text-xs text-muted-foreground">{authUser?.role}</p>
                 </div>
                 <div className="p-2">
-                  <button className="w-full text-left flex items-center space-x-2 p-2 hover:bg-muted rounded-md transition-colors">
+                  <a href="/dashboard/profile" className="w-full text-left flex items-center space-x-2 p-2 hover:bg-muted rounded-md transition-colors">
                     <User size={16} />
                     <span className="text-sm">Moj profil</span>
-                  </button>
-                  <button className="w-full text-left flex items-center space-x-2 p-2 hover:bg-muted rounded-md transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings">
-                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    <span className="text-sm">Postavke</span>
-                  </button>
+                  </a>
                 </div>
               </motion.div>
             )}

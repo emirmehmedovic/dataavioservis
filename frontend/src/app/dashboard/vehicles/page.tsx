@@ -164,23 +164,28 @@ export default function VehiclesPage() {
             </div>
             <div className="flex gap-2">
               <Button 
-                variant={viewMode === 'grid' ? 'default' : 'secondary'} 
+                variant="secondary"
                 size="icon"
                 onClick={() => setViewMode('grid')}
                 aria-label="Grid prikaz"
+                className={viewMode === 'grid' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
               >
                 <Grid size={18} />
               </Button>
               <Button 
-                variant={viewMode === 'list' ? 'default' : 'secondary'} 
+                variant="secondary"
                 size="icon"
                 onClick={() => setViewMode('list')}
                 aria-label="List prikaz"
+                className={viewMode === 'list' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
               >
                 <List size={18} />
               </Button>
               <Link href="/dashboard/vehicles/new">
-                <Button variant="default" className="shadow-md">
+                <Button 
+                  variant="default" 
+                  className="shadow-md bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                >
                   <Plus size={18} className="mr-2"/>
                   Dodaj Vozilo
                 </Button>

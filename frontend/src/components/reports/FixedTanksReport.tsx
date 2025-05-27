@@ -428,7 +428,7 @@ export default function FixedTanksReport() {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden max-w-full">
       {/* Header with black glassmorphism effect */}
       <div className="p-6 text-white relative overflow-hidden">
         {/* Black glassmorphism background */}
@@ -448,7 +448,7 @@ export default function FixedTanksReport() {
         </div>
       </div>
       
-      <div className="p-6">
+      <div className="p-2 sm:p-4 md:p-6">
         <div className="grid gap-6">
           {tanks.map(tank => {
             // Calculate fill percentage for visual indicator
@@ -469,38 +469,18 @@ export default function FixedTanksReport() {
                 className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden"
               >
                 <div className="p-5 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                         {tank.tank_name}
                       </h3>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 hover:bg-indigo-200">
+                        <div className="mt-1 flex flex-wrap gap-1 sm:gap-2">
+                        <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 hover:bg-indigo-200 text-xs sm:text-sm">
                           {tank.fuel_type}
                         </Badge>
-                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200">
-                          Kapacitet: {tank.capacity_liters.toLocaleString()} L
+                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 text-xs sm:text-sm">
+                          Kap: {tank.capacity_liters.toLocaleString()} L
                         </Badge>
-                      </div>
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        Lokacija: {tank.location_description || 'Nije specificirana'}
-                      </p>
-                      <div className="mb-2 md:mb-0">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Identifikacioni Dokument</p>
-                        <p className="text-sm text-gray-900 dark:text-gray-100">
-                          {tank.identificationDocumentUrl ? (
-                            <a 
-                              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${tank.identificationDocumentUrl}`}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
-                            >
-                              Pogledaj Dokument
-                            </a>
-                          ) : (
-                            'Nema dokumenta'
-                          )}
-                        </p>
                       </div>
                     </div>
                     
@@ -524,7 +504,7 @@ export default function FixedTanksReport() {
                         onClick={() => toggleHistory(tank.id)} 
                         variant="outline" 
                         size="sm"
-                        className="transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400"
+                        className="transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                       >
                         {tank.showHistory 
                           ? <ChevronUp className="h-4 w-4 mr-1" /> 
@@ -593,7 +573,7 @@ export default function FixedTanksReport() {
                         {/* Filter controls */}
                         <CardContent>
                           {/* Filters Row */}
-                          <div className="flex md:flex-row flex-col md:space-x-2 md:space-y-0 space-y-2 mb-4 items-end">
+                          <div className="flex flex-col md:flex-row md:space-x-2 space-y-2 md:space-y-0 mb-4 items-start md:items-end">
                             {/* Start Date Filter */}
                             <div className="flex-1">
                               <label htmlFor={`start-date-${tank.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -645,14 +625,16 @@ export default function FixedTanksReport() {
                             </div>
                             {/* Action Buttons */}
                             <div className="flex items-end space-x-2 md:mt-0 mt-2">
-                              <Button onClick={() => toggleHistory(tank.id, true)} size="sm" variant="outline">
-                                <Filter size={16} className="mr-2" />
-                                Primijeni Filtere i Osvježi
+                              <Button onClick={() => toggleHistory(tank.id, true)} size="sm" variant="outline" className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 whitespace-nowrap">
+                                <Filter size={14} className="mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Primijeni Filtere i Osvježi</span>
+                                <span className="inline sm:hidden">Osvježi</span>
                               </Button>
                               {tank.history && tank.history.length > 0 && (
-                                <Button onClick={() => handleExportToPdf(tank)} size="sm" variant="outline" className="bg-blue-500 hover:bg-blue-600 text-white">
-                                  <FileDown size={16} className="mr-2" />
-                                  Izvezi u PDF
+                                <Button onClick={() => handleExportToPdf(tank)} size="sm" variant="outline" className="bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                                  <FileDown size={14} className="mr-1 sm:mr-2" />
+                                  <span className="hidden sm:inline">Izvezi u PDF</span>
+                                  <span className="inline sm:hidden">PDF</span>
                                 </Button>
                               )}
                             </div>
@@ -668,10 +650,16 @@ export default function FixedTanksReport() {
                             <p className="mt-4 text-gray-600 dark:text-gray-400">Nema historije transakcija za odabrani period.</p>
                           </div>
                         ) : (
-                          <div className="overflow-x-auto">
-                            <Table>
+                          <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
+                            <Table className="min-w-full text-xs sm:text-sm">
                               <TableHeader>
-                                <TableRow><TableHead className="w-[150px]">Datum i Vrijeme</TableHead><TableHead className="w-[100px]">Tip</TableHead><TableHead className="text-right w-[120px]">Količina (L)</TableHead><TableHead>Izvor/Odredište</TableHead><TableHead>Napomene/Dokument</TableHead></TableRow>
+                                <TableRow>
+                                  <TableHead className="w-[100px] sm:w-[150px] whitespace-nowrap">Datum i Vrijeme</TableHead>
+                                  <TableHead className="w-[70px] sm:w-[100px]">Tip</TableHead>
+                                  <TableHead className="text-right w-[80px] sm:w-[120px]">Količina (L)</TableHead>
+                                  <TableHead className="hidden sm:table-cell">Izvor/Odredište</TableHead>
+                                  <TableHead className="hidden sm:table-cell">Napomene</TableHead>
+                                </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {tank.history
@@ -685,13 +673,15 @@ export default function FixedTanksReport() {
                                     }
                                     // END DEBUGGING
                                     return (
-                                      <TableRow key={entry.id}><TableCell>
-                                        {entry.transaction_datetime && !isNaN(new Date(entry.transaction_datetime as string | number | Date).getTime()) 
-                                          ? format(new Date(entry.transaction_datetime as string | number | Date), 'dd.MM.yyyy HH:mm') 
-                                          : 'Nevažeći datum'}
-                                      </TableCell><TableCell>
+                                      <TableRow key={entry.id}>
+                                        <TableCell className="whitespace-nowrap text-xs sm:text-sm">
+                                          {entry.transaction_datetime && !isNaN(new Date(entry.transaction_datetime as string | number | Date).getTime()) 
+                                            ? format(new Date(entry.transaction_datetime as string | number | Date), 'dd.MM.yyyy HH:mm') 
+                                            : 'Nevažeći datum'}
+                                        </TableCell>
+                                        <TableCell>
                                         <Badge 
-                                          className={entry.type === 'intake' 
+                                          className={`text-xs sm:text-sm ${entry.type === 'intake' 
                                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200' 
                                             : entry.type === 'transfer_to_mobile' 
                                               ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200' 
@@ -702,10 +692,10 @@ export default function FixedTanksReport() {
                                               : entry.type === 'internal_transfer_in'
                                               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200'
                                               : entry.type === 'internal_transfer_out'
-                                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 hover:bg-orange-200'
-                                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200'}
-                                        >
-                                          {entry.type === 'intake' ? 'ULAZ' 
+                                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-200'
+                                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200'
+                                          }`}
+                                        >  {entry.type === 'intake' ? 'ULAZ' 
                                             : entry.type === 'transfer_to_mobile' ? 'IZLAZ (MOB.)' 
                                             : entry.type === 'fuel_drain' ? 'DRENIRANO' 
                                             : entry.type === 'fuel_return' ? 'POVRAT FILTRIRANOG GORIVA'
@@ -713,26 +703,31 @@ export default function FixedTanksReport() {
                                             : entry.type === 'internal_transfer_out' ? 'INTERNI IZLAZ'
                                             : entry.type.toUpperCase()}
                                         </Badge>
-                                      </TableCell><TableCell className="text-right font-medium">
-                                        <span className={
-                                          entry.type === 'intake' ? 'text-emerald-600 dark:text-emerald-400' 
-                                          : entry.type === 'transfer_to_mobile' || entry.type === 'fuel_drain' ? 'text-red-600 dark:text-red-400' 
-                                          : entry.type === 'fuel_return' ? 'text-green-600 dark:text-green-400'
-                                          : entry.type === 'internal_transfer_in' ? 'text-blue-600 dark:text-blue-400'
-                                          : entry.type === 'internal_transfer_out' ? 'text-orange-600 dark:text-orange-400'
-                                          : 'text-gray-700 dark:text-gray-300' 
-                                        }>
-                                          {entry.type === 'intake' || entry.type === 'fuel_return' ? '+' : entry.type === 'transfer_to_mobile' || entry.type === 'fuel_drain' ? '-' : ''}{entry.quantityLiters.toFixed(2)} L
-                                        </span>
-                                      </TableCell><TableCell>{entry.sourceOrDestination || 'N/A'}</TableCell><TableCell>
-                                        {
-                                          (entry.type === 'internal_transfer_in' && entry.notes === 'Internal transfer in')
-                                            ? 'Interni prijem goriva'
-                                            : (entry.type === 'internal_transfer_out' && entry.notes === 'Internal transfer out')
-                                              ? 'Interni izdatak goriva'
-                                              : entry.notes || entry.relatedDocument || '-'
-                                        }
-                                      </TableCell></TableRow>
+                                      </TableCell>
+                                        <TableCell className="text-right text-xs sm:text-sm">
+                                          <span className={
+                                            entry.type === 'intake' ? 'text-emerald-600 dark:text-emerald-400' 
+                                            : entry.type === 'transfer_to_mobile' || entry.type === 'fuel_drain' ? 'text-red-600 dark:text-red-400' 
+                                            : entry.type === 'fuel_return' ? 'text-green-600 dark:text-green-400'
+                                            : entry.type === 'internal_transfer_in' ? 'text-blue-600 dark:text-blue-400'
+                                            : entry.type === 'internal_transfer_out' ? 'text-orange-600 dark:text-orange-400'
+                                            : 'text-gray-700 dark:text-gray-300' 
+                                          }>
+                                            {entry.type === 'intake' || entry.type === 'fuel_return' ? '+' : entry.type === 'transfer_to_mobile' || entry.type === 'fuel_drain' ? '-' : ''}{entry.quantityLiters.toFixed(2)} L
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
+                                          {entry.sourceOrDestination || 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
+                                          {
+                                            (entry.type === 'internal_transfer_in' && entry.notes === 'Internal transfer in')
+                                              ? 'Interni prijem goriva'
+                                              : (entry.type === 'internal_transfer_out' && entry.notes === 'Internal transfer out')
+                                                ? 'Interni izdatak goriva'
+                                                : entry.notes || entry.relatedDocument || '-'
+                                          }
+                                        </TableCell></TableRow>
                                     );
                                   })}
                               </TableBody>
@@ -781,23 +776,23 @@ export default function FixedTanksReport() {
                     {summaryError}
                   </div>
                 ) : fuelSummary ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow-sm">
-                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Fiksni Tankovi</div>
-                      <div className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        {fuelSummary.fixedTanksTotal.toLocaleString('bs-BA')} L
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg shadow-sm">
+                      <div className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Fiksni Tankovi</div>
+                      <div className="mt-1 text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {fuelSummary?.fixedTanksTotal?.toLocaleString('bs-BA') || '0'} L
                       </div>
                     </div>
-                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg shadow-sm">
-                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Mobilni Tankovi</div>
-                      <div className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        {fuelSummary.mobileTanksTotal.toLocaleString('bs-BA')} L
+                    <div className="bg-green-50 dark:bg-green-900/20 p-3 sm:p-4 rounded-lg shadow-sm">
+                      <div className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Mobilni Tankovi</div>
+                      <div className="mt-1 text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {fuelSummary?.mobileTanksTotal?.toLocaleString('bs-BA') || '0'} L
                       </div>
                     </div>
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg shadow-sm">
-                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ukupno</div>
-                      <div className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        {fuelSummary.grandTotal.toLocaleString('bs-BA')} L
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-3 sm:p-4 rounded-lg shadow-sm">
+                      <div className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Ukupno</div>
+                      <div className="mt-1 text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {fuelSummary?.grandTotal?.toLocaleString('bs-BA') || '0'} L
                       </div>
                     </div>
                   </div>
@@ -812,8 +807,8 @@ export default function FixedTanksReport() {
             <hr className="my-6 border-gray-300 dark:border-gray-600" />
             
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">Ukupan ulaz goriva (po periodu):</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <h3 className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">Ukupan ulaz goriva (po periodu):</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 items-end">
                 <div>
                   <label htmlFor="totalIntakeStartDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Od datuma:</label>
                   <Input
@@ -835,9 +830,10 @@ export default function FixedTanksReport() {
                   />
                 </div>
               </div>
-              <Button onClick={fetchCombinedIntakeData} disabled={totalIntakeLoading || !totalIntakeStartDate || !totalIntakeEndDate} className="mt-4 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white">
-                {totalIntakeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Filter className="mr-2 h-4 w-4" />} 
-                Osvježi Ukupan Ulaz
+              <Button onClick={fetchCombinedIntakeData} disabled={totalIntakeLoading || !totalIntakeStartDate || !totalIntakeEndDate} className="mt-2 sm:mt-4 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm py-1 sm:py-2">
+                {totalIntakeLoading ? <Loader2 className="mr-1 sm:mr-2 h-3 sm:h-4 w-3 sm:w-4 animate-spin" /> : <Filter className="mr-1 sm:mr-2 h-3 sm:h-4 w-3 sm:w-4" />} 
+                <span className="hidden sm:inline">Osvježi Ukupan Ulaz</span>
+                <span className="inline sm:hidden">Osvježi</span>
               </Button>
               
               {totalIntakeLoading && (
@@ -852,8 +848,8 @@ export default function FixedTanksReport() {
                 </div>
               )}
               {!totalIntakeLoading && totalIntakeAmount !== null && !totalIntakeError && (
-                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-4">
-                  {totalIntakeAmount.toFixed(2)} L
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2 sm:mt-4">
+                  {totalIntakeAmount?.toFixed(2) || '0'} L
                 </p>
               )}
               {!totalIntakeLoading && totalIntakeAmount === null && !totalIntakeError && totalIntakeStartDate && totalIntakeEndDate && (

@@ -58,8 +58,8 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-12 w-full">
-      <div className="w-full px-2 sm:px-4 md:px-6 py-6">
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-12 w-full overflow-x-hidden">
+      <div className="px-2 sm:px-4 md:px-6 py-6">
         {/* Header with black glassmorphism effect */}
         <div className="rounded-2xl shadow-xl mb-8 p-6 sm:p-8 text-white relative overflow-hidden">
           {/* Black glassmorphism background */}
@@ -78,66 +78,79 @@ export default function ReportsPage() {
           </div>
         </div>
         
-        {/* Tabbed Navigation */}
-        <div className="mb-6 overflow-x-auto scrollbar-hide">
-          <div className="flex space-x-1 bg-white dark:bg-gray-800 p-1 rounded-xl shadow-md min-w-max">
+        {/* Tabbed Navigation - Dodatno optimizirana za mobilne uređaje */}
+        <div className="mb-6 overflow-x-auto scrollbar-hide -mx-2 sm:mx-0 px-2 sm:px-0">
+          <div className="flex space-x-1 bg-white dark:bg-gray-800 p-1 rounded-xl shadow-md min-w-max w-full">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-300 whitespace-nowrap
+                className={`flex items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-300 whitespace-nowrap flex-shrink-0
                   ${activeTab === tab.id
                     ? 'bg-gradient-to-r from-[#E60026] to-[#B3001F] text-white shadow-md dark:from-[#B3001F] dark:to-[#800014]'
                     : 'text-gray-600 hover:text-[#E60026] hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-[#E60026]'}`}
               >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
+                <span className="mr-1 sm:mr-2">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="inline sm:hidden">{tab.id === 'fuel-operations' ? 'Točenje' : tab.label.split(' ')[0]}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Content based on active tab */}
-        <div className="transition-all duration-300">
+        {/* Content based on active tab - Responsive container */}
+        <div className="transition-all duration-300 max-w-full overflow-hidden">
           {/* Fixed Tanks Tab */}
           {activeTab === 'fixed-tanks' && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <FixedTanksReport />
+              <div className="p-0 sm:p-2 md:p-4">
+                <FixedTanksReport />
+              </div>
             </div>
           )}
           
           {/* Tanker Vehicles Tab */}
           {activeTab === 'tanker-vehicles' && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <TankerVehiclesReport />
+              <div className="p-0 sm:p-2 md:p-4">
+                <TankerVehiclesReport />
+              </div>
             </div>
           )}
           
           {/* Fuel Intake Tab */}
           {activeTab === 'fuel-intake' && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <FuelIntakeReport />
+              <div className="p-0 sm:p-2 md:p-4">
+                <FuelIntakeReport />
+              </div>
             </div>
           )}
           
           {/* Fuel Operations Tab */}
           {activeTab === 'fuel-operations' && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <FuelOperationsReport />
+              <div className="p-0 sm:p-2 md:p-4">
+                <FuelOperationsReport />
+              </div>
             </div>
           )}
           
           {/* Drained Fuel Tab */}
           {activeTab === 'drained-fuel' && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <FuelDrainReport />
+              <div className="p-0 sm:p-2 md:p-4">
+                <FuelDrainReport />
+              </div>
             </div>
           )}
           
           {/* Statistika Tab */}
           {activeTab === 'statistika' && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <FuelReports />
+              <div className="p-0 sm:p-2 md:p-4">
+                <FuelReports />
+              </div>
             </div>
           )}
         </div>

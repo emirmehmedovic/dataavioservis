@@ -29,6 +29,9 @@ router.post('/tanks/:id/image',
 router.get('/tanks/:id/refills', authenticateToken, fuelTankRefillController.getTankRefills);
 router.post('/tanks/:id/refills', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), fuelTankRefillController.createTankRefill);
 
+// Fuel Tank Transactions route
+router.get('/tanks/:id/transactions', authenticateToken, fuelTankController.getTankTransactions);
+
 // Mount Fueling Operation routes
 router.use('/operations', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), fuelingOperationRoutes);
 

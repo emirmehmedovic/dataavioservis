@@ -40,6 +40,23 @@ export interface TankTransaction {
   user?: string;          // User associated with the transaction
 }
 
+// Represents a single transaction in the history of a mobile tank (aircraft tanker)
+export interface MobileTankTransaction {
+  id: number;
+  transaction_datetime: string; // ISO date-time string
+  type: 'supplier_refill' | 'fixed_tank_transfer' | 'aircraft_fueling' | 'adjustment' | string;
+  quantity_liters: number;
+  source_name?: string; // For fixed_tank_transfer: name of the fixed tank
+  source_id?: number;   // For fixed_tank_transfer: ID of the fixed tank
+  destination_name?: string; // For aircraft_fueling: aircraft registration or flight number
+  destination_id?: number;   // For aircraft_fueling: operation ID
+  supplier_name?: string;    // For supplier_refill: name of the supplier
+  invoice_number?: string;   // For supplier_refill: invoice number
+  price_per_liter?: number;  // For supplier_refill: price per liter
+  notes?: string;
+  user?: string;             // User who performed the transaction
+}
+
 // Corresponds to Prisma Model FuelIntakeDocuments
 export interface FuelIntakeDocument {
   id: number;

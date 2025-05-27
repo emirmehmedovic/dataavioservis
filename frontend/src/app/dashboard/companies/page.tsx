@@ -111,8 +111,9 @@ const CompaniesPage = () => {
           <Link href="/dashboard/companies/new">
             <Button 
               variant="default"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
             >
-              <FaPlus className="mr-2 h-4 w-4" /> {/* Ikona kao dijete */}
+              <FaPlus className="mr-2 h-4 w-4" />
               Dodaj Novu Firmu
             </Button>
           </Link>

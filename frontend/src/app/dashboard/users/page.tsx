@@ -111,6 +111,7 @@ const UserManagementPage: React.FC = () => {
           <Button 
             variant="default" 
             onClick={() => setIsAddUserModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
           >
             <FiPlus className="mr-2" />
             Dodaj Novog Korisnika
