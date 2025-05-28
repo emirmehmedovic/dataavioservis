@@ -38,7 +38,7 @@ export default function DashboardPage() {
     mobileTanksTotal: number;
     grandTotal: number;
   } | null>(null);
-  const [monthlyIntake, setMonthlyIntake] = useState<number | null>(null);
+  // We don't need monthly intake anymore as we'll show total fuel status instead
   const [fixedTanks, setFixedTanks] = useState<FixedStorageTank[]>([]);
   const [error, setError] = useState<string | null>(null);
   
@@ -51,14 +51,7 @@ export default function DashboardPage() {
         const summary = await getTotalFuelSummary();
         setFuelSummary(summary);
         
-        // Get current month's start and end dates
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
-        
-        // Fetch monthly intake
-        const intakeData = await getTotalFixedTankIntake(startOfMonth, endOfMonth);
-        setMonthlyIntake(intakeData.totalIntake);
+        // We don't need to fetch monthly intake as we're showing total fuel status instead
         
         // Fetch fixed tanks
         const tanks = await getFixedTanks();
@@ -290,23 +283,24 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    <BarChart3 className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Mjesečni Unos</h3>
-                    <p className="text-2xl font-bold">{monthlyIntake ? formatNumber(monthlyIntake) : 0} L</p>
+                    <h3 className="text-sm font-medium text-muted-foreground">Ukupno Stanje</h3>
+                    <p className="text-2xl font-bold">{fuelSummary ? formatNumber(fuelSummary.grandTotal) : 0} L</p>
                   </div>
                 </div>
                 <Link href="/dashboard/reports" className="text-xs text-green-600 flex items-center hover:underline">
                   Izvještaji <ChevronRight size={14} />
                 </Link>
               </div>
-              <div className="flex items-center text-sm">
-                <span className="inline-flex items-center text-green-600 mr-2">
-                  <TrendingUp size={14} className="mr-1" /> +12%
-                </span>
-                <span className="text-xs text-muted-foreground">u odnosu na prethodni mjesec</span>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-green-600 rounded-full" 
+                  style={{ width: '100%' }} 
+                />
               </div>
+              <p className="text-xs text-muted-foreground mt-2">Ukupna količina goriva u sistemu</p>
             </CardContent>
           </Card>
         </div>

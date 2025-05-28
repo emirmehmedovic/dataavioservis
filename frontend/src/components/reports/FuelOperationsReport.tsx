@@ -398,7 +398,7 @@ export default function FuelOperationsReport() {
       orientation: 'landscape',
       unit: 'mm'
     });
-  
+
     // Register custom font for proper display of Bosnian characters
     registerFont(doc);
     doc.setFont(FONT_NAME);
@@ -407,7 +407,7 @@ export default function FuelOperationsReport() {
     doc.setFontSize(18);
     doc.setFont(FONT_NAME, 'bold');
     doc.text('Izvještaj Izlaznih Operacija Goriva', 14, 22);
-  
+
     // Set up filter information section
     doc.setFontSize(11);
     doc.setFont(FONT_NAME, 'normal');
@@ -420,7 +420,7 @@ export default function FuelOperationsReport() {
     if (filterDateTo) filterInfo += `\n - Datum Do: ${format(filterDateTo, 'dd.MM.yyyy')}`;
     if (filterDestination) filterInfo += `\n - Destinacija: ${filterDestination}`;
     if (filterCurrency !== '__ALL__') filterInfo += `\n - Valuta: ${filterCurrency}`;
-  
+
     if (filterInfo === 'Primijenjeni filteri:') {
       filterInfo += ' Nijedan';
     }
@@ -470,6 +470,60 @@ export default function FuelOperationsReport() {
     const startY = filterDateFrom || filterDateTo || filterAirline !== '__ALL__' || 
                   filterTrafficType !== '__ALL__' || filterDestination || 
                   filterCurrency !== '__ALL__' ? 60 : 45;
+    
+    // Helper function to add the summary information
+    const addSummary = (doc: jsPDF, x: number, y: number) => {
+      // Set styles for summary
+      doc.setFont(FONT_NAME, 'bold');
+      doc.setFontSize(12);
+      doc.text('SAŽETAK IZVJEŠTAJA', x, y);
+      
+      doc.setFontSize(10);
+      // Display totals
+      y += 8;
+      doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA')} L`, x, y);
+      y += 5;
+      doc.text(`Ukupno Kilograma: ${totalKg.toLocaleString('bs-BA')} kg`, x, y);
+      y += 5;
+      doc.text(`Prosječna Gustoća: ${averageDensity.toLocaleString('bs-BA', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg/L`, x, y);
+      
+      // Display revenue by currency
+      y += 8;
+      doc.text('Ukupan promet po valuti:', x, y);
+      
+      const currencyKeys = Object.keys(revenueByCurrency);
+      if (currencyKeys.length > 0) {
+        currencyKeys.forEach((currency, index) => {
+          const amount = revenueByCurrency[currency];
+          const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM';
+          y += 5;
+          doc.text(`${currency}: ${currencySymbol} ${amount.toLocaleString('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, x, y);
+        });
+        
+        // Add empty entries for missing currencies
+        const missingCurrencies = ['USD', 'EUR', 'BAM'].filter(c => !currencyKeys.includes(c));
+        missingCurrencies.forEach((currency) => {
+          const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM';
+          y += 5;
+          doc.text(`${currency}: ${currencySymbol} 0.00`, x, y);
+        });
+      } else {
+        // If no revenue data, show zeros for all currencies
+        y += 5;
+        doc.text('USD: $ 0.00', x, y);
+        y += 5;
+        doc.text('EUR: € 0.00', x, y);
+        y += 5;
+        doc.text('BAM: KM 0.00', x, y);
+      }
+      
+      // Add page number on the summary page
+      doc.setFont(FONT_NAME, 'normal');
+      doc.setFontSize(8);
+      // Use the correct method to get current page number
+      const currentPage = doc.internal.pages.length - 1;
+      doc.text(`Stranica ${currentPage}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+    };
 
     // Generate table with improved styling
     autoTable(doc, {
@@ -512,47 +566,49 @@ export default function FuelOperationsReport() {
         13: { cellWidth: 20, halign: 'center' }  // Tip Saobraćaja
       },
       didDrawPage: function (data) {
-        // Add footer with total information
-        doc.setFont(FONT_NAME, 'bold');
-        doc.setFontSize(10);
-        
-        // Display totals in the footer
-        const footerY = doc.internal.pageSize.height - 20; // Increased space for more lines
-        doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA')} L`, data.settings.margin.left, footerY - 8);
-        doc.text(`Ukupno Kilograma: ${totalKg.toLocaleString('bs-BA')} kg`, data.settings.margin.left, footerY - 4);
-        doc.text(`Prosječna Gustoća: ${averageDensity.toLocaleString('bs-BA', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg/L`, data.settings.margin.left, footerY);
-        
-        // Display revenue by currency
-        const currencyKeys = Object.keys(revenueByCurrency);
-        if (currencyKeys.length > 0) {
-          doc.text('Ukupan promet po valuti:', data.settings.margin.left + 90, footerY - 8);
-          
-          currencyKeys.forEach((currency, index) => {
-            const amount = revenueByCurrency[currency];
-            const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM';
-            doc.text(`${currency}: ${currencySymbol} ${amount.toLocaleString('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-              data.settings.margin.left + 90, footerY - 4 + (index * 4));
-          });
-          
-          // Add empty entries for missing currencies
-          const missingCurrencies = ['USD', 'EUR', 'BAM'].filter(c => !currencyKeys.includes(c));
-          missingCurrencies.forEach((currency, index) => {
-            const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'KM';
-            doc.text(`${currency}: ${currencySymbol} 0.00`, 
-              data.settings.margin.left + 90, footerY - 4 + ((currencyKeys.length + index) * 4));
-          });
-        } else {
-          // If no revenue data, show zeros for all currencies
-          doc.text('Ukupan promet po valuti:', data.settings.margin.left + 90, footerY - 8);
-          doc.text('USD: $ 0.00', data.settings.margin.left + 90, footerY - 4);
-          doc.text('EUR: € 0.00', data.settings.margin.left + 90, footerY);
-          doc.text('BAM: KM 0.00', data.settings.margin.left + 90, footerY + 4);
-        }
-        
-        // Add page number
+        // Add page number on every page
         doc.setFont(FONT_NAME, 'normal');
         doc.setFontSize(8);
+        const footerY = doc.internal.pageSize.height - 20;
         doc.text(`Stranica ${data.pageNumber}`, doc.internal.pageSize.width - 20, footerY + 8);
+      },
+      didParseCell: function(data) {
+        // Track the last row to determine when we're at the end of the table
+        if (data.section === 'body') {
+          // Use a custom property to track the last row
+          // @ts-ignore - Adding custom property to track last row
+          if (!data.table._lastRow || data.row.index > data.table._lastRow) {
+            // @ts-ignore - Adding custom property to track last row
+            data.table._lastRow = data.row.index;
+          }
+        }
+      },
+      didDrawCell: function(data) {
+        // Check if this is the last cell of the last row
+        // @ts-ignore - Using custom property to track last row
+        if (data.section === 'body' && 
+            // @ts-ignore - Using custom property to track last row
+            data.row.index === data.table._lastRow && 
+            data.column.index === data.table.columns.length - 1) {
+          
+          // We've drawn the last cell, now add the summary
+          // Either on the current page if there's enough space, or on a new page
+          
+          // Calculate required height for summary
+          const summaryHeight = 40; // Approximate height needed for summary in mm
+          const pageHeight = doc.internal.pageSize.height;
+          const currentY = data.cell.y + data.cell.height;
+          const remainingSpace = pageHeight - currentY - 20; // 20mm margin at bottom
+          
+          // If not enough space on current page, add a new page
+          if (remainingSpace < summaryHeight) {
+            doc.addPage();
+            addSummary(doc, data.settings.margin.left, 40); // Start at 40mm from top of new page
+          } else {
+            // Add summary on current page with some spacing
+            addSummary(doc, data.settings.margin.left, currentY + 15);
+          }
+        }
       }
     });
 
