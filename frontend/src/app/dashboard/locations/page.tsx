@@ -52,28 +52,41 @@ const LocationsPage = () => {
       transition={{ duration: 0.5 }}
     >
       {/* Header Section */}
-      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg rounded-xl p-6">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/4"></div>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
         
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 relative z-10">
-          <div>
-            <motion.h1 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.5 }}
-              className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600"
-            >
-              Lokacije
-            </motion.h1>
-            <p className="text-sm text-muted-foreground mt-1">Pregled i upravljanje lokacijama</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
+          <div className="flex items-center">
+            <div className="mr-4 p-3 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
+              <FaMapMarkerAlt className="h-8 w-8 text-[#e53e3e]" />
+            </div>
+            <div>
+              <motion.h1 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-2xl md:text-3xl font-bold text-white"
+              >
+                Lokacije
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="text-gray-300 mt-1"
+              >
+                Pregled i upravljanje lokacijama
+              </motion.p>
+            </div>
           </div>
           <Link href="/dashboard/locations/new">
             <Button 
               variant="default"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
+              className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
             >
-              <FaPlus className="mr-2" />
+              <FaPlus className="h-4 w-4" />
               Dodaj Novu Lokaciju
             </Button>
           </Link>
@@ -81,47 +94,55 @@ const LocationsPage = () => {
       </div>
 
       {error && (
-        <motion.div 
-          className="backdrop-blur-md bg-red-500/10 border border-red-500/30 text-red-700 px-6 py-4 rounded-xl relative"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          role="alert"
-        >
+        <div className="bg-[#e53e3e]/20 backdrop-blur-md border border-white/10 shadow-lg p-4 rounded-xl">
           <div className="flex items-center">
-            <FaExclamationTriangle className="h-5 w-5 mr-3 text-red-500" />
-            <strong className="font-bold mr-2">Greška!</strong>
-            <span className="block">{error}</span>
+            <div className="mr-3 p-2 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
+              <FaExclamationTriangle className="text-[#e53e3e]" />
+            </div>
+            <div>
+              <strong className="font-bold mr-2 text-white">Greška!</strong>
+              <span className="text-white">{error}</span>
+            </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Locations List */}
-      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg rounded-xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4"></div>
+      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] shadow-lg rounded-xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#4FC3C7] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#4FC3C7] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4"></div>
         
         <div className="relative z-10">
           {locations.length === 0 && !isLoading ? (
             <div className="text-center py-16 px-4">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex items-center justify-center mb-4">
-                <FaMapMarkerAlt className="h-8 w-8 text-blue-500" />
+              <div className="w-20 h-20 mx-auto bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg flex items-center justify-center mb-6">
+                <FaMapMarkerAlt className="h-10 w-10 text-[#e53e3e]" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+              <h3 className="text-xl font-semibold mb-3 text-white">
                 Nema dostupnih lokacija
               </h3>
-              <p className="text-muted-foreground max-w-md mx-auto mb-2">
-                Nema unesenih lokacija. Kliknite na dugme iznad da dodate novu.
+              <p className="text-white/70 max-w-md mx-auto mb-4">
+                Nema unesenih lokacija. Kliknite na dugme ispod da dodate novu.
               </p>
+              
+              <Link href="/dashboard/locations/new" className="inline-block mt-2">
+                <Button 
+                  variant="default"
+                  className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
+                >
+                  <FaPlus className="h-4 w-4" />
+                  Dodaj Novu Lokaciju
+                </Button>
+              </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left border-b border-white/10">
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Naziv Lokacije</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Adresa</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">PDV Broj Kompanije</th>
+                  <tr className="text-left border-b border-white/10 bg-gradient-to-r from-[#2c2c2c] to-[#1a1a1a]">
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Naziv Lokacije</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Adresa</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">PDV Broj Kompanije</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,22 +156,26 @@ const LocationsPage = () => {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="p-2 bg-blue-500/10 rounded-lg mr-3">
-                            <FaMapMarkerAlt className="text-blue-500/80" />
+                          <div className="p-2 bg-[#4FC3C7]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-sm mr-3">
+                            <FaMapMarkerAlt className="text-[#4FC3C7]" />
                           </div>
-                          <span className="font-medium text-gray-700">{location.name}</span>
+                          <span className="font-medium text-white">{location.name}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <FaAddressCard className="mr-2 text-gray-400" />
-                          <span className="text-gray-600">{location.address || 'N/A'}</span>
+                          <div className="p-1.5 bg-[#e53e3e]/20 backdrop-blur-md rounded-lg border border-white/10 shadow-sm mr-2">
+                            <FaAddressCard className="text-[#e53e3e]" />
+                          </div>
+                          <span className="text-white/80">{location.address || 'N/A'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <FaBuilding className="mr-2 text-gray-400" />
-                          <span className="text-gray-600">{location.companyTaxId || '-'}</span>
+                          <div className="p-1.5 bg-[#FBBF24]/20 backdrop-blur-md rounded-lg border border-white/10 shadow-sm mr-2">
+                            <FaBuilding className="text-[#FBBF24]" />
+                          </div>
+                          <span className="text-white/80">{location.companyTaxId || '-'}</span>
                         </div>
                       </td>
                     </motion.tr>

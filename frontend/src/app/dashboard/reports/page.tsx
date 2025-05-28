@@ -8,7 +8,7 @@ import FixedTanksReport from '@/components/reports/FixedTanksReport';
 import TankerVehiclesReport from '@/components/reports/TankerVehiclesReport';
 import FuelIntakeReport from '@/components/reports/FuelIntakeReport';
 import FuelOperationsReport from '@/components/reports/FuelOperationsReport';
-import FuelReports from '../../../../components/fuel/FuelReports';
+import FuelReports from '@/components/fuel/FuelReports';
 import FuelDrainReport from '@/components/reports/FuelDrainReport';
 import { 
   ChartBarIcon, 
@@ -38,10 +38,10 @@ export default function ReportsPage() {
 
   if (isLoading || (!authUser || (authUser.role !== 'ADMIN' && authUser.role !== 'KONTROLA'))) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a]">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="h-12 w-12 rounded-full bg-indigo-200 dark:bg-indigo-700 mb-4"></div>
-          <p className="text-indigo-600 dark:text-indigo-400 font-medium">Učitavanje ili provjera pristupa...</p>
+          <div className="h-12 w-12 rounded-full bg-[#e53e3e]/50 mb-4"></div>
+          <p className="text-white font-medium">Učitavanje ili provjera pristupa...</p>
         </div>
       </div>
     );
@@ -58,43 +58,60 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-12 w-full overflow-x-hidden">
+    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen pb-12 w-full overflow-x-hidden">
       <div className="px-2 sm:px-4 md:px-6 py-6">
-        {/* Header with black glassmorphism effect */}
-        <div className="rounded-2xl shadow-xl mb-8 p-6 sm:p-8 text-white relative overflow-hidden">
-          {/* Black glassmorphism background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-          {/* Glass highlight effect */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+        {/* Header with glassmorphism effect */}
+        <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6 mb-8">
+          {/* Subtle red shadows in corners */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+          
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Izvještaji i Statistika</h1>
-              <p className="mt-2 text-indigo-100 text-sm sm:text-base">Pregled svih ključnih podataka o gorivu i operacijama</p>
-            </div>
-            <div className="flex items-center space-x-2 bg-white/10 rounded-lg p-2 self-start">
-              <ChartBarIcon className="h-8 w-8 text-white/90" />
-              <span className="text-white font-medium hidden sm:inline">Analitika</span>
+              <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+                <ChartBarIcon className="h-8 w-8 mr-3 text-[#e53e3e]" />
+                Izvještaji i Statistika
+              </h1>
+              <p className="text-gray-300 mt-1 ml-11">Pregled svih ključnih podataka o gorivu i operacijama</p>
             </div>
           </div>
         </div>
         
-        {/* Tabbed Navigation - Dodatno optimizirana za mobilne uređaje */}
+        {/* Tabbed Navigation - Glassmorphism style */}
         <div className="mb-6 overflow-x-auto scrollbar-hide -mx-2 sm:mx-0 px-2 sm:px-0">
-          <div className="flex space-x-1 bg-white dark:bg-gray-800 p-1 rounded-xl shadow-md min-w-max w-full">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-300 whitespace-nowrap flex-shrink-0
-                  ${activeTab === tab.id
-                    ? 'bg-gradient-to-r from-[#E60026] to-[#B3001F] text-white shadow-md dark:from-[#B3001F] dark:to-[#800014]'
-                    : 'text-gray-600 hover:text-[#E60026] hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-[#E60026]'}`}
-              >
-                <span className="mr-1 sm:mr-2">{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="inline sm:hidden">{tab.id === 'fuel-operations' ? 'Točenje' : tab.label.split(' ')[0]}</span>
-              </button>
-            ))}
+          <div className="flex space-x-2 bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] p-2 rounded-xl shadow-lg border border-white/5 min-w-max w-full relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+            
+            {tabs.map((tab, index) => {
+              // Define color for each tab
+              const colors = [
+                '#4FC3C7', // teal for fixed-tanks
+                '#e53e3e', // red for tanker-vehicles
+                '#FBBF24', // yellow for fuel-intake
+                '#8B5CF6', // purple for fuel-operations
+                '#3B82F6', // blue for drained-fuel
+                '#F97316'  // orange for statistika
+              ];
+              const color = colors[index % colors.length];
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2 rounded-xl backdrop-blur-md whitespace-nowrap flex-shrink-0 relative z-10 ${activeTab === tab.id
+                    ? 'text-white shadow-md border border-white/10'
+                    : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                  style={{
+                    background: activeTab === tab.id ? `linear-gradient(135deg, ${color}20, ${color}40)` : 'transparent',
+                    borderBottom: activeTab === tab.id ? `2px solid ${color}` : 'none'
+                  }}
+                >
+                  <span style={{ color: activeTab === tab.id ? color : 'currentColor' }}>{tab.icon}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="inline sm:hidden">{tab.id === 'fuel-operations' ? 'Točenje' : tab.label.split(' ')[0]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

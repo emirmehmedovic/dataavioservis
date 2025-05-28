@@ -397,53 +397,57 @@ export default function FixedTanksReport() {
   };
 
   if (loading) return (
-    <div className="flex justify-center items-center h-64 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-md">
+    <div className="flex justify-center items-center h-64 bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] rounded-xl shadow-lg border border-white/5">
       <div className="flex flex-col items-center">
-        <Loader2 className="h-10 w-10 animate-spin text-indigo-600 dark:text-indigo-400" />
-        <span className="mt-4 text-indigo-600 dark:text-indigo-400 font-medium">Učitavanje izvještaja o fiksnim tankovima...</span>
+        <Loader2 className="h-10 w-10 animate-spin text-[#F08080]" />
+        <span className="mt-4 text-white font-medium">Učitavanje izvještaja o fiksnim tankovima...</span>
       </div>
     </div>
   );
   
   if (error) return (
-    <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-6 rounded-xl shadow-md">
-      <div className="flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-red-500 rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-500 rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+      <div className="flex items-center relative z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <span className="text-red-600 dark:text-red-400 font-medium">Greška: {error}</span>
+        <span className="text-white font-medium">Greška: {error}</span>
       </div>
     </div>
   );
   
   if (tanks.length === 0) return (
-    <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-6 rounded-xl shadow-md">
-      <div className="flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-[#4FC3C7] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#4FC3C7] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+      <div className="flex items-center relative z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#4FC3C7] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span className="text-blue-600 dark:text-blue-400 font-medium">Nema dostupnih fiksnih tankova.</span>
+        <span className="text-white font-medium">Nema dostupnih fiksnih tankova.</span>
       </div>
     </div>
   );
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden max-w-full">
-      {/* Header with black glassmorphism effect */}
-      <div className="p-6 text-white relative overflow-hidden">
-        {/* Black glassmorphism background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-        {/* Glass highlight effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
-        <div className="flex items-center justify-between relative z-10">
+      {/* Header with glassmorphism effect */}
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Izvještaj o Fiksnim Rezervoarima Goriva</h2>
-            <p className="mt-1 text-indigo-100 text-sm">Pregled stanja i historije transakcija fiksnih rezervoara</p>
-          </div>
-          <div className="bg-white/10 p-3 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-2 text-[#F08080]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Izvještaj o Fiksnim Rezervoarima Goriva
+            </h2>
+            <p className="text-gray-300 mt-1 ml-10">Pregled stanja i historije transakcija fiksnih rezervoara</p>
           </div>
         </div>
       </div>
@@ -466,7 +470,7 @@ export default function FixedTanksReport() {
             return (
               <div 
                 key={tank.id} 
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden"
               >
                 <div className="p-5 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
@@ -500,21 +504,19 @@ export default function FixedTanksReport() {
                         </div>
                       )}
                       
-                      <Button 
-                        onClick={() => toggleHistory(tank.id)} 
-                        variant="outline" 
-                        size="sm"
-                        className="transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                      <button
+                        onClick={() => toggleHistory(tank.id)}
+                        className="backdrop-blur-md bg-gray-700/70 border border-white/20 text-white shadow-lg hover:bg-gray-600/70 transition-all font-medium rounded-xl flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm"
                       >
                         {tank.showHistory 
-                          ? <ChevronUp className="h-4 w-4 mr-1" /> 
-                          : <ChevronDown className="h-4 w-4 mr-1" />
+                          ? <><ChevronUp className="h-4 w-4 mr-1" /></>
+                          : <><ChevronDown className="h-4 w-4 mr-1" /></>
                         }
                         {tank.historyLoading 
                           ? 'Učitavanje...' 
                           : (tank.showHistory ? 'Sakrij Historiju' : 'Prikaži Historiju')
                         }
-                      </Button>
+                      </button>
                     </div>
                   </div>
                   
@@ -625,17 +627,17 @@ export default function FixedTanksReport() {
                             </div>
                             {/* Action Buttons */}
                             <div className="flex items-end space-x-2 md:mt-0 mt-2">
-                              <Button onClick={() => toggleHistory(tank.id, true)} size="sm" variant="outline" className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 whitespace-nowrap">
+                              <button onClick={() => toggleHistory(tank.id, true)} className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                                 <Filter size={14} className="mr-1 sm:mr-2" />
                                 <span className="hidden sm:inline">Primijeni Filtere i Osvježi</span>
                                 <span className="inline sm:hidden">Osvježi</span>
-                              </Button>
+                              </button>
                               {tank.history && tank.history.length > 0 && (
-                                <Button onClick={() => handleExportToPdf(tank)} size="sm" variant="outline" className="bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                                <button onClick={() => handleExportToPdf(tank)} className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm">
                                   <FileDown size={14} className="mr-1 sm:mr-2" />
                                   <span className="hidden sm:inline">Izvezi u PDF</span>
                                   <span className="inline sm:hidden">PDF</span>
-                                </Button>
+                                </button>
                               )}
                             </div>
                           </div>
@@ -830,11 +832,15 @@ export default function FixedTanksReport() {
                   />
                 </div>
               </div>
-              <Button onClick={fetchCombinedIntakeData} disabled={totalIntakeLoading || !totalIntakeStartDate || !totalIntakeEndDate} className="mt-2 sm:mt-4 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm py-1 sm:py-2">
-                {totalIntakeLoading ? <Loader2 className="mr-1 sm:mr-2 h-3 sm:h-4 w-3 sm:w-4 animate-spin" /> : <Filter className="mr-1 sm:mr-2 h-3 sm:h-4 w-3 sm:w-4" />} 
+              <button 
+                onClick={fetchCombinedIntakeData} 
+                disabled={totalIntakeLoading || !totalIntakeStartDate || !totalIntakeEndDate} 
+                className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {totalIntakeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Filter className="h-4 w-4" />} 
                 <span className="hidden sm:inline">Osvježi Ukupan Ulaz</span>
                 <span className="inline sm:hidden">Osvježi</span>
-              </Button>
+              </button>
               
               {totalIntakeLoading && (
                 <div className="mt-4 flex items-center justify-center text-gray-500 dark:text-gray-400 py-3">

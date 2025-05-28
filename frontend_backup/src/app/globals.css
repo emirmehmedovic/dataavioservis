@@ -17,7 +17,7 @@ html, body {
   /* Base colors */
   color: var(--color-foreground);
   background-color: var(--color-background);
-  --color-primary: #0073ff;
+  --color-primary: #F08080;
   --color-secondary: #f3f4f6;
   --color-background: #ffffff;
   --color-foreground: #111827;
@@ -30,7 +30,7 @@ html, body {
 
 /* Dark mode */
 [data-theme="dark"] {
-  --color-primary: #3b82f6;
+  --color-primary: #F08080;
   --color-secondary: #1f2937;
   --color-background: #111827;
   --color-foreground: #f9fafb;

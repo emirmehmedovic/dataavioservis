@@ -21,10 +21,24 @@ const CustomsPage = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Carina</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Pregled fiksnih tankova i historijata ulaza goriva za carinske potrebe.</p>
-      </header>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6 mb-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
+          <div className="flex items-center">
+            <div className="mr-4 p-3 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#e53e3e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">Carina</h1>
+              <p className="text-gray-300 mt-1">Pregled fiksnih tankova i historijata ulaza goriva za carinske potrebe.</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <section>
         <Card>

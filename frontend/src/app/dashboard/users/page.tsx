@@ -75,13 +75,13 @@ const UserManagementPage: React.FC = () => {
 
   if (loading && users.length === 0) {
     return (
-      <div className="flex flex-col justify-center items-center h-[calc(100vh-150px)] bg-background text-foreground">
+      <div className="flex flex-col justify-center items-center h-[calc(100vh-150px)] bg-white">
         <motion.div 
-          className="h-16 w-16 rounded-full border-t-4 border-b-4 border-secondary" // Use secondary for loader
+          className="h-16 w-16 rounded-full border-t-4 border-b-4 border-[#e53e3e]" 
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
-        <p className="text-lg font-medium text-muted-foreground mt-4 bg-clip-text text-transparent bg-gradient-to-r from-secondary to-avioBlue-600">
+        <p className="text-lg font-medium text-gray-700 mt-4">
           Učitavanje korisnika...
         </p>
       </div>
@@ -90,50 +90,54 @@ const UserManagementPage: React.FC = () => {
 
   return (
     <motion.div 
-      className="space-y-6 p-4 md:p-6 bg-background text-foreground" // Ensure base bg and text colors
+      className="space-y-6 p-4 md:p-6 bg-white text-gray-800 min-h-screen" 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Header Section - Glassmorphism kept */}
-      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg rounded-xl p-6">
-        {/* Decorative blurs - adjusted colors to theme */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/20 rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-avioBlue-400/20 rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/4"></div>
+      {/* Header Section - Glassmorphism dizajn */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg rounded-xl p-6 border border-white/10">
+        {/* Dekorativne sjene u uglovima */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#e53e3e]/20 rounded-full filter blur-3xl opacity-30 -translate-y-1/2 translate-x-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#e53e3e]/20 rounded-full filter blur-3xl opacity-30 translate-y-1/2 -translate-x-1/4"></div>
         
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 relative z-10">
-          <div>
-            <motion.h1 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.5 }}
-              className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-secondary to-avioBlue-600" // Themed gradient
-            >
-              Upravljanje Korisnicima
-            </motion.h1>
-            <p className="text-sm text-muted-foreground mt-1">Dodajte ili upravljajte korisnicima sistema</p>
+          <div className="flex items-center">
+            <div className="p-3 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl mr-4 border border-white/10">
+              <FaUserAlt className="h-6 w-6 text-[#e53e3e]" />
+            </div>
+            <div>
+              <motion.h1 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+                className="text-2xl md:text-3xl font-bold text-white"
+              >
+                Upravljanje Korisnicima
+              </motion.h1>
+              <p className="text-sm text-white/70 mt-1">Pregled i upravljanje korisničkim računima sistema</p>
+            </div>
           </div>
           <Button 
-            variant="default" // This should use bg-primary from your Button.tsx
+            className="bg-[#e53e3e]/80 hover:bg-[#e53e3e] text-white border border-white/20 shadow-lg backdrop-blur-md rounded-xl transition-all duration-300"
             onClick={() => setIsAddUserModalOpen(true)}
-            // className="shadow-md" // Shadow can be part of the default variant in Button.tsx
           >
-            <FiPlus className="mr-2" /> {/* Icon color should be handled by text-primary-foreground */}
+            <FiPlus className="mr-2" />
             Dodaj Novog Korisnika
           </Button>
         </div>
       </div>
 
-      {/* Users List - Glassmorphism kept */}
-      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg rounded-xl">
-        {/* Decorative blurs - adjusted colors to theme */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/15 rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-avioBlue-400/15 rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4"></div>
+      {/* Users List - Glassmorphism dizajn */}
+      <div className="relative overflow-hidden border border-gray-200 bg-white shadow-lg rounded-xl">
+        {/* Dekorativne sjene u uglovima */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#4FC3C7]/10 rounded-full filter blur-3xl opacity-20 -translate-y-1/2 translate-x-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#e53e3e]/10 rounded-full filter blur-3xl opacity-20 translate-y-1/2 -translate-x-1/4"></div>
         
         {loading && users.length > 0 && (
           <div className="absolute top-4 right-4 z-20">
             <motion.div 
-              className="h-6 w-6 rounded-full border-t-2 border-b-2 border-secondary" // Themed loader
+              className="h-6 w-6 rounded-full border-t-2 border-b-2 border-[#e53e3e]" 
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             />
@@ -143,46 +147,49 @@ const UserManagementPage: React.FC = () => {
         <div className="relative z-10">
           {users.length === 0 && !loading ? (
             <div className="text-center py-16 px-4">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-secondary/20 to-avioBlue-500/20 rounded-full flex items-center justify-center mb-4">
-                <FaUserAlt className="h-8 w-8 text-secondary" />
+              <div className="w-24 h-24 mx-auto bg-[#e53e3e]/20 backdrop-blur-md rounded-full flex items-center justify-center mb-6 border border-gray-200 shadow-lg">
+                <FaUserAlt className="h-10 w-10 text-[#e53e3e]" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-secondary to-avioBlue-600">
+              <h3 className="text-xl font-semibold mb-3 text-gray-800">
                 Nema pronađenih korisnika
               </h3>
-              <p className="text-muted-foreground max-w-md mx-auto mb-2">
-                Dodajte prvog korisnika klikom na dugme iznad.
+              <p className="text-gray-600 max-w-md mx-auto mb-6">
+                Trenutno nema korisnika u sistemu. Dodajte prvog korisnika klikom na dugme ispod.
               </p>
+              <Button 
+                className="bg-[#e53e3e]/80 hover:bg-[#e53e3e] text-white border border-white/20 shadow-lg backdrop-blur-md rounded-xl transition-all duration-300 mx-auto"
+                onClick={() => setIsAddUserModalOpen(true)}
+              >
+                <FiPlus className="mr-2" />
+                Dodaj Novog Korisnika
+              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  {/* Table header styles from global.css should apply if using <TableHead> from ui/Table.tsx */}
-                  {/* If not, apply text-muted-foreground and border-border */}
-                  <tr className="text-left border-b border-border"> {/* Use border-border */}
-                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Korisničko ime</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Uloga</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Kreiran</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider text-center">Akcije</th>
+                  <tr className="text-left border-b border-gray-200 bg-gray-50">
+                    <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">Korisničko ime</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">Uloga</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">Kreiran</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider text-center">Akcije</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user, index) => (
                     <motion.tr 
                       key={user.id} 
-                      // hover:bg-muted/50 for table rows, border-border for row borders
-                      className="border-b border-border hover:bg-muted/50 transition-colors duration-200" 
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200" 
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05, duration: 0.3 }}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          {/* Using themed icon background and color */}
-                          <div className="p-2 bg-secondary/10 rounded-lg mr-3">
-                            <FaUserAlt className="text-secondary" /> 
+                          <div className="p-2 bg-[#4FC3C7]/20 backdrop-blur-md rounded-xl mr-3 border border-white/10">
+                            <FaUserAlt className="text-[#4FC3C7]" /> 
                           </div>
-                          <span className="font-medium text-foreground">{user.username}</span>
+                          <span className="font-medium text-gray-800">{user.username}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -199,40 +206,32 @@ const UserManagementPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <FaCalendarAlt className="mr-2 text-muted-foreground/70" /> {/* Slightly muted icon */}
-                          <span className="text-muted-foreground">
+                          <div className="p-2 bg-[#FBBF24]/20 backdrop-blur-md rounded-xl mr-3 border border-white/10">
+                            <FaCalendarAlt className="text-[#FBBF24]" /> 
+                          </div>
+                          <span className="text-gray-600">
                             {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center space-x-2">
-                          {/* Action buttons should use variants from Button.tsx for consistency */}
+                        <div className="flex items-center justify-center space-x-3">
                           <Button
-                            variant="ghost" 
-                            size="icon"
-                            className="h-8 w-8 text-secondary hover:text-secondary-foreground" // Ghost hover should use accent by default
-                            // onClick={() => { /* TODO: Open view user modal */ }}
+                            className="h-9 w-9 bg-[#4FC3C7]/20 backdrop-blur-md rounded-xl border border-white/10 text-[#4FC3C7] hover:bg-[#4FC3C7]/30 transition-all duration-300"
                             disabled
                             aria-label="Pregledaj Korisnika"
                           >
                             <FiEye size={16} />
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-yellow-500 hover:text-yellow-600" // Keep specific color for edit if desired
-                            // Or make it secondary: className="h-8 w-8 text-secondary hover:text-secondary-foreground"
-                            // onClick={() => { /* TODO: Open edit user modal */ }}
+                            className="h-9 w-9 bg-[#FBBF24]/20 backdrop-blur-md rounded-xl border border-white/10 text-[#FBBF24] hover:bg-[#FBBF24]/30 transition-all duration-300"
                             disabled
                             aria-label="Izmeni Korisnika"
                           >
                             <FiEdit size={16} />
                           </Button>
                           <Button
-                            variant="ghost" 
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive-foreground" // Destructive action
+                            className="h-9 w-9 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 text-[#e53e3e] hover:bg-[#e53e3e]/30 transition-all duration-300"
                             onClick={() => handleDeleteUser(user.id)}
                             disabled={deletingUserId === user.id}
                             aria-label="Obriši Korisnika"
@@ -242,7 +241,7 @@ const UserManagementPage: React.FC = () => {
                                 animate={{ rotate: 360 }} 
                                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                               >
-                                <FiLoader size={16} className="text-destructive" /> {/* Ensure loader is also destructive color */}
+                                <FiLoader size={16} className="text-[#e53e3e]" />
                               </motion.div>
                             ) : (
                               <FiTrash2 size={16} />

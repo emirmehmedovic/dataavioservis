@@ -274,38 +274,46 @@ const FuelDrainReport = () => {
 
   return (
     <Card>
-      <div className="relative overflow-hidden">
-        {/* Black glassmorphism background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-        {/* Glass highlight effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
-        <CardHeader className="flex flex-row items-center justify-between relative z-10 text-white">
-          <CardTitle>Evidencija Dreniranog Goriva</CardTitle>
-        <Button 
-          onClick={handleExportAllToPdf} 
-          variant="default" 
-          size="sm" 
-          disabled={filteredData.length === 0}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
-        >
-          <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-          Preuzmi PDF (filtrirano)
-        </Button>
-      </CardHeader>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between relative z-10 text-white">
+          <div>
+            <CardTitle className="text-2xl md:text-3xl font-bold text-white flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-3 text-[#e53e3e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+              Evidencija Dreniranog Goriva
+            </CardTitle>
+            <p className="text-gray-300 mt-1 ml-11">Pregled svih zapisa o dreniranom gorivu</p>
+          </div>
+          <Button 
+            onClick={handleExportAllToPdf} 
+            variant="outline" 
+            size="sm" 
+            disabled={filteredData.length === 0}
+            className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all mt-4 md:mt-0"
+          >
+            <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+            Preuzmi PDF (filtrirano)
+          </Button>
+        </CardHeader>
       </div>
       <CardContent>
         {/* Combined Filters Row */}
-        <div className="flex flex-wrap gap-4 mb-6 p-4 border rounded-md bg-gray-50 items-end">
+        <div className="flex flex-wrap gap-4 mb-6 p-4 border border-white/20 rounded-xl backdrop-blur-md bg-white/5 dark:bg-gray-800/30 shadow-lg items-end">
           {/* Date Filters */}
           <div>
-            <Label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Od datuma:</Label>
-            <Input type="date" id="startDate" name="startDate" value={startDate} onChange={handleStartDateChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+            <Label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Od datuma:</Label>
+            <Input type="date" id="startDate" name="startDate" value={startDate} onChange={handleStartDateChange} className="mt-1 block w-full rounded-xl border-white/20 shadow-sm focus:border-[#e53e3e] focus:ring-[#e53e3e] sm:text-sm backdrop-blur-md bg-white/5 dark:bg-gray-800/30" />
           </div>
           <div>
-            <Label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">Do datuma:</Label>
-            <Input type="date" id="endDate" name="endDate" value={endDate} onChange={handleEndDateChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+            <Label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Do datuma:</Label>
+            <Input type="date" id="endDate" name="endDate" value={endDate} onChange={handleEndDateChange} className="mt-1 block w-full rounded-xl border-white/20 shadow-sm focus:border-[#e53e3e] focus:ring-[#e53e3e] sm:text-sm backdrop-blur-md bg-white/5 dark:bg-gray-800/30" />
           </div>
-          <Button onClick={resetDateFilters} variant="outline" className="self-end">Poništi datume</Button>
+          <Button onClick={resetDateFilters} variant="outline" className="self-end backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all rounded-xl">Poništi datume</Button>
 
           {/* Source Type Filter */}
           <div className="ml-auto">
@@ -322,7 +330,7 @@ const FuelDrainReport = () => {
             </Select>
           </div>
           {/* TODO: Add dropdown for specific source ID here */}
-          <Button onClick={resetSourceFilters} variant="outline" className="self-end">Poništi filter izvora</Button>
+          <Button onClick={resetSourceFilters} variant="outline" className="self-end backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all rounded-xl">Poništi filter izvora</Button>
         </div>
 
         {filteredData.length === 0 ? (

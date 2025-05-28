@@ -126,24 +126,27 @@ const ActivityLog: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg">
+      {/* Subtle red shadows in corners */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
       {/* Stats and Filter Toggle */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
-        <div className="flex items-center space-x-4 mb-3 sm:mb-0">
-          <div className="bg-indigo-100 dark:bg-indigo-900/50 rounded-lg p-2">
-            <div className="text-xs text-indigo-600 dark:text-indigo-300 font-medium">Ukupno zapisa</div>
-            <div className="text-xl font-bold text-indigo-700 dark:text-indigo-200">{totalItems}</div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 relative z-10">
+        <div className="flex flex-wrap gap-4 mb-4 md:mb-0">
+          <div className="bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg p-3">
+            <div className="text-xs text-white font-medium">Ukupno zapisa</div>
+            <div className="text-xl font-bold text-white">{totalItems}</div>
           </div>
           
-          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-2">
-            <div className="text-xs text-blue-600 dark:text-blue-300 font-medium">Stranica</div>
-            <div className="text-xl font-bold text-blue-700 dark:text-blue-200">{currentPage} / {totalPages || 1}</div>
+          <div className="bg-[#4FC3C7]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg p-3">
+            <div className="text-xs text-white font-medium">Stranica</div>
+            <div className="text-xl font-bold text-white">{currentPage} / {totalPages || 1}</div>
           </div>
         </div>
         
         <button 
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+          className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -154,7 +157,7 @@ const ActivityLog: React.FC = () => {
       
       {/* Filters - Collapsible */}
       {showFilters && (
-        <div className="border-b border-gray-100 dark:border-gray-700">
+        <div className="border-b border-white/10 bg-black/30 backdrop-blur-md">
           <ActivityFilters 
             filters={filters} 
             onFilterChange={handleFilterChange} 
@@ -167,35 +170,35 @@ const ActivityLog: React.FC = () => {
       {/* Activity Table */}
       {loading ? (
         <div className="flex flex-col justify-center items-center h-64 p-6">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Učitavanje aktivnosti...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#e53e3e]"></div>
+          <p className="mt-4 text-sm text-white/70">Učitavanje aktivnosti...</p>
         </div>
       ) : error ? (
         <div className="flex flex-col justify-center items-center h-64 p-6">
-          <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="rounded-full bg-[#e53e3e]/20 backdrop-blur-md border border-white/10 shadow-lg p-3">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#e53e3e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="mt-3 text-red-600 dark:text-red-400 font-medium">{error}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Molimo pokušajte ponovo kasnije</p>
+          <p className="mt-3 text-white font-medium">{error}</p>
+          <p className="text-sm text-white/70 mt-1">Molimo pokušajte ponovo kasnije</p>
         </div>
       ) : activities.length === 0 ? (
         <div className="flex flex-col justify-center items-center h-64 p-6">
-          <div className="rounded-full bg-gray-100 dark:bg-gray-700 p-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="rounded-full bg-[#4FC3C7]/20 backdrop-blur-md border border-white/10 shadow-lg p-3">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#4FC3C7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
           </div>
-          <p className="mt-3 text-gray-700 dark:text-gray-300 font-medium">Nema rezultata</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Nema aktivnosti koje odgovaraju zadanim filterima</p>
+          <p className="mt-3 text-white font-medium">Nema rezultata</p>
+          <p className="text-sm text-white/70 mt-1">Nema aktivnosti koje odgovaraju zadanim filterima</p>
         </div>
       ) : (
         <>
           <ActivityTable activities={activities} />
           
           {/* Pagination */}
-          <div className="border-t border-gray-100 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/80">
+          <div className="border-t border-white/10 p-4 bg-black/30 backdrop-blur-md">
             <Pagination 
               currentPage={currentPage}
               totalPages={totalPages}

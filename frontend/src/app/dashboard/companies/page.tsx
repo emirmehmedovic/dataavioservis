@@ -92,28 +92,41 @@ const CompaniesPage = () => {
       transition={{ duration: 0.5 }}
     >
       {/* Header Section */}
-      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg rounded-xl p-6">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/4"></div>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
         
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 relative z-10">
-          <div>
-            <motion.h1 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.5 }}
-              className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600"
-            >
-              Firme
-            </motion.h1>
-            <p className="text-sm text-muted-foreground mt-1">Upravljajte firmama i njihovim vozilima</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
+          <div className="flex items-center">
+            <div className="mr-4 p-3 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
+              <FaBuilding className="h-8 w-8 text-[#e53e3e]" />
+            </div>
+            <div>
+              <motion.h1 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-2xl md:text-3xl font-bold text-white"
+              >
+                Upravljanje Firmama
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="text-gray-300 mt-1"
+              >
+                Pregled, dodavanje i uređivanje kompanija u sistemu
+              </motion.p>
+            </div>
           </div>
           <Link href="/dashboard/companies/new">
             <Button 
               variant="default"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
+              className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
             >
-              <FaPlus className="mr-2 h-4 w-4" />
+              <FaPlus className="h-4 w-4" />
               Dodaj Novu Firmu
             </Button>
           </Link>
@@ -121,81 +134,91 @@ const CompaniesPage = () => {
       </div>
 
       {error && (
-        <motion.div 
-          className="backdrop-blur-md bg-red-500/10 border border-red-500/30 text-red-700 px-6 py-4 rounded-xl relative"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          role="alert"
-        >
+        <div className="bg-[#e53e3e]/20 backdrop-blur-md border border-white/10 shadow-lg p-4 rounded-xl">
           <div className="flex items-center">
-            <FaExclamationTriangle className="h-5 w-5 mr-3 text-red-500" />
-            <strong className="font-bold mr-2">Greška!</strong>
-            <span className="block">{error}</span>
+            <div className="mr-3 p-2 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
+              <FaExclamationTriangle className="text-[#e53e3e]" />
+            </div>
+            <p className="text-white">{error}</p>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Search Box */}
       <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-md rounded-xl p-4">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
-        
-        <div className="relative z-10">
+        <div className="flex items-center space-x-3">
           <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FaSearch className="text-white/70" />
+            </div>
             <input
               type="text"
-              placeholder="Pretraži firme po nazivu..."
-              className="w-full py-3 px-4 pr-12 text-gray-700 bg-white/80 backdrop-blur-md rounded-lg border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              placeholder="Pretraži firme..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-white/20 rounded-xl backdrop-blur-md bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#e53e3e] focus:border-transparent"
             />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              {searchTerm ? (
-                <FaTimesCircle 
-                  className="h-5 w-5 text-gray-400 hover:text-gray-600 cursor-pointer"
-                  onClick={() => setSearchTerm('')}
-                />
-              ) : (
-                <FaSearch className="h-5 w-5 text-gray-400" />
-              )}
-            </div>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/70 hover:text-white"
+              >
+                <FaTimesCircle />
+              </button>
+            )}
           </div>
+          <Link href="/dashboard/companies/add">
+            <Button className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2">
+              <FaPlus size={16} />
+              <span>Dodaj Firmu</span>
+            </Button>
+          </Link>
         </div>
       </div>
 
       {/* Companies List */}
-      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg rounded-xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4"></div>
+      <div className="relative overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] shadow-lg rounded-xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#4FC3C7] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#4FC3C7] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4"></div>
         
         <div className="relative z-10">
           {filteredCompanies.length === 0 && !loading ? (
             <div className="text-center py-16 px-4">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex items-center justify-center mb-4">
-                <FaBuilding className="h-8 w-8 text-blue-500" />
+              <div className="w-20 h-20 mx-auto bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg flex items-center justify-center mb-6">
+                <FaBuilding className="h-10 w-10 text-[#e53e3e]" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+              <h3 className="text-xl font-semibold mb-3 text-white">
                 Nema pronađenih firmi
               </h3>
               {companies.length > 0 && searchTerm && (
-                <p className="text-muted-foreground max-w-md mx-auto mb-2">
+                <p className="text-white/70 max-w-md mx-auto mb-4">
                   Pokušajte sa drugim terminom pretrage.
                 </p>
               )}
               {companies.length === 0 && !searchTerm && (
-                <p className="text-muted-foreground max-w-md mx-auto mb-2">
-                  Nema unesenih firmi. Kliknite na dugme iznad da dodate novu.
+                <p className="text-white/70 max-w-md mx-auto mb-4">
+                  Nema unesenih firmi. Kliknite na dugme ispod da dodate novu.
                 </p>
               )}
+              
+              <Link href="/dashboard/companies/new" className="inline-block mt-2">
+                <Button 
+                  variant="default"
+                  className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
+                >
+                  <FaPlus className="h-4 w-4" />
+                  Dodaj Novu Firmu
+                </Button>
+              </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left border-b border-white/10">
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Naziv Firme</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider text-center">Broj Vozila</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider text-center">Akcije</th>
+                  <tr className="text-left border-b border-white/10 bg-gradient-to-r from-[#2c2c2c] to-[#1a1a1a]">
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Naziv Firme</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider text-center">Broj Vozila</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider text-center">Akcije</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -209,15 +232,17 @@ const CompaniesPage = () => {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <FaBuilding className="mr-3 text-blue-500/80" />
-                          <span className="font-medium text-gray-700">{company.name}</span>
+                          <div className="mr-3 p-1.5 bg-[#4FC3C7]/20 backdrop-blur-md rounded-lg border border-white/10 shadow-sm">
+                            <FaBuilding className="text-[#4FC3C7]" />
+                          </div>
+                          <span className="font-medium text-white">{company.name}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center">
-                          <div className="backdrop-blur-sm bg-white/10 border border-white/20 rounded-full px-3 py-1 inline-flex items-center">
-                            <FaCar className="mr-2 text-blue-500/80 h-3 w-3" />
-                            <span className="text-gray-700">{company.vehicles ? company.vehicles.length : '0'}</span>
+                          <div className="backdrop-blur-sm bg-[#e53e3e]/20 border border-white/20 rounded-full px-3 py-1 inline-flex items-center">
+                            <FaCar className="mr-2 text-[#e53e3e] h-3 w-3" />
+                            <span className="text-white">{company.vehicles ? company.vehicles.length : '0'}</span>
                           </div>
                         </div>
                       </td>
@@ -227,7 +252,7 @@ const CompaniesPage = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-blue-500 hover:text-blue-600 border border-white/10 hover:bg-blue-500/10"
+                              className="h-8 w-8 text-[#4FC3C7] hover:text-[#4FC3C7] border border-white/10 hover:bg-[#4FC3C7]/20 backdrop-blur-md"
                               aria-label="Uredi firmu"
                             >
                               <FaEdit size={16} />
@@ -236,7 +261,7 @@ const CompaniesPage = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-600 border border-white/10 hover:bg-red-500/10"
+                            className="h-8 w-8 text-[#e53e3e] hover:text-[#e53e3e] border border-white/10 hover:bg-[#e53e3e]/20 backdrop-blur-md"
                             onClick={() => openDeleteModal(company)}
                             aria-label="Obriši firmu"
                           >

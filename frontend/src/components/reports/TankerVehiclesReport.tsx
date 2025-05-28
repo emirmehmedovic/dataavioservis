@@ -73,8 +73,8 @@ const TankerVehiclesReport: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
-            <Loader2 className="h-10 w-10 animate-spin text-purple-600 dark:text-purple-400" />
-            <span className="mt-4 text-purple-600 dark:text-purple-400 font-medium">Učitavanje podataka o cisternama...</span>
+            <Loader2 className="h-10 w-10 animate-spin text-[#e53e3e]" />
+            <span className="mt-4 text-[#e53e3e] font-medium">Učitavanje podataka o cisternama...</span>
           </div>
         </div>
       </div>
@@ -98,19 +98,19 @@ const TankerVehiclesReport: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
-      {/* Header with black glassmorphism effect */}
-      <div className="p-6 text-white relative overflow-hidden">
-        {/* Black glassmorphism background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-        {/* Glass highlight effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
-        <div className="flex items-center justify-between relative z-10">
+      {/* Header with glassmorphism effect */}
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Izvještaj o Stanju Avio Cisterni</h2>
-            <p className="mt-1 text-purple-100 text-sm">Pregled trenutnog stanja mobilnih cisterni za gorivo</p>
-          </div>
-          <div className="bg-white/10 p-3 rounded-full">
-            <TruckIcon className="h-8 w-8 text-white" />
+            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+              <TruckIcon className="h-8 w-8 mr-3 text-[#e53e3e]" />
+              Izvještaj o Stanju Avio Cisterni
+            </h2>
+            <p className="text-gray-300 mt-1 ml-11">Pregled trenutnog stanja mobilnih cisterni za gorivo</p>
           </div>
         </div>
       </div>
@@ -125,56 +125,60 @@ const TankerVehiclesReport: React.FC = () => {
         </div>
       ) : (
         <div className="p-6">
-          {/* Summary cards */}
+          {/* Summary cards - Glassmorphism style */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-100 dark:border-indigo-800">
-              <div className="flex items-center">
-                <div className="bg-indigo-100 dark:bg-indigo-800 p-2 rounded-full mr-4">
-                  <TruckIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="relative backdrop-blur-md bg-white/10 dark:bg-gray-800/30 rounded-xl p-4 border border-white/20 shadow-lg overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
+              <div className="flex items-center relative z-10">
+                <div className="bg-[#e53e3e]/20 p-3 rounded-xl mr-4 border border-white/10">
+                  <TruckIcon className="h-5 w-5 text-[#e53e3e]" />
                 </div>
                 <div>
-                  <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Ukupno cisterni</p>
-                  <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{tankers.length}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Ukupno cisterni</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">{tankers.length}</p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-100 dark:border-purple-800">
-              <div className="flex items-center">
-                <div className="bg-purple-100 dark:bg-purple-800 p-2 rounded-full mr-4">
-                  <DropletIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <div className="relative backdrop-blur-md bg-white/10 dark:bg-gray-800/30 rounded-xl p-4 border border-white/20 shadow-lg overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#4FC3C7] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
+              <div className="flex items-center relative z-10">
+                <div className="bg-[#4FC3C7]/20 p-3 rounded-xl mr-4 border border-white/10">
+                  <DropletIcon className="h-5 w-5 text-[#4FC3C7]" />
                 </div>
                 <div>
-                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Ukupni kapacitet</p>
-                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Ukupni kapacitet</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
                     {tankers.reduce((sum, tanker) => sum + tanker.capacity_liters, 0).toLocaleString()} L
                   </p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800">
-              <div className="flex items-center">
-                <div className="bg-blue-100 dark:bg-blue-800 p-2 rounded-full mr-4">
-                  <GaugeIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="relative backdrop-blur-md bg-white/10 dark:bg-gray-800/30 rounded-xl p-4 border border-white/20 shadow-lg overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#FBBF24] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
+              <div className="flex items-center relative z-10">
+                <div className="bg-[#FBBF24]/20 p-3 rounded-xl mr-4 border border-white/10">
+                  <GaugeIcon className="h-5 w-5 text-[#FBBF24]" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Trenutno goriva</p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Trenutno goriva</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
                     {tankers.reduce((sum, tanker) => sum + tanker.current_liters, 0).toLocaleString()} L
                   </p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-4 border border-emerald-100 dark:border-emerald-800">
-              <div className="flex items-center">
-                <div className="bg-emerald-100 dark:bg-emerald-800 p-2 rounded-full mr-4">
-                  <MapPinIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="relative backdrop-blur-md bg-white/10 dark:bg-gray-800/30 rounded-xl p-4 border border-white/20 shadow-lg overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#8B5CF6] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4"></div>
+              <div className="flex items-center relative z-10">
+                <div className="bg-[#8B5CF6]/20 p-3 rounded-xl mr-4 border border-white/10">
+                  <GaugeIcon className="h-5 w-5 text-[#8B5CF6]" />
                 </div>
                 <div>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">Prosječna popunjenost</p>
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Prosječna popunjenost</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
                     {(tankers.reduce((sum, tanker) => {
                       return sum + getFillPercentage(tanker.current_liters, tanker.capacity_liters);
                     }, 0) / tankers.length).toFixed(1)}%
@@ -185,10 +189,10 @@ const TankerVehiclesReport: React.FC = () => {
           </div>
           
           {/* Data table */}
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="overflow-x-auto rounded-xl border border-white/20 backdrop-blur-md bg-white/5 dark:bg-gray-800/30 shadow-lg">
             <Table>
               <TableHeader>
-                <TableRow><TableHead className="bg-gray-50 dark:bg-gray-800">Identifikator</TableHead><TableHead className="bg-gray-50 dark:bg-gray-800">Naziv</TableHead><TableHead className="bg-gray-50 dark:bg-gray-800">Lokacija</TableHead><TableHead className="bg-gray-50 dark:bg-gray-800">Tip Goriva</TableHead><TableHead className="bg-gray-50 dark:bg-gray-800 text-right">Kapacitet (L)</TableHead><TableHead className="bg-gray-50 dark:bg-gray-800 text-right">Trenutno (L)</TableHead><TableHead className="bg-gray-50 dark:bg-gray-800 text-right">Popunjenost</TableHead><TableHead className="bg-gray-50 dark:bg-gray-800 text-center">Status</TableHead></TableRow>
+                <TableRow><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10">Identifikator</TableHead><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10">Naziv</TableHead><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10">Lokacija</TableHead><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10">Tip Goriva</TableHead><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10 text-right">Kapacitet (L)</TableHead><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10 text-right">Trenutno (L)</TableHead><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10 text-right">Popunjenost</TableHead><TableHead className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] text-white border-b border-white/10 text-center">Status</TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 {tankers.map((tanker) => {
@@ -204,7 +208,7 @@ const TankerVehiclesReport: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200">
+                        <Badge className="backdrop-blur-md bg-[#3B82F6]/30 border border-white/20 text-white shadow-sm hover:bg-[#3B82F6]/40">
                           {tanker.fuel_type}
                         </Badge>
                       </TableCell>
@@ -224,7 +228,7 @@ const TankerVehiclesReport: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge className={`${fillPercentage < 20 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : fillPercentage < 50 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
+                        <Badge className={`backdrop-blur-md border border-white/20 shadow-sm ${fillPercentage < 20 ? 'bg-[#e53e3e]/30 text-white' : fillPercentage < 50 ? 'bg-[#FBBF24]/30 text-white' : 'bg-[#4FC3C7]/30 text-white'}`}>
                           {fillPercentage < 20 ? 'Nisko' : fillPercentage < 50 ? 'Srednje' : 'Dobro'}
                         </Badge>
                       </TableCell>

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FuelingOperation } from '../types';
 import { formatDate, API_BASE_URL, generatePDFInvoice } from '../utils/helpers';
 import { generateXMLInvoice, downloadXML } from '../utils/xmlInvoice';
@@ -12,7 +13,28 @@ interface OperationDetailsModalProps {
 }
 
 const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation, onClose }) => {
-  return (
+  // Create a portal to render the modal outside of the current component hierarchy
+  // This ensures the modal is displayed over the entire viewport regardless of parent containers
+  
+  // Create modal container if it doesn't exist
+  useEffect(() => {
+    // Check if we need to create the modal container
+    if (!document.getElementById('modal-root')) {
+      const modalRoot = document.createElement('div');
+      modalRoot.id = 'modal-root';
+      document.body.appendChild(modalRoot);
+    }
+    
+    // Prevent scrolling on the body when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+  
+  return createPortal(
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-0">
         {/* Header with black glassmorphism effect */}
@@ -475,7 +497,7 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
         </div>
       </div>
     </div>
-  );
+  , document.getElementById('modal-root') || document.body);
 };
 
 export default OperationDetailsModal;

@@ -14,34 +14,45 @@ html, body {
 }
 
 :root {
-  /* Base colors - usklađeno s shadcn/ui očekivanjima */
-  color: hsl(var(--foreground)); /* Koristi shadcn varijablu */
-  background-color: hsl(var(--background)); /* Koristi shadcn varijablu */
+  /* Base colors - based on visual.md specifications */
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
   
-  --primary: 0 115 255; /* Primjer: #0073ff kao HSL vrijednosti (približno) - Prilagodite točne HSL vrijednosti */
-  --secondary: 220 13% 96%; /* Primjer: #f3f4f6 kao HSL - Prilagodite */
-  --background: 0 0% 100%;    /* #ffffff -> 0 0% 100% */
-  --foreground: 220 13% 6%;    /* #111827 -> 220 13% 6.7% (zaokruženo) */
-  --muted: 220 9% 46%;       /* #6b7280 -> 220 9% 46.1% */
-  --accent: 210 90% 67%;      /* #60a5fa -> 210 90% 67.5% */
-  --border: 220 14% 90%;      /* #e5e7eb -> 220 13.8% 90% */
+  /* Primary colors from visual.md */
+  --primary: 0 84% 60%; /* Accent Red: #e53e3e for primary actions */
+  --secondary: 210 64% 50%; /* Secondary Blue: #3182ce for secondary actions */
+  --background: 0 0% 97%;  /* Main Gradient: #f7f7f7 -> #dedede */
+  --foreground: 220 13% 10%; /* text-primary: #1a202c */
+  --muted: 220 9% 46%; /* text-secondary: #4a5568 */
+  --accent: 0 84% 60%; /* Same as primary for consistency */
+  --border: 220 14% 90%; /* gray-200: #e2e8f0 */
   
-  --card: 0 0% 100%;           /* #ffffff -> 0 0% 100% (isto kao --background po defaultu) */
-  --card-foreground: 220 13% 6%; /* #111827 (isto kao --foreground po defaultu) */
+  /* Card colors */
+  --card: 0 0% 100%; /* White background for cards */
+  --card-foreground: 220 13% 10%; /* Same as foreground */
 
-  --popover: 0 0% 100%; /* Popover background for light mode (white) */
-  --popover-foreground: 220 13% 6%; /* Popover text for light mode (dark gray) */
+  /* Popover colors */
+  --popover: 0 0% 100%; /* White background for popovers */
+  --popover-foreground: 220 13% 10%; /* Same as foreground */
 
-  /* Dodatne shadcn varijable koje mogu biti potrebne (s placeholder vrijednostima) */
-  --primary-foreground: 0 0% 100%; /* Bijela za tekst na primarnoj boji */
-  --secondary-foreground: 220 13% 6%; /* Tamna za tekst na sekundarnoj boji */
-  --muted-foreground: 220 9% 40%; /* Malo tamnija za muted foreground */
-  --accent-foreground: 0 0% 100%; /* Bijela za tekst na akcentnoj boji */
-  --destructive: 0 84% 60%;      /* Crvena */
+  /* Additional variables */
+  --primary-foreground: 0 0% 100%; /* White text on primary color */
+  --secondary-foreground: 0 0% 100%; /* White text on secondary color */
+  --muted-foreground: 220 9% 40%; /* text-tertiary: #718096 */
+  --accent-foreground: 0 0% 100%; /* White text on accent color */
+  --destructive: 0 84% 60%; /* Same as primary/accent red */
   --destructive-foreground: 0 0% 100%;
-  --input: 220 14% 90%; /* Slično borderu */
-  --ring: 210 90% 67%;   /* Slično accentu ili primarnoj boji */
-  --radius: 0.5rem; /* Default shadcn radius */
+  --input: 220 14% 90%; /* gray-200: #e2e8f0 */
+  --ring: 210 64% 50%; /* Secondary Blue */
+  --radius: 0.5rem; /* Default radius */
+  
+  /* Gray scale from visual.md */
+  --gray-50: 210 40% 98%; /* #f7fafc */
+  --gray-100: 210 40% 96%; /* #edf2f7 */
+  --gray-200: 214 32% 91%; /* #e2e8f0 */
+  --gray-600: 215 16% 34%; /* #4a5568 */
+  --gray-700: 218 17% 23%; /* #2d3748 */
+  --gray-800: 218 17% 14%; /* #1a202c */
   
   /* Hope color theme (ove ostaju kako jesu ako ih koristite specifično) */
   --clr-hope-100: oklab(28% -0.033 -0.013);
@@ -54,28 +65,29 @@ html, body {
 
 /* Dark mode */
 [data-theme="dark"] {
-  --primary: 210 90% 60%;    /* #3b82f6 -> 210 90% 60.2% */
-  --secondary: 220 13% 15%;   /* #1f2937 -> 220 13.3% 14.5% */
-  --background: 220 13% 6%;    /* #111827 -> 220 13.3% 6.7% */
-  --foreground: 0 0% 98%;      /* #f9fafb -> 0 0% 98% */
-  --muted: 220 9% 46%;       /* #6b7280 (ista kao u light modu ili prilagodite) */
-  --accent: 210 90% 67%;      /* #60a5fa (ista kao u light modu ili prilagodite) */
-  --border: 220 13% 22%;      /* #374151 -> 220 13% 21.6% */
+  /* Dark mode colors based on visual.md */
+  --primary: 0 84% 55%;    /* Slightly darker red for dark mode */
+  --secondary: 210 64% 45%;   /* Slightly darker blue for dark mode */
+  --background: 0 0% 13%;    /* Sidebar Gradient: #000000 -> #222222 -> #333333 */
+  --foreground: 0 0% 98%;    /* Light text for dark mode */
+  --muted: 220 9% 65%;       /* Lighter muted text for dark mode */
+  --accent: 0 84% 55%;       /* Same as primary */
+  --border: 0 0% 20%;        /* Dark border */
   
-  --card: 220 13% 15%;         /* #1f2937 (isto kao --secondary u dark modu) */
-  --card-foreground: 0 0% 98%;  /* #f9fafb (isto kao --foreground u dark modu) */
+  --card: 0 0% 15%;          /* Slightly lighter than background */
+  --card-foreground: 0 0% 98%; /* Light text */
 
-  --popover: 220 13% 10%; /* Popover background for dark mode (slightly lighter than main dark bg) e.g. hsl(220, 13%, 10%) */
-  --popover-foreground: 0 0% 98%;  /* Popover text for dark mode (light gray / white) */
+  --popover: 0 0% 18%;       /* Slightly lighter than background for popovers */
+  --popover-foreground: 0 0% 98%; /* Light text */
 
-  --primary-foreground: 220 13% 6%; 
-  --secondary-foreground: 0 0% 98%;
-  --muted-foreground: 0 0% 70%;
-  --accent-foreground: 220 13% 6%;
+  --primary-foreground: 0 0% 100%;
+  --secondary-foreground: 0 0% 100%;
+  --muted-foreground: 0 0% 80%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 70% 50%;
-  --destructive-foreground: 0 0% 98%;
-  --input: 220 13% 22%; 
-  --ring: 210 90% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 0 0% 20%;
+  --ring: 210 64% 45%;
 }
 
 /* Custom Animations */
@@ -101,36 +113,55 @@ html, body {
 }
 
 ::-webkit-scrollbar-track {
-  background-color: var(--color-secondary);
+  background-color: hsl(var(--gray-100));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-primary);
+  background-color: hsl(var(--primary));
   opacity: 0.7;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-primary);
+  background-color: hsl(var(--primary));
+  opacity: 1;
 }
 
-/* Custom gradient background with OKLAB colors */
-.hope-gradient {
-  background: linear-gradient(to bottom, #363636, #000000, #363636);
+/* Hide scrollbar only for sidebar */
+.sidebar-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom gradient backgrounds based on visual.md */
+.sidebar-gradient {
+  background: linear-gradient(to bottom, #333333, #222222, #000000);
+}
+
+.header-gradient {
+  background: linear-gradient(to right, #f7fafc, #edf2f7);
+}
+
+.main-gradient {
+  background: linear-gradient(to bottom, #f7f7f7, #dedede);
 }
 
 /* Custom Card Styles */
 .card {
-  background-color: var(--card);
+  background-color: hsl(var(--card));
   border-radius: 0.5rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid hsl(var(--border));
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
   padding: 1rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .card-content {
@@ -139,7 +170,7 @@ html, body {
 
 .card-footer {
   padding: 1rem;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .card-hover {
@@ -179,7 +210,7 @@ html, body {
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background-color: hsl(var(--primary));
   color: white;
 }
 
@@ -188,8 +219,8 @@ html, body {
 }
 
 .btn-secondary {
-  background-color: var(--color-secondary);
-  color: var(--color-foreground);
+  background-color: hsl(var(--secondary));
+  color: white;
 }
 
 .btn-secondary:hover {
@@ -197,29 +228,33 @@ html, body {
 }
 
 .btn-outline {
-  border: 1px solid var(--color-border);
+  border: 1px solid hsl(var(--border));
   background-color: transparent;
+  color: hsl(var(--foreground));
 }
 
 .btn-outline:hover {
-  background-color: var(--color-secondary);
+  background-color: hsl(var(--secondary));
+  color: white;
 }
 
 .btn-ghost {
   background-color: transparent;
+  color: hsl(var(--foreground));
 }
 
 .btn-ghost:hover {
-  background-color: var(--color-secondary);
+  background-color: hsl(var(--secondary));
+  color: white;
 }
 
 .btn-destructive {
-  background-color: #ef4444;
+  background-color: hsl(var(--destructive));
   color: white;
 }
 
 .btn-destructive:hover {
-  background-color: rgba(239, 68, 68, 0.9);
+  opacity: 0.9;
 }
 
 /* Table Styles */
@@ -303,18 +338,17 @@ html, body {
   text-align: left;
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--color-muted);
+  color: hsl(var(--muted));
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .table td {
   padding: 0.75rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .table tr:hover {
-  background-color: var(--color-secondary);
-  opacity: 0.5;
+  background-color: hsl(var(--gray-100));
 }

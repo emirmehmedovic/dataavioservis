@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getTotalFuelSummary } from '@/lib/apiService';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
@@ -24,6 +25,7 @@ import {
   ShieldCheck, // Added ShieldCheck
   Plane, // Added Plane for Airport
   FileText, // Added FileText for Activities
+  Droplet, // Added Droplet for fuel status
 } from 'lucide-react';
 
 // Define new user roles for specific access
@@ -54,6 +56,29 @@ export default function Sidebar() {
   const { logout, authUser } = useAuth();
   const [collapsed, setCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [fuelSummary, setFuelSummary] = useState<{grandTotal: number} | null>(null);
+  const [fuelPercentage, setFuelPercentage] = useState(0);
+  
+  // Fetch total fuel data for the sidebar
+  useEffect(() => {
+    const fetchFuelData = async () => {
+      try {
+        const summary = await getTotalFuelSummary();
+        setFuelSummary(summary);
+        // Set a mock percentage for visualization (you can calculate actual percentage if you have total capacity)
+        setFuelPercentage(65); // This is just an example, replace with actual calculation if available
+      } catch (error) {
+        console.error('Error fetching fuel summary:', error);
+      }
+    };
+    
+    fetchFuelData();
+  }, []);
+  
+  // Format number with thousand separator
+  const formatNumber = (num: number) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
 
   // Filter navItems based on user role
   const navItems = baseNavItems.filter(item => 
@@ -77,7 +102,7 @@ export default function Sidebar() {
     <>
       {/* Mobile menu button - only visible on small screens */}
       <motion.button
-        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-gradient-to-r from-[#E60026] to-[#4D000A] text-white shadow-lg md:hidden backdrop-blur-lg"
+        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-primary text-white shadow-lg md:hidden backdrop-blur-lg"
         onClick={toggleMobileSidebar}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -99,10 +124,10 @@ export default function Sidebar() {
       {/* Sidebar */}
       <motion.aside
         className={cn(
-          'fixed top-0 left-0 z-40 h-screen hope-gradient text-white shadow-xl flex flex-col',
+          'fixed top-0 left-0 z-40 h-screen sidebar-gradient text-white shadow-xl flex flex-col',
           'md:relative md:z-0 backdrop-blur-lg bg-black/20 border-r border-white/10',
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          'group'
+          'group sidebar-no-scrollbar'
         )}
         variants={sidebarVariants}
         initial={false}
@@ -115,7 +140,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center space-x-3 overflow-hidden">
             <motion.div
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#E60026] to-[#4D000A] text-white font-bold shadow-md"
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-white font-bold shadow-md"
               animate={{ 
                 rotate: collapsed ? 360 : 0,
                 scale: [1, 1.05, 1]
@@ -140,7 +165,7 @@ export default function Sidebar() {
                 transition={{ delay: 0.1 }}
                 className="flex flex-col"
               >
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-[#E60026]/70">
+                <h1 className="text-xl font-bold text-white">
                   AvioServis
                 </h1>
                 <span className="text-xs text-white/60">Admin Panel</span>
@@ -187,7 +212,7 @@ export default function Sidebar() {
         )}
 
         {/* Navigation */}
-        <div className="flex-grow p-3 overflow-y-auto">
+        <div className="flex-grow p-3 overflow-y-auto sidebar-no-scrollbar">
           <div className={cn(
             "text-xs uppercase text-white/40 font-medium px-3 mb-2",
             collapsed ? "text-center" : "text-left"
@@ -255,19 +280,20 @@ export default function Sidebar() {
               <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
-                    <Activity size={14} className="text-[#E60026]" />
-                    <span className="text-sm">Aktivna vozila</span>
+                    <Droplet size={14} className="text-[#E60026]" />
+                    <span className="text-sm">Ukupno stanje goriva</span>
                   </div>
-                  <span className="font-bold text-[#E60026]">28</span>
+                  <span className="font-bold text-[#E60026]">{fuelSummary ? formatNumber(fuelSummary.grandTotal) : '0'} L</span>
                 </div>
                 <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
                   <motion.div 
                     className="h-full bg-gradient-to-r from-[#E60026] to-[#4D000A] rounded-full"
                     initial={{ width: 0 }}
-                    animate={{ width: '75%' }}
+                    animate={{ width: `${fuelPercentage}%` }}
                     transition={{ delay: 0.5, duration: 1 }}
                   />
                 </div>
+                <p className="text-xs text-white/60 mt-1">{fuelPercentage}% ukupnog kapaciteta</p>
               </div>
             </motion.div>
           )}

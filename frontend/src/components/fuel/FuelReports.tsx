@@ -304,12 +304,12 @@ export default function FuelReports() {
     >
       <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
         {/* Subtle red shadows in corners */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#e53e3e] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
           <div className="flex items-center">
-            <div className="mr-4 p-3 bg-[#F08080]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
-              <ChartBarIcon className="h-8 w-8 text-white" />
+            <div className="mr-4 p-3 bg-[#e53e3e]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
+              <ChartBarIcon className="h-8 w-8 text-[#e53e3e]" />
             </div>
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-white">Izvještaji o Potrošnji Goriva</h2>
@@ -327,7 +327,7 @@ export default function FuelReports() {
                 name="startDate"
                 value={dateRange.startDate}
                 onChange={handleDateChange}
-                className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
+                className="shadow-sm focus:ring-[#e53e3e] focus:border-[#e53e3e] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
               />
             </div>
             <div>
@@ -340,7 +340,7 @@ export default function FuelReports() {
                 name="endDate"
                 value={dateRange.endDate}
                 onChange={handleDateChange}
-                className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
+                className="shadow-sm focus:ring-[#e53e3e] focus:border-[#e53e3e] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
               />
             </div>
             <div>
@@ -351,7 +351,7 @@ export default function FuelReports() {
                 id="airlineId"
                 value={selectedAirlineId}
                 onChange={handleAirlineChange}
-                className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
+                className="shadow-sm focus:ring-[#e53e3e] focus:border-[#e53e3e] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
               >
                 <option value="all">Sve avio kompanije</option>
                 {airlines && airlines.length > 0 && airlines.map(airline => (
@@ -364,7 +364,7 @@ export default function FuelReports() {
             <div className="flex items-end">
               <button
                 onClick={handleExportCSV}
-                className="backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
+                className="backdrop-blur-md bg-[#e53e3e]/80 border border-white/20 text-white shadow-lg hover:bg-[#e53e3e]/90 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
               >
                 <ArrowDownTrayIcon className="h-5 w-5" />
                 <span>Izvoz CSV</span>
@@ -383,7 +383,7 @@ export default function FuelReports() {
           <nav className="flex space-x-2 overflow-x-auto relative z-10 px-1" aria-label="Tabs">
             {[
               { id: 'overview', name: 'Opšti Pregled', icon: <ChartBarIcon className="h-4 w-4" />, color: '#4FC3C7' },
-              { id: 'consumptionAnalysis', name: 'Analiza Potrošnje', icon: <ChartPieIcon className="h-4 w-4" />, color: '#F08080' },
+              { id: 'consumptionAnalysis', name: 'Analiza Potrošnje', icon: <ChartPieIcon className="h-4 w-4" />, color: '#e53e3e' },
               { id: 'inventoryStatus', name: 'Stanje Zaliha', icon: <DocumentArrowDownIcon className="h-4 w-4" />, color: '#FBBF24' },
               { id: 'details', name: 'Detaljni Prikazi', icon: <DocumentArrowDownIcon className="h-4 w-4" />, color: '#8B5CF6' },
             ].map((tab) => (
