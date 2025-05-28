@@ -168,18 +168,36 @@ export default function AirlineManagement() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Avio Kompanije</h2>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowAddModal(true);
-          }}
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" />
-          Dodaj Avio Kompaniju
-        </button>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6 mb-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+              <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 19L13 4.00001L20 14.5L15 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M13 4L9.04401 13.1224C9.01443 13.1921 9.01443 13.2685 9.04401 13.3382L11 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4 19L11 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Avio Kompanije
+            </h2>
+            <p className="text-gray-300 mt-1 ml-8">
+              Upravljanje avio kompanijama i njihovim podacima
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            className="backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span>Dodaj Avio Kompaniju</span>
+          </button>
+        </div>
       </div>
 
       {loading ? (

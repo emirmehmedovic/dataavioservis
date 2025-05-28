@@ -124,7 +124,7 @@ export default function FuelManagement() {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden"
           >
           <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-            <div className="bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 p-1 rounded-t-xl shadow-inner overflow-hidden relative">
+            <div className="bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] backdrop-blur-md border border-white/10 p-1 rounded-xl shadow-lg overflow-hidden relative">
               {/* Glass reflection effect */}
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
               <Tab.List className="flex gap-1 overflow-x-auto">
@@ -136,8 +136,8 @@ export default function FuelManagement() {
                         'px-6 py-4 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2',
                         'focus:outline-none',
                         selected
-                          ? 'bg-white text-[#E60026] rounded-t-lg shadow-lg'
-                          : 'text-white hover:bg-white/10 hover:text-[#E60026]/80 rounded-t-lg'
+                          ? 'backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white rounded-xl shadow-lg'
+                          : 'text-white hover:bg-white/10 hover:text-white rounded-xl'
                       )
                     }
                   >

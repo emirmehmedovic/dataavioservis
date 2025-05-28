@@ -469,15 +469,29 @@ const DrainedFuelOperations: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Drenirano gorivo</h2>
-        <Button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Novo istakanje
-        </Button>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6 mb-4">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+              <ArrowDownIcon className="h-6 w-6 mr-2" />
+              Drenirano gorivo
+            </h2>
+            <p className="text-gray-300 mt-1 ml-8">
+              Evidencija istakanja i povrata dreniranog goriva
+            </p>
+          </div>
+          <Button 
+            onClick={() => setIsModalOpen(true)}
+            className="backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl flex items-center gap-2"
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span>Novo istakanje</span>
+          </Button>
+        </div>
       </div>
       
       {/* Summary Cards */}

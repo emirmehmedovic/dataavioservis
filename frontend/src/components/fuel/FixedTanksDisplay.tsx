@@ -143,11 +143,14 @@ export default function FixedTanksDisplay({
   const uniqueFuelTypes = Array.from(new Set(tanks.map(tank => tank.fuel_type)));
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-lg border border-gray-100">
+    <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100">
       {/* Header with title and action buttons */}
-      <div className="relative overflow-hidden p-6 rounded-t-lg shadow-md text-white">
-        {/* Black glassmorphism background - exactly matching tab header */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+      <div className="relative overflow-hidden p-6 rounded-xl shadow-lg text-white">
+        {/* Black gradient with subtle red corners */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] backdrop-blur-md border border-white/10 z-0"></div>
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
         
         {/* Glass highlight effect - matching tab header */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
@@ -170,7 +173,7 @@ export default function FixedTanksDisplay({
                 <DialogTrigger asChild>
                   <Button 
                     variant="default"
-                    className="bg-gradient-to-r from-[#E60026] to-[#4D000A] hover:from-[#B3001F] hover:to-[#800014] text-white py-2 px-4 rounded-md shadow-sm flex items-center space-x-2 text-sm"
+                    className="backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium py-2 px-4 rounded-xl flex items-center space-x-2 text-sm"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4C11.4477 4 11 4.44772 11 5V11H5C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13H11V19C11 19.5523 11.4477 20 12 20C12.5523 20 13 19.5523 13 19V13H19C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11H13V5C13 4.44772 12.5523 4 12 4Z" fill="currentColor"/></svg>
                     <span>Dodaj Novi Tank</span>
@@ -200,7 +203,7 @@ export default function FixedTanksDisplay({
               <Button 
                 variant="outline"
                 onClick={() => setIsTransferModalOpen(true)}
-                className="ml-4 border-[#E60026]/30 text-[#E60026] bg-white hover:bg-[#E60026]/10 py-2 px-4 rounded-md shadow-sm flex items-center space-x-2 text-sm"
+                className="backdrop-blur-md bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/20 transition-all py-2 px-4 rounded-xl flex items-center space-x-2 text-sm"
               >
                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.0002 4.00001H8.00016C6.89559 4.00001 6.00016 4.89544 6.00016 6.00001V18C6.00016 19.1046 6.89559 20 8.00016 20H16.0002C17.1047 20 18.0002 19.1046 18.0002 18V6.00001C18.0002 4.89544 17.1047 4.00001 16.0002 4.00001ZM12.0002 16L9.00016 13H11.0002V10C11.0002 9.44772 11.4479 9.00001 12.0002 9.00001C12.5524 9.00001 13.0002 9.44772 13.0002 10V13H15.0002L12.0002 16Z" fill="currentColor"/></svg>
                 <span>Pretakanje (Fiksni u Fiksni)</span>

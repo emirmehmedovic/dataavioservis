@@ -302,17 +302,19 @@ export default function FuelReports() {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      <div className="rounded-xl p-6 shadow-xl relative overflow-hidden">
-        {/* Black glassmorphism background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-        {/* Glass highlight effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
           <div className="flex items-center">
-            <div className="mr-4 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+            <div className="mr-4 p-3 bg-[#F08080]/20 backdrop-blur-md rounded-xl border border-white/10 shadow-lg">
               <ChartBarIcon className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white">Izvještaji o Potrošnji Goriva</h2>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-white">Izvještaji o Potrošnji Goriva</h2>
+              <p className="text-gray-300 mt-1">Analiza i praćenje potrošnje goriva</p>
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <div>
@@ -325,7 +327,7 @@ export default function FuelReports() {
                 name="startDate"
                 value={dateRange.startDate}
                 onChange={handleDateChange}
-                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 bg-white/90 backdrop-blur-sm rounded-md"
+                className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
               />
             </div>
             <div>
@@ -338,7 +340,7 @@ export default function FuelReports() {
                 name="endDate"
                 value={dateRange.endDate}
                 onChange={handleDateChange}
-                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 bg-white/90 backdrop-blur-sm rounded-md"
+                className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
               />
             </div>
             <div>
@@ -349,7 +351,7 @@ export default function FuelReports() {
                 id="airlineId"
                 value={selectedAirlineId}
                 onChange={handleAirlineChange}
-                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 bg-white/90 backdrop-blur-sm rounded-md"
+                className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-white/20 bg-white/90 backdrop-blur-md rounded-xl"
               >
                 <option value="all">Sve avio kompanije</option>
                 {airlines && airlines.length > 0 && airlines.map(airline => (
@@ -362,10 +364,10 @@ export default function FuelReports() {
             <div className="flex items-end">
               <button
                 onClick={handleExportCSV}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                className="backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl flex items-center gap-2 px-4 py-2"
               >
-                <ArrowDownTrayIcon className="-ml-1 mr-2 h-5 w-5" />
-                Izvoz CSV
+                <ArrowDownTrayIcon className="h-5 w-5" />
+                <span>Izvoz CSV</span>
               </button>
             </div>
           </div>
@@ -373,29 +375,32 @@ export default function FuelReports() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="p-1 relative overflow-hidden">
-          {/* Black glassmorphism background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
-          {/* Glass highlight effect */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
-          <nav className="flex space-x-1 overflow-x-auto relative z-10" aria-label="Tabs">
+      <div className="bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] rounded-xl shadow-lg overflow-hidden border border-white/5">
+        <div className="p-2 relative overflow-hidden">
+          {/* Subtle gradient background for tabs */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent z-0"></div>
+          
+          <nav className="flex space-x-2 overflow-x-auto relative z-10 px-1" aria-label="Tabs">
             {[
-              { id: 'overview', name: 'Opšti Pregled', icon: <ChartBarIcon className="h-4 w-4" /> },
-              { id: 'consumptionAnalysis', name: 'Analiza Potrošnje', icon: <ChartPieIcon className="h-4 w-4" /> },
-              { id: 'inventoryStatus', name: 'Stanje Zaliha', icon: <DocumentArrowDownIcon className="h-4 w-4" /> },
-              { id: 'details', name: 'Detaljni Prikazi', icon: <DocumentArrowDownIcon className="h-4 w-4" /> },
+              { id: 'overview', name: 'Opšti Pregled', icon: <ChartBarIcon className="h-4 w-4" />, color: '#4FC3C7' },
+              { id: 'consumptionAnalysis', name: 'Analiza Potrošnje', icon: <ChartPieIcon className="h-4 w-4" />, color: '#F08080' },
+              { id: 'inventoryStatus', name: 'Stanje Zaliha', icon: <DocumentArrowDownIcon className="h-4 w-4" />, color: '#FBBF24' },
+              { id: 'details', name: 'Detaljni Prikazi', icon: <DocumentArrowDownIcon className="h-4 w-4" />, color: '#8B5CF6' },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`whitespace-nowrap py-3 px-4 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2 rounded-t-lg ${
+                style={{
+                  background: activeTab === tab.id ? `linear-gradient(135deg, ${tab.color}20, ${tab.color}40)` : 'transparent',
+                  borderBottom: activeTab === tab.id ? `2px solid ${tab.color}` : 'none'
+                }}
+                className={`whitespace-nowrap py-3 px-5 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2 rounded-xl backdrop-blur-md ${
                   activeTab === tab.id
-                    ? 'bg-white text-indigo-800 shadow-lg'
-                    : 'text-white hover:bg-white/10'
+                    ? 'text-white shadow-md border border-white/10'
+                    : 'text-gray-300 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <span>{tab.icon}</span>
+                <span style={{ color: tab.color }}>{tab.icon}</span>
                 <span>{tab.name}</span>
               </button>
             ))}

@@ -468,11 +468,14 @@ export default function FuelingOperations() {
   };
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-md fuel-operations-small-screen" style={{ maxWidth: '100%', width: '100%' }}>
+    <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100 fuel-operations-small-screen" style={{ maxWidth: '100%', width: '100%' }}>
       {/* Header with title and action buttons */}
-      <div className="p-6 rounded-t-lg text-white relative overflow-hidden">
-        {/* Black glassmorphism background - exactly matching tab header */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 z-0"></div>
+      <div className="p-6 rounded-xl text-white relative overflow-hidden">
+        {/* Background gradient matching other components */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] backdrop-blur-md border border-white/10 z-0"></div>
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
         {/* Glass highlight effect - matching tab header */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent z-0"></div>
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 relative z-10">
@@ -491,7 +494,7 @@ export default function FuelingOperations() {
               resetForm();
               setShowAddModal(true);
             }}
-            className="mt-4 sm:mt-0 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md backdrop-blur-sm border border-white/20 transition-colors flex items-center font-medium shadow-sm relative z-10"
+            className="mt-4 sm:mt-0 px-4 py-2 backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl flex items-center gap-2 relative z-10"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

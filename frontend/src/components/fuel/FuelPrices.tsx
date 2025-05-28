@@ -155,14 +155,42 @@ const FuelPrices: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6 mb-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+              <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5 10H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M17 10H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Cijene Goriva
+            </h2>
+            <p className="text-gray-300 mt-1 ml-8">
+              Upravljanje cijenama goriva i praćenje tržišnih trendova
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <Tabs defaultValue="manage-prices" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border border-white/20 p-1 rounded-t-xl shadow-inner overflow-hidden relative h-16">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+        <TabsList className="flex space-x-2 overflow-x-auto bg-gradient-to-br from-[#2c2c2c] to-[#1a1a1a] p-2 rounded-xl shadow-lg border border-white/5 relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
           <TabsTrigger 
             value="manage-prices" 
-            className="px-6 py-4 text-sm font-medium transition-all duration-200 ease-in-out flex items-center justify-center gap-2 focus:outline-none data-[state=active]:bg-white data-[state=active]:text-[#E60026] data-[state=active]:rounded-t-lg data-[state=active]:shadow-lg text-white hover:bg-white/10 hover:text-[#E60026]/80 rounded-t-lg h-full"
+            className="px-5 py-3 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2 focus:outline-none rounded-xl backdrop-blur-md text-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/10 hover:text-white hover:bg-white/5"
+            style={{
+              background: activeTab === 'manage-prices' ? 'linear-gradient(135deg, #F0808020, #F0808040)' : 'transparent',
+              borderBottom: activeTab === 'manage-prices' ? '2px solid #F08080' : 'none'
+            }}
           >
-            <span className="text-current">
+            <span style={{ color: '#F08080' }}>
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"></path>
                 <path d="M8 8L16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"></path>
@@ -174,9 +202,13 @@ const FuelPrices: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger 
             value="charts" 
-            className="px-6 py-4 text-sm font-medium transition-all duration-200 ease-in-out flex items-center justify-center gap-2 focus:outline-none data-[state=active]:bg-white data-[state=active]:text-[#E60026] data-[state=active]:rounded-t-lg data-[state=active]:shadow-lg text-white hover:bg-white/10 hover:text-[#E60026]/80 rounded-t-lg h-full"
+            className="px-5 py-3 text-sm font-medium transition-all duration-200 ease-in-out flex items-center gap-2 focus:outline-none rounded-xl backdrop-blur-md text-gray-300 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/10 hover:text-white hover:bg-white/5"
+            style={{
+              background: activeTab === 'charts' ? 'linear-gradient(135deg, #4FC3C720, #4FC3C740)' : 'transparent',
+              borderBottom: activeTab === 'charts' ? '2px solid #4FC3C7' : 'none'
+            }}
           >
-            <span className="text-current">
+            <span style={{ color: '#4FC3C7' }}>
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4 19L13 4.00001L20 14.5L15 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
                 <path d="M13 4L9.04401 13.1224C9.01443 13.1921 9.01443 13.2685 9.04401 13.3382L11 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -223,10 +255,11 @@ const FuelPrices: React.FC = () => {
             {/* Form for adding new fuel price rule */}
             <div className="lg:col-span-1">
               <Card className="bg-white shadow-lg rounded-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-black/40 via-black/60 to-black/40 backdrop-blur-xl border-b border-white/20 pb-6 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+                <CardHeader className="relative overflow-hidden rounded-t-xl border-b border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg pb-6">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
                   <CardTitle className="text-white flex items-center gap-2 relative z-10">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#F08080]" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                     </svg>
                     Dodaj Novo Pravilo o Cijeni Goriva
@@ -276,14 +309,14 @@ const FuelPrices: React.FC = () => {
                           onChange={(e) => setPrice(e.target.value)} 
                           placeholder="Unesite cijenu"
                           step="0.00001"
-                          className="w-full pr-12 border-gray-300 focus:border-[#E60026]/50 focus:ring-[#E60026]/50 rounded-md"
+                          className="w-full pr-12 border-white/20 focus:border-[#F08080] focus:ring-[#F08080] rounded-xl backdrop-blur-md"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="currency" className="block text-sm font-medium text-gray-700">Valuta</label>
                       <Select onValueChange={setCurrency} value={currency}>
-                        <SelectTrigger id="currency" className="w-full border-gray-300 focus:border-[#E60026]/50 focus:ring-[#E60026]/50 rounded-md">
+                        <SelectTrigger id="currency" className="w-full border-white/20 focus:border-[#F08080] focus:ring-[#F08080] rounded-xl backdrop-blur-md">
                           <SelectValue placeholder="Izaberite valutu" />
                         </SelectTrigger>
                         <SelectContent>
@@ -293,12 +326,15 @@ const FuelPrices: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button 
+                    <button 
                       type="submit" 
-                      className="w-full bg-[#E60026] text-white font-medium py-2 px-4 rounded-md transition-all duration-300 transform hover:scale-[1.02] hover:bg-[#E60026]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026]/50"
+                      className="w-full backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl flex items-center justify-center gap-2 px-4 py-2 mt-4"
                     >
-                      Dodaj Pravilo
-                    </Button>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                      </svg>
+                      <span>Dodaj Pravilo</span>
+                    </button>
                   </form>
                 </CardContent>
               </Card>

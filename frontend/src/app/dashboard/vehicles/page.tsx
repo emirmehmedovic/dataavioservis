@@ -138,26 +138,26 @@ export default function VehiclesPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg p-6">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/4"></div>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-600 rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gray-800 rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/4"></div>
         
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 relative z-10">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
               Vozila
             </h1>
-            <p className="text-muted-foreground mt-1">Upravljajte voznim parkom</p>
+            <p className="text-gray-300 mt-1">Upravljajte voznim parkom</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 items-center">
             <div className="relative w-full sm:w-auto">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-4 w-4">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#F08080] h-4 w-4">
                 <Search size={16} />
               </div>
               <input
                 type="text"
                 placeholder="Pretraži vozila..."
-                className="pl-10 pr-4 py-2 border border-white/20 rounded-lg w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white/10 backdrop-blur-md text-foreground"
+                className="pl-10 pr-4 py-2 border border-white/20 rounded-lg w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#F08080]/50 bg-white/10 backdrop-blur-md text-foreground"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -168,7 +168,9 @@ export default function VehiclesPage() {
                 size="icon"
                 onClick={() => setViewMode('grid')}
                 aria-label="Grid prikaz"
-                className={viewMode === 'grid' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                className={viewMode === 'grid' 
+                  ? 'backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all' 
+                  : 'backdrop-blur-md bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/20 transition-all'}
               >
                 <Grid size={18} />
               </Button>
@@ -177,14 +179,16 @@ export default function VehiclesPage() {
                 size="icon"
                 onClick={() => setViewMode('list')}
                 aria-label="List prikaz"
-                className={viewMode === 'list' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                className={viewMode === 'list' 
+                  ? 'backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all' 
+                  : 'backdrop-blur-md bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/20 transition-all'}
               >
                 <List size={18} />
               </Button>
               <Link href="/dashboard/vehicles/new">
                 <Button 
                   variant="default" 
-                  className="shadow-md bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  className="backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium"
                 >
                   <Plus size={18} className="mr-2"/>
                   Dodaj Vozilo

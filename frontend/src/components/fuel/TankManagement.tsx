@@ -372,29 +372,43 @@ export default function TankManagement() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Upravljanje Tankerima</h1>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowAddModal(true);
-          }}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-          Dodaj Novi Tank
-        </button>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] shadow-lg p-6 mb-6">
+        {/* Subtle red shadows in corners */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+        
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+              <TruckIcon className="h-6 w-6 mr-2" />
+              Upravljanje Tankerima
+            </h1>
+            <p className="text-gray-300 mt-1 ml-8">
+              Upravljanje mobilnim cisternama za gorivo
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            className="backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium py-2 px-4 rounded-xl flex items-center gap-2 text-sm"
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span>Dodaj Novi Tank</span>
+          </button>
+        </div>
       </div>
       
       {/* Fuel Summary Component */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-        <div className="px-4 py-5 sm:px-6 bg-gray-50">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
-            <BeakerIcon className="h-5 w-5 mr-2 text-indigo-600" />
+      <div className="bg-white shadow overflow-hidden rounded-xl mb-6 border border-gray-100">
+        <div className="px-4 py-5 sm:px-6 bg-gradient-to-br from-[#4d4c4c]/90 to-[#1a1a1a]/90 backdrop-blur-sm text-white">
+          <h3 className="text-lg leading-6 font-medium flex items-center">
+            <BeakerIcon className="h-5 w-5 mr-2 text-white" />
             Ukupno Stanje Goriva
             <button 
               onClick={fetchFuelSummary} 
-              className="ml-2 text-indigo-600 hover:text-indigo-800"
+              className="ml-2 backdrop-blur-md bg-white/10 border border-white/20 text-white shadow-sm hover:bg-white/20 transition-all p-1 rounded-lg"
               disabled={summaryLoading}
               title="Osvježi podatke"
             >
@@ -404,28 +418,31 @@ export default function TankManagement() {
             </button>
           </h3>
         </div>
-        <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
+        <div className="border-t border-white/5 px-4 py-5 sm:p-6 bg-gradient-to-br from-[#1a1a1a]/80 to-[#333333]/80 backdrop-blur-sm">
           {summaryLoading ? (
             <div className="flex justify-center items-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#F08080]"></div>
             </div>
           ) : fuelSummary ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg shadow-sm">
-                <div className="text-sm font-medium text-gray-500">Fiksni Tankovi</div>
-                <div className="mt-1 text-2xl font-semibold text-gray-900">
+              <div className="backdrop-blur-md bg-[#F08080]/10 border border-white/10 p-4 rounded-xl shadow-lg relative overflow-hidden group hover:bg-[#F08080]/15 transition-all">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 group-hover:opacity-10 transition-opacity"></div>
+                <div className="text-sm font-medium text-gray-300">Fiksni Tankovi</div>
+                <div className="mt-1 text-2xl font-semibold text-white">
                   {fuelSummary.fixedTanksTotal.toLocaleString('bs-BA')} L
                 </div>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg shadow-sm">
-                <div className="text-sm font-medium text-gray-500">Mobilni Tankovi</div>
-                <div className="mt-1 text-2xl font-semibold text-gray-900">
+              <div className="backdrop-blur-md bg-[#F08080]/10 border border-white/10 p-4 rounded-xl shadow-lg relative overflow-hidden group hover:bg-[#F08080]/15 transition-all">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 group-hover:opacity-10 transition-opacity"></div>
+                <div className="text-sm font-medium text-gray-300">Mobilni Tankovi</div>
+                <div className="mt-1 text-2xl font-semibold text-white">
                   {fuelSummary.mobileTanksTotal.toLocaleString('bs-BA')} L
                 </div>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg shadow-sm">
-                <div className="text-sm font-medium text-gray-500">Ukupno</div>
-                <div className="mt-1 text-2xl font-semibold text-gray-900">
+              <div className="backdrop-blur-md bg-[#F08080]/20 border border-white/10 p-4 rounded-xl shadow-lg relative overflow-hidden group hover:bg-[#F08080]/25 transition-all">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#F08080] rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/4 group-hover:opacity-15 transition-opacity"></div>
+                <div className="text-sm font-medium text-gray-300">Ukupno</div>
+                <div className="mt-1 text-2xl font-semibold text-white">
                   {fuelSummary.grandTotal.toLocaleString('bs-BA')} L
                 </div>
               </div>
@@ -490,10 +507,10 @@ export default function TankManagement() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 relative group"
+                  className="bg-gradient-to-br from-[#1a1a1a]/90 to-[#333333]/90 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-white/5 hover:shadow-xl transition-all duration-300 relative group p-6"
                 >
                   <div className="flex flex-col h-full">
-                    <div className="flex-1 bg-white rounded-t-lg p-4 relative overflow-hidden">
+                    <div className="flex-1 relative overflow-hidden">
                       <div className="w-full h-48 mb-2">
                         {tank.image_url ? (
                           <TankImageDisplay 
@@ -502,29 +519,29 @@ export default function TankManagement() {
                             height="h-48"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <TruckIcon className="h-20 w-20 text-gray-300" />
+                          <div className="w-full h-full bg-white/5 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                            <TruckIcon className="h-20 w-20 text-white/30" />
                           </div>
                         )}
                       </div>
                       <div className="flex flex-col justify-between mt-2">
                         <div className="flex justify-between">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium backdrop-blur-md bg-[#F08080]/20 border border-white/10 text-white">
                             {tank.name || 'Cisterna'}
                           </span>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium backdrop-blur-md bg-white/10 border border-white/10 text-white">
                             ID: {tank.identifier}
                           </span>
                         </div>
                         <div className="text-right mt-2">
-                          <span className="text-sm font-bold">{fillPercentage}%</span>
-                          <span className="text-xs text-gray-500 ml-1">popunjenost</span>
+                          <span className="text-sm font-bold text-white">{fillPercentage}%</span>
+                          <span className="text-xs text-gray-300 ml-1">popunjenost</span>
                         </div>
                       </div>
                     </div>
                     
                     {/* Fuel gauge visualization */}
-                    <div className="p-4 pt-0">
+                    <div className="mt-4">
                       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div 
                           className={`h-full rounded-full transition-all duration-500 ease-out ${status.color}`}
@@ -534,9 +551,9 @@ export default function TankManagement() {
                     </div>
                     
                     {/* Tank details in a grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="bg-gray-50 p-3 rounded-lg">
-                         <p className="text-xs text-gray-500 mb-0">Tip Goriva</p>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                       <div className="backdrop-blur-md bg-white/5 border border-white/10 p-3 rounded-xl">
+                         <p className="text-xs text-gray-300 mb-0">Tip Goriva</p>
                          <div className="flex items-start pt-0">
                           {tank.fuel_type.toLowerCase() === 'jet a-1'.toLowerCase() ? (
                             <img 
@@ -553,45 +570,45 @@ export default function TankManagement() {
                         </div>
                        </div>
                       
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Kapacitet</p>
-                        <p className="font-medium text-gray-900">{tank.capacity_liters.toLocaleString()} L</p>
+                      <div className="backdrop-blur-md bg-white/5 border border-white/10 p-3 rounded-xl">
+                        <p className="text-xs text-gray-300 mb-1">Kapacitet</p>
+                        <p className="font-medium text-white">{tank.capacity_liters.toLocaleString()} L</p>
                       </div>
 
                       
-                      <div className="bg-gray-50 p-3 rounded-lg col-span-2">
-                        <p className="text-xs text-gray-500 mb-1">Trenutna Količina</p>
-                        <p className="font-medium text-gray-900 text-lg">
+                      <div className="backdrop-blur-md bg-white/5 border border-white/10 p-3 rounded-xl col-span-2">
+                        <p className="text-xs text-gray-300 mb-1">Trenutna Količina</p>
+                        <p className="font-medium text-white text-lg">
                           {currentAmount.toLocaleString()} L
-                          <span className="text-xs text-gray-500 ml-2">od {tank.capacity_liters.toLocaleString()} L</span>
+                          <span className="text-xs text-gray-400 ml-2">od {tank.capacity_liters.toLocaleString()} L</span>
                         </p>
                       </div>
                     </div>
                     
                     {/* Action buttons */}
-                    <div className="mt-5 flex flex-col space-y-2">
+                    <div className="mt-6 flex flex-col space-y-2">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => openRefillModal(tank)}
-                          className="flex-1 flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-[#E60026] to-[#800014] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
+                          className="flex-1 flex items-center justify-center px-3 py-2 backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl"
                         >
-                          <ArrowUpCircleIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
+                          <ArrowUpCircleIcon className="mr-1.5 h-5 w-5" />
                           Dopuni
                         </button>
                         
                         <button
                           onClick={() => openEditModal(tank)}
-                          className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026] transition-colors shadow-sm"
+                          className="flex items-center justify-center px-3 py-2 backdrop-blur-md bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/20 transition-all rounded-xl"
                         >
-                          <PencilIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
+                          <PencilIcon className="mr-1.5 h-4 w-4" />
                           Uredi
                         </button>
                         
                         <button
                           onClick={() => handleDeleteTank(tank.id)}
-                          className="flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors shadow-sm"
+                          className="flex items-center justify-center px-3 py-2 backdrop-blur-md bg-white/10 border border-white/20 text-white shadow-lg hover:bg-red-500/20 transition-all rounded-xl"
                         >
-                          <TrashIcon className="-ml-0.5 mr-1.5 h-4 w-4" />
+                          <TrashIcon className="mr-1.5 h-4 w-4" />
                           Obriši
                         </button>
                       </div>
@@ -676,15 +693,23 @@ export default function TankManagement() {
       )}
       
       {/* Transaction History Section */}
-      <div className="mt-10 bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6 bg-gray-50">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
-              <ClockIcon className="h-5 w-5 mr-2 text-indigo-600" />
-              Historija Transakcija
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Pregled historije dopuna i transfera za sve cisterne
-            </p>
+      <div className="mt-10 bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
+          <div className="relative overflow-hidden p-6 rounded-t-xl shadow-md">
+            {/* Background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#4d4c4c] to-[#1a1a1a] backdrop-blur-md border-b border-white/10 z-0"></div>
+            {/* Subtle red shadows in corners */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 -translate-y-1/2 translate-x-1/4 z-0"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F08080] rounded-full filter blur-3xl opacity-5 translate-y-1/2 -translate-x-1/4 z-0"></div>
+            
+            <div className="relative z-10">
+              <h3 className="text-xl font-bold text-white flex items-center">
+                <ClockIcon className="h-6 w-6 mr-2" />
+                Historija Transakcija
+              </h3>
+              <p className="mt-1 max-w-2xl text-sm text-gray-300">
+                Pregled historije dopuna i transfera za sve cisterne
+              </p>
+            </div>
           </div>
           
           <div className="p-6">
@@ -695,7 +720,7 @@ export default function TankManagement() {
                 <input
                   type="month"
                   id="date-filter"
-                  className="shadow-sm focus:ring-[#E60026] focus:border-[#E60026] block w-full sm:text-sm border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-gray-300 rounded-xl"
                   value={dateFilter}
                   onChange={(e) => {
                     setDateFilter(e.target.value);
@@ -708,7 +733,7 @@ export default function TankManagement() {
                 <label htmlFor="type-filter" className="block text-sm font-medium text-gray-700 mb-1">Tip transakcije</label>
                 <select
                   id="type-filter"
-                  className="shadow-sm focus:ring-[#E60026] focus:border-[#E60026] block w-full sm:text-sm border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-gray-300 rounded-xl"
                   value={typeFilter}
                   onChange={(e) => {
                     setTypeFilter(e.target.value);
@@ -726,7 +751,7 @@ export default function TankManagement() {
               <div className="flex items-end">
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#E60026] hover:bg-[#C00020] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E60026]"
+                  className="inline-flex items-center px-4 py-2 backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl"
                   onClick={() => {
                     setDateFilter(format(new Date(), 'yyyy-MM'));
                     setTypeFilter('all');
