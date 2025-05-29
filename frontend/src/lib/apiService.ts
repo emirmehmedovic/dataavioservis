@@ -271,10 +271,18 @@ export async function getVehicleById(id: string): Promise<Vehicle> {
 }
 
 export async function updateVehicle(id: number, vehicleData: Partial<Vehicle>): Promise<Vehicle> {
-  return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(vehicleData),
-  });
+  try {
+    console.log('Updating vehicle with ID:', id, 'Data:', vehicleData);
+    const response = await fetchWithAuth<Vehicle>(`${API_BASE_URL}/api/vehicles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(vehicleData),
+    });
+    console.log('Update successful, response:', response);
+    return response;
+  } catch (error) {
+    console.error(`Error updating vehicle with ID ${id}:`, error);
+    throw error;
+  }
 }
 
 // Funkcija za upload slike vozila
@@ -703,6 +711,90 @@ export const createServiceRecordWithDocument = async (
   return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${vehicleId}/service-records/with-document`, {
     method: 'POST',
     body: formData,
+  });
+};
+
+// Upload a technical document for a vehicle
+export const uploadTechnicalDocument = async (
+  vehicleId: number | string,
+  title: string,
+  documentType: string,
+  file: File
+): Promise<{ id: number; fileUrl: string; title: string; documentType: string; uploadedAt: string; vehicleId: number }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('title', title);
+  formData.append('documentType', documentType);
+
+  return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${vehicleId}/technical-documents`, {
+    method: 'POST',
+    body: formData,
+  });
+};
+
+// Delete a technical document
+export const deleteTechnicalDocument = async (
+  vehicleId: number | string,
+  documentId: number | string
+): Promise<{ message: string }> => {
+  return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${vehicleId}/technical-documents/${documentId}`, {
+    method: 'DELETE',
+  });
+};
+
+// Upload a filter document for a vehicle
+export const uploadFilterDocument = async (
+  vehicleId: number | string,
+  title: string,
+  documentType: string,
+  file: File
+): Promise<{ id: number; fileUrl: string; title: string; documentType: string; uploadedAt: string; vehicleId: number }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('title', title);
+  formData.append('documentType', documentType);
+
+  return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${vehicleId}/filter-documents`, {
+    method: 'POST',
+    body: formData,
+  });
+};
+
+// Delete a filter document
+export const deleteFilterDocument = async (
+  vehicleId: number | string,
+  documentId: number | string
+): Promise<{ message: string }> => {
+  return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${vehicleId}/filter-documents/${documentId}`, {
+    method: 'DELETE',
+  });
+};
+
+// Upload a hose document for a vehicle
+export const uploadHoseDocument = async (
+  vehicleId: number | string,
+  title: string,
+  documentType: string,
+  file: File
+): Promise<{ id: number; fileUrl: string; title: string; documentType: string; uploadedAt: string; vehicleId: number }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('title', title);
+  formData.append('documentType', documentType);
+
+  return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${vehicleId}/hose-documents`, {
+    method: 'POST',
+    body: formData,
+  });
+};
+
+// Delete a hose document
+export const deleteHoseDocument = async (
+  vehicleId: number | string,
+  documentId: number | string
+): Promise<{ message: string }> => {
+  return fetchWithAuth(`${API_BASE_URL}/api/vehicles/${vehicleId}/hose-documents/${documentId}`, {
+    method: 'DELETE',
   });
 };
 

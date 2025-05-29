@@ -85,6 +85,77 @@ model Vehicle {
   crijeva_za_tocenje                                   String?
   kapacitet_cisterne                                   Float?
   periodicni_pregled_vazi_do                           DateTime?           @map("periodicni_pregled_vazi_do")
+  
+  // Nova polja za opis i specifikacije
+  vehicle_description                                  String?
+  supported_fuel_types                                 String?
+  euro_norm                                            String?
+  flow_rate                                            Float?
+  vehicle_type                                         String?
+  tank_type                                            String?
+  fueling_type                                         String?
+  loading_type                                         String?
+  truck_type                                           String?
+  
+  // Polja za preglede i licence
+  tromjesecni_pregled_datum                            DateTime?
+  tromjesecni_pregled_vazi_do                          DateTime?
+  licenca_datum_izdavanja                              DateTime?
+  licenca_vazi_do                                      DateTime?
+  volumeter_kalibracija_datum                          DateTime?
+  volumeter_kalibracija_vazi_do                        DateTime?
+  
+  // Dodatna polja za filter
+  filter_standard                                      String?
+  filter_vessel_type                                   String?
+  filter_cartridge_type                                String?
+  filter_separator_type                                String?
+  filter_ews                                           String?
+  filter_safety_valve                                  String?
+  filter_vent_valve                                    String?
+  filter_replacement_date                              DateTime?
+  
+  // Polja za crijeva - podkrilno punjenje
+  underwing_hose_standard                              String?
+  underwing_hose_type                                  String?
+  underwing_hose_size                                  String?
+  underwing_hose_length                                String?
+  underwing_hose_diameter                              String?
+  underwing_hose_production_date                       DateTime?
+  underwing_hose_installation_date                     DateTime?
+  underwing_hose_lifespan                              String?
+  underwing_hose_test_date                             DateTime?
+  
+  // Polja za crijeva - nadkrilno punjenje
+  overwing_hose_standard                               String?
+  overwing_hose_type                                   String?
+  overwing_hose_size                                   String?
+  overwing_hose_length                                 String?
+  overwing_hose_diameter                               String?
+  overwing_hose_production_date                        DateTime?
+  overwing_hose_installation_date                      DateTime?
+  overwing_hose_lifespan                               String?
+  overwing_hose_test_date                              DateTime?
+  
+  // Polja za testove
+  manometer_calibration_date                           DateTime?
+  manometer_calibration_valid_until                    DateTime?
+  
+  // Polja za dodatne kalibracije i testove
+  water_chemical_test_date                             DateTime?
+  water_chemical_test_valid_until                      DateTime?
+  torque_wrench_calibration_date                       DateTime?
+  torque_wrench_calibration_valid_until                DateTime?
+  thermometer_calibration_date                         DateTime?
+  thermometer_calibration_valid_until                  DateTime?
+  hydrometer_calibration_date                          DateTime?
+  hydrometer_calibration_valid_until                   DateTime?
+  conductivity_meter_calibration_date                  DateTime?
+  conductivity_meter_calibration_valid_until           DateTime?
+  resistance_meter_calibration_date                    DateTime?
+  resistance_meter_calibration_valid_until             DateTime?
+  main_flow_meter_calibration_date                     DateTime?
+  main_flow_meter_calibration_valid_until              DateTime?
   registrovano_do                                      DateTime?
   tip_filtera                                          String?
   broj_crijeva_hd38                                    String?
@@ -133,6 +204,9 @@ model Vehicle {
   company                                              Company             @relation(fields: [companyId], references: [id])
   location                                             Location            @relation(fields: [locationId], references: [id])
   images                                               VehicleImage[]
+  technicalDocuments                                   TechnicalDocument[]
+  filterDocuments                                      FilterDocument[]
+  hoseDocuments                                        HoseDocument[]
 }
 
 model VehicleImage {
@@ -141,6 +215,42 @@ model VehicleImage {
   vehicleId  Int
   uploadedAt DateTime @default(now())
   vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+}
+
+model TechnicalDocument {
+  id           Int      @id @default(autoincrement())
+  title        String
+  fileUrl      String
+  documentType String
+  uploadedAt   DateTime @default(now())
+  vehicleId    Int
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  
+  @@index([vehicleId])
+}
+
+model FilterDocument {
+  id           Int      @id @default(autoincrement())
+  title        String
+  fileUrl      String
+  documentType String
+  uploadedAt   DateTime @default(now())
+  vehicleId    Int
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  
+  @@index([vehicleId])
+}
+
+model HoseDocument {
+  id           Int      @id @default(autoincrement())
+  title        String
+  fileUrl      String
+  documentType String
+  uploadedAt   DateTime @default(now())
+  vehicleId    Int
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  
+  @@index([vehicleId])
 }
 
 model FixedStorageTanks {

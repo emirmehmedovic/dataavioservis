@@ -92,9 +92,37 @@ export interface Vehicle {
   registrovano_do?: Date | null;        // Vehicle registration valid until
   adr_vazi_do?: Date | null;            // ADR certificate valid until
   periodicni_pregled_vazi_do?: Date | string | null; // Date for API, string for form input
+  
+  // Nova polja za opis i specifikacije
+  vehicle_description?: string | null;   // Tekstualni opis vozila
+  supported_fuel_types?: string | null;  // Vrste goriva koje podržava
+  euro_norm?: string | null;            // Euro norma
+  flow_rate?: number | null;            // Protok (L/min)
+  vehicle_type?: string | null;         // Tip (Refuler, Dispenser, Defuler)
+  tanker_type?: string | null;          // Tip tanka
+  fueling_type?: string | null;         // Vrsta punjenja (Nadkrilno, Podkrilno)
+  loading_type?: string | null;         // Tip punjenja (Top, Bottom)
+  truck_type?: string | null;           // Tip kamiona (Solo, Poluprikolica)
+  
+  // Polja za preglede i licence
+  tromjesecni_pregled_datum?: Date | string | null;  // Datum tromjesečnog pregleda
+  tromjesecni_pregled_vazi_do?: Date | string | null;  // Tromjesečni pregled važi do
+  licenca_datum_izdavanja?: Date | string | null;  // Datum izdavanja licence
+  licenca_vazi_do?: Date | string | null;  // Licenca važi do
+  volumeter_kalibracija_datum?: Date | string | null;  // Datum kalibracije volumetra
+  volumeter_kalibracija_vazi_do?: Date | string | null;  // Kalibracija volumetra važi do
+  
+  // Dodatna polja za filter
+  filter_standard?: string | null;  // Standard filtriranja
+  filter_vessel_type?: string | null;  // Tip posude
+  filter_cartridge_type?: string | null;  // Tip uložaka
+  filter_separator_type?: string | null;  // Tip separatora
+  filter_ews?: string | null;  // EWS
+  filter_safety_valve?: string | null;  // Sigurnosni ventil
+  filter_vent_valve?: string | null;  // Ventil ozrake
+  filter_replacement_date?: Date | string | null;  // Datum zamjene filtera
 
-  // Fields from uncommented tanker section
-  tanker_type?: string | null;
+  // Dodatne informacije o cisterni
   tanker_compartments?: number | null;
   tanker_material?: string | null;
   tanker_last_pressure_test_date?: Date | string | null;
@@ -107,7 +135,7 @@ export interface Vehicle {
   filter_annual_inspection_date?: Date | string | null;
   filter_next_annual_inspection_date?: Date | string | null;
   filter_ew_sensor_inspection_date?: Date | string | null;
-  calculated_filter_expiry_date?: Date | string | null; // For frontend display
+  filter_expiry_date?: Date | string | null; // Datum isteka filtera
 
   // Hose Details
   broj_crijeva_hd63?: string | null;
@@ -147,11 +175,58 @@ export interface Vehicle {
   tahograf_naredna_kalibracija?: Date | string | null;
   cisterna_zadnja_kalibracija?: Date | string | null;
   cisterna_naredna_kalibracija?: Date | string | null;
+  
+  // Polja za crijeva - podkrilno punjenje
+  underwing_hose_standard?: string | null;
+  underwing_hose_type?: string | null;
+  underwing_hose_size?: string | null;
+  underwing_hose_length?: string | null;
+  underwing_hose_diameter?: string | null;
+  underwing_hose_production_date?: Date | string | null;
+  underwing_hose_installation_date?: Date | string | null;
+  underwing_hose_lifespan?: string | null;
+  underwing_hose_test_date?: Date | string | null;
+  
+  // Polja za crijeva - nadkrilno punjenje
+  overwing_hose_standard?: string | null;
+  overwing_hose_type?: string | null;
+  overwing_hose_size?: string | null;
+  overwing_hose_length?: string | null;
+  overwing_hose_diameter?: string | null;
+  overwing_hose_production_date?: Date | string | null;
+  overwing_hose_installation_date?: Date | string | null;
+  overwing_hose_lifespan?: string | null;
+  overwing_hose_test_date?: Date | string | null;
+  
+  // Polja za testove i kalibracije
+  manometer_calibration_date?: Date | string | null;
+  manometer_calibration_valid_until?: Date | string | null;
+  
+  // Polja za dodatne kalibracije i testove
+  water_chemical_test_date?: Date | string | null;
+  water_chemical_test_valid_until?: Date | string | null;
+  torque_wrench_calibration_date?: Date | string | null;
+  torque_wrench_calibration_valid_until?: Date | string | null;
+  thermometer_calibration_date?: Date | string | null;
+  thermometer_calibration_valid_until?: Date | string | null;
+  hydrometer_calibration_date?: Date | string | null;
+  hydrometer_calibration_valid_until?: Date | string | null;
+  conductivity_meter_calibration_date?: Date | string | null;
+  conductivity_meter_calibration_valid_until?: Date | string | null;
+  resistance_meter_calibration_date?: Date | string | null;
+  resistance_meter_calibration_valid_until?: Date | string | null;
+  main_flow_meter_calibration_date?: Date | string | null;
+  main_flow_meter_calibration_valid_until?: Date | string | null;
 
   responsible_person_contact?: string | null;
   created_at?: string; 
   updated_at?: string; 
   images?: VehicleImage[]; // Niz slika povezanih sa vozilom
+  
+  // Dokumenti povezani sa vozilom
+  filterDocuments?: FilterDocument[];
+  technicalDocuments?: TechnicalDocument[];
+  hoseDocuments?: HoseDocument[];
 }
 
 export interface Company {
@@ -238,3 +313,35 @@ export interface ServiceRecord {
 
 // Type for creating a service record
 export type CreateServiceRecordPayload = Omit<ServiceRecord, 'id' | 'createdAt' | 'updatedAt'>;
+
+// Interfejs za tehničku dokumentaciju vozila
+export interface TechnicalDocument {
+  id: number;
+  title: string;
+  fileUrl: string;
+  documentType: string;
+  uploadedAt: Date | string;
+  vehicleId: number;
+}
+
+// Interfejs za dokumentaciju filtera
+export interface FilterDocument {
+  id: number;
+  title: string;
+  fileUrl: string;
+  documentType: string;
+  uploadedAt: Date | string;
+  vehicleId: number;
+}
+
+// Interfejs za dokumentaciju crijeva
+export interface HoseDocument {
+  id: number;
+  title: string;
+  fileUrl: string;
+  documentType: string;
+  uploadedAt: Date | string;
+  vehicleId: number;
+}
+
+// Napomena: Polja za dokumente su dodana u glavni Vehicle interfejs iznad
