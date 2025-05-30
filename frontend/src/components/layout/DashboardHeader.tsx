@@ -62,8 +62,8 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
 
   return (
     <header className="bg-card border-b border-border py-3 px-4 md:px-6 mb-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
+        <div className="w-full">
           {title ? (
             <>
               <h1 className="text-xl font-semibold">{title}</h1>
@@ -89,7 +89,7 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
           )}
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 self-end">
           <div className="relative">
             <Button 
               variant="ghost" 

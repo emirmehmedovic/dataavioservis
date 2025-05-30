@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { getTotalFuelSummary } from '@/lib/apiService';
 import { cn } from '@/lib/utils';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
+
 import {
   Home,
   Car,
@@ -299,21 +299,8 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Footer with theme toggle and logout */}
+        {/* Footer with logout */}
         <div className="p-4 border-t border-white/10 space-y-2 bg-black/10 backdrop-blur-md">
-          <div className="flex items-center justify-between mb-2">
-            <ThemeToggle />
-            {!collapsed && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-xs text-white/60"
-              >
-                Tema
-              </motion.div>
-            )}
-          </div>
           <motion.button
             onClick={logout}
             className={cn(

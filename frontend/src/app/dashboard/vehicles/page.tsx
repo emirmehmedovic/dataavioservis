@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Filter,
   Grid,
-  List
+  List,
+  Fuel
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -249,9 +250,11 @@ export default function VehiclesPage() {
 
             return (
               <motion.div key={vehicle.id} variants={itemVariants}>
-                <Card className="h-full flex flex-col overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/60 to-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <Link href={`/dashboard/vehicles/details/${vehicle.id}`} className="block relative h-48 w-full group overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 group-hover:opacity-70 transition-all duration-300 z-10" />
+                <Card className="h-full flex flex-col overflow-hidden border border-white/10 backdrop-blur-md bg-gradient-to-br from-[#4d4c4c]/60 to-[#1a1a1a]/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 rounded-xl relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#F08080]/20 rounded-full filter blur-3xl opacity-20 -mr-10 -mt-10 z-0"></div>
+                  <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500/20 rounded-full filter blur-3xl opacity-20 -ml-10 -mb-10 z-0"></div>
+                  <Link href={`/dashboard/vehicles/details/${vehicle.id}`} className="block relative h-48 w-full group overflow-hidden rounded-t-xl">
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/50 group-hover:opacity-70 transition-all duration-300 z-10" />
                     
                     {imageUrl ? (
                       <Image
@@ -263,25 +266,40 @@ export default function VehiclesPage() {
                         className="transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
-                        <Car className="h-16 w-16 text-gray-400" />
+                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
+                        <Car className="h-16 w-16 text-gray-300" />
                       </div>
                     )}
-                    <div className="absolute top-3 right-3 z-20">
-                      <span className={`backdrop-blur-md ${getStatusColor(vehicle.status)} inline-block px-3 py-1 rounded-full text-xs font-medium text-white shadow-md border border-white/20`}>
+                    <div className="absolute bottom-3 left-3 z-20">
+                      <span className={`backdrop-blur-md ${getStatusColor(vehicle.status)} inline-block px-3 py-1 rounded-full text-xs font-medium text-white shadow-md border border-white/20 transition-all duration-300 group-hover:scale-105`}>
                         {vehicle.status || 'N/A'}
                       </span>
                     </div>
                   </Link>
-                  <CardContent className="flex-grow flex flex-col p-4 relative">
+                  <CardContent className="flex-grow flex flex-col p-5 relative z-10">
                     <Link href={`/dashboard/vehicles/details/${vehicle.id}`}>
-                      <h3 className="text-lg font-semibold mb-1 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 line-clamp-1">{vehicle.vehicle_name}</h3>
+                      <h3 className="text-lg font-semibold mb-1 text-white hover:text-[#F08080] transition-colors duration-200 line-clamp-1">{vehicle.vehicle_name}</h3>
                     </Link>
-                    <p className="text-sm text-muted-foreground mb-3">Reg: {vehicle.license_plate}</p>
+                    <div className="flex flex-col gap-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-[#F08080]/20 flex items-center justify-center">
+                          <span className="text-xs font-medium text-white">REG</span>
+                        </div>
+                        <p className="text-sm text-white/80">{vehicle.license_plate}</p>
+                      </div>
+                      {vehicle.fuel_type && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <Fuel size={14} className="text-blue-300" />
+                          </div>
+                          <p className="text-sm text-white/80">{vehicle.fuel_type}</p>
+                        </div>
+                      )}
+                    </div>
                     
-                    <div className="mt-auto flex justify-between items-center pt-3 border-t border-white/10">
+                    <div className="mt-auto flex justify-between items-center pt-3 border-t border-white/20">
                       <Link href={`/dashboard/vehicles/details/${vehicle.id}`}>
-                        <Button variant="secondary" size="sm">
+                        <Button variant="secondary" size="sm" className="backdrop-blur-md bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all duration-200">
                           Detalji
                         </Button>
                       </Link>
@@ -381,7 +399,7 @@ export default function VehiclesPage() {
                           <Button 
                             variant="ghost" 
                             size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-600 border border-white/10 hover:bg-red-500/10 disabled:opacity-50"
+                            className="h-8 w-8 text-[#F08080] hover:text-white border border-[#F08080]/30 hover:bg-[#F08080]/30 disabled:opacity-50 transition-all duration-200"
                             onClick={() => handleDeleteVehicle(vehicle.id, vehicle.vehicle_name)}
                             disabled={deletingId === vehicle.id}
                             aria-label="Obriši vozilo"
