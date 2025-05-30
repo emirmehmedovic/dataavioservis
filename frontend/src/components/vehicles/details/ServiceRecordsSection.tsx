@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import ServiceRecordDetailsModal from './ServiceRecordDetailsModal';
 import { ServiceRecord } from '@/types';
 import { FaEye, FaTrash, FaPlus, FaFileMedical } from 'react-icons/fa';
 import { formatServiceCategory, formatDateForDisplay } from './serviceHelpers';
@@ -27,6 +28,18 @@ const ServiceRecordsSection: React.FC<ServiceRecordsSectionProps> = ({
   onRecordDeleted
 }) => {
   const [deletingRecordId, setDeletingRecordId] = useState<number | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<ServiceRecord | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+
+  const handleOpenDetails = (record: ServiceRecord) => {
+    setSelectedRecord(record);
+    setDetailsModalOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedRecord(null);
+    setDetailsModalOpen(false);
+  };
 
   const handleDeleteServiceRecord = async (recordId: number) => {
     if (!confirm('Jeste li sigurni da želite obrisati ovaj servisni zapis?')) {
@@ -106,7 +119,7 @@ const ServiceRecordsSection: React.FC<ServiceRecordsSectionProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => onViewRecord(record)}
+                      onClick={() => handleOpenDetails(record)}
                       className="text-indigo-600 hover:text-indigo-900 mr-3"
                       aria-label="Pregledaj servisni zapis"
                     >
@@ -131,7 +144,12 @@ const ServiceRecordsSection: React.FC<ServiceRecordsSectionProps> = ({
           </table>
         </div>
       )}
-    </Card>
+    <ServiceRecordDetailsModal
+      open={detailsModalOpen}
+      record={selectedRecord}
+      onClose={handleCloseDetails}
+    />
+  </Card>
   );
 };
 

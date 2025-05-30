@@ -207,10 +207,105 @@ router.delete(
   async (req: AuthRequest, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      await prisma.vehicle.delete({ where: { id } });
-      res.json({ message: 'Deleted' });
+      
+      // Prvo provjerimo postoji li vozilo
+      const vehicle = await prisma.vehicle.findUnique({
+        where: { id },
+        include: {
+          images: true,
+          filterDocuments: true,
+          technicalDocuments: true,
+          hoseDocuments: true,
+          serviceRecords: true
+        }
+      });
+      
+      if (!vehicle) {
+        res.status(404).json({ message: 'Vehicle not found' });
+        return;
+      }
+      
+      // Transakcija za brisanje svih povezanih zapisa i zatim vozila
+      await prisma.$transaction(async (tx) => {
+        // Brisanje slika
+        if (vehicle.images && vehicle.images.length > 0) {
+          await tx.vehicleImage.deleteMany({
+            where: { vehicleId: id }
+          });
+          
+          // Brisanje fizičkih slika (opciono)
+          for (const image of vehicle.images) {
+            try {
+              const imagePath = path.join(__dirname, '../../public', image.imageUrl);
+              if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+              }
+            } catch (fileErr) {
+              console.error(`Error deleting image file: ${fileErr}`);
+              // Nastavljamo s brisanjem čak i ako ne možemo obrisati fizičku sliku
+            }
+          }
+        }
+        
+        // Brisanje dokumenata filtera
+        if (vehicle.filterDocuments && vehicle.filterDocuments.length > 0) {
+          await tx.filterDocument.deleteMany({
+            where: { vehicleId: id }
+          });
+        }
+        
+        // Brisanje tehničkih dokumenata
+        if (vehicle.technicalDocuments && vehicle.technicalDocuments.length > 0) {
+          await tx.technicalDocument.deleteMany({
+            where: { vehicleId: id }
+          });
+        }
+        
+        // Brisanje dokumenata crijeva
+        if (vehicle.hoseDocuments && vehicle.hoseDocuments.length > 0) {
+          await tx.hoseDocument.deleteMany({
+            where: { vehicleId: id }
+          });
+        }
+        
+        // Brisanje servisnih zapisa
+        if (vehicle.serviceRecords && vehicle.serviceRecords.length > 0) {
+          await tx.serviceRecord.deleteMany({
+            where: { vehicleId: id }
+          });
+        }
+        
+        // Na kraju brišemo samo vozilo
+        await tx.vehicle.delete({
+          where: { id }
+        });
+      });
+      
+      res.json({ message: 'Vehicle and all related records successfully deleted' });
     } catch (err) {
-      res.status(404).json({ message: 'Vehicle not found or error deleting' });
+      console.error('Error deleting vehicle:', err);
+      
+      // Detaljnija poruka o grešci
+      let errorMessage = 'Server error while deleting vehicle';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      // Prisma greške za referencijalni integritet
+      const prismaError = err as any;
+      if (prismaError.code === 'P2003') {
+        res.status(400).json({ 
+          message: 'Cannot delete vehicle because it is referenced by other records',
+          details: prismaError.meta?.field_name || 'unknown relation'
+        });
+        return;
+      }
+      
+      res.status(500).json({ 
+        message: 'Error deleting vehicle', 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? err : undefined
+      });
     }
   }
 );
