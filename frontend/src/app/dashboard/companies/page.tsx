@@ -214,9 +214,14 @@ const CompaniesPage = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead>
-                  <tr className="text-left border-b border-white/10 bg-gradient-to-r from-[#2c2c2c] to-[#1a1a1a]">
+                <thead className="bg-white/5 backdrop-blur-md">
+                  <tr>
                     <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Naziv Firme</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">ID Broj</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Grad</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Adresa</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Kontakt Osoba</th>
+                    <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider">Telefon</th>
                     <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider text-center">Broj Vozila</th>
                     <th className="px-6 py-4 text-sm font-semibold text-white uppercase tracking-wider text-center">Akcije</th>
                   </tr>
@@ -237,6 +242,21 @@ const CompaniesPage = () => {
                           </div>
                           <span className="font-medium text-white">{company.name}</span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-white/80">{company.taxId || '-'}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-white/80">{company.city || '-'}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-white/80">{company.address || '-'}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-white/80">{company.contactPersonName || '-'}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-white/80">{company.contactPersonPhone || '-'}</span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center">
