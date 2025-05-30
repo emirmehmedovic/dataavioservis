@@ -194,7 +194,14 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ vehicle }) => {
         doc.setFont(FONT_NAME, 'bold');
         doc.text(language === 'bs' ? 'Napomene:' : 'Notes:', leftMargin, yPos);
         doc.setFont(FONT_NAME, 'normal');
-        doc.text(vehicle.notes, valueX, yPos); yPos += lineHeight;
+        
+        // Primjena prelamanja teksta za duge opise
+        const maxWidth = doc.internal.pageSize.getWidth() - valueX - 15; // 15 je margina s desne strane
+        const splitNotes = doc.splitTextToSize(vehicle.notes, maxWidth);
+        doc.text(splitNotes, valueX, yPos);
+        
+        // Povećati yPos na osnovu broja linija teksta
+        yPos += (splitNotes.length * lineHeight) + 2;
       }
       
       yPos += 5;

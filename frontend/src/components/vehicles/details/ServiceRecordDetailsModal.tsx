@@ -155,7 +155,9 @@ const ServiceRecordDetailsModal: React.FC<ServiceRecordDetailsModalProps> = ({ o
       
       // Handle multiline description
       const description = record.description || (language === 'bs' ? 'Nema opisa' : 'No description');
-      const splitDescription = doc.splitTextToSize(description, 130);
+      // Ograničiti širinu teksta na 125 za bolju čitljivost i da ne izlazi van stranice
+      const maxWidth = width - 85; // 70 (početna pozicija) + 15 (margina)
+      const splitDescription = doc.splitTextToSize(description, maxWidth);
       doc.text(splitDescription, 70, yPos);
       yPos += (splitDescription.length * lineHeight) + 5;
       
@@ -178,6 +180,7 @@ const ServiceRecordDetailsModal: React.FC<ServiceRecordDetailsModalProps> = ({ o
           
         const tableRows = record.serviceItems.map(item => [
           formatServiceItemType(item.type, language),
+          // Osigurati da se opis u tabeli također prelama ako je predugačak
           item.description || (language === 'bs' ? 'Nema opisa' : 'No description'),
           typeof item.replaced === 'boolean' 
             ? (item.replaced 
@@ -206,7 +209,24 @@ const ServiceRecordDetailsModal: React.FC<ServiceRecordDetailsModalProps> = ({ o
           alternateRowStyles: {
             fillColor: [240, 242, 245] // Very subtle gray for alternating rows
           },
-          margin: { top: 10, right: 14, bottom: 10, left: 14 }
+          columnStyles: {
+            1: { cellWidth: 60 }, // Kolona s opisom - fiksna širina za opis
+          },
+          margin: { top: 10, right: 14, bottom: 10, left: 14 },
+          styles: {
+            overflow: 'linebreak', // Prelamanje teksta umjesto skraćivanja
+            cellPadding: 3
+          },
+          willDrawCell: (data) => {
+            // Osigurati da se tekst u ćelijama prelama ako je predugačak
+            if (data.section === 'body' && data.column.index === 1 && typeof data.cell.text === 'string') {
+              const text = data.cell.text;
+              const textWidth = doc.getStringUnitWidth(text) * data.row.height / doc.internal.scaleFactor;
+              if (textWidth > data.cell.width) {
+                data.cell.text = doc.splitTextToSize(text, data.cell.width - 4);
+              }
+            }
+          }
         });
         
         // Update yPos after table
