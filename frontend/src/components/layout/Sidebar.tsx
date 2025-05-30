@@ -41,13 +41,13 @@ enum CustomRole {
 const baseNavItems = [
   { name: 'Početna', href: '/dashboard', icon: Home, roles: ['ADMIN'] },
   { name: 'Vozila', href: '/dashboard/vehicles', icon: Car, roles: ['ADMIN'] },
-  { name: 'Gorivo', href: '/dashboard/fuel', icon: Fuel, roles: ['ADMIN', 'KONTROLA'] },
+  { name: 'Firme', href: '/dashboard/companies', icon: Building2, roles: ['ADMIN'] },
+  { name: 'Lokacije', href: '/dashboard/locations', icon: MapPin, roles: ['ADMIN'] },
+  { name: 'Avio gorivo', href: '/dashboard/fuel', icon: Fuel, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Izvještaji', href: '/dashboard/reports', icon: ClipboardList, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Aktivnosti', href: '/aktivnosti', icon: FileText, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Carina', href: '/dashboard/customs', icon: ShieldCheck, roles: ['ADMIN', 'CARINA'] },
   { name: 'Aerodrom', href: '/dashboard/airport', icon: Plane, roles: ['ADMIN', 'AERODROM'] },
-  { name: 'Firme', href: '/dashboard/companies', icon: Building2, roles: ['ADMIN'] },
-  { name: 'Lokacije', href: '/dashboard/locations', icon: MapPin, roles: ['ADMIN'] },
   { name: 'Korisnici', href: '/dashboard/users', icon: Users, roles: ['ADMIN'] },
 ];
 
