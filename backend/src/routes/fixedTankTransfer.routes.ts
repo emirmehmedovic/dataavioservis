@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { sensitiveOperationsLimiter } from '../middleware/rateLimit';
+import { authenticateToken } from '../middleware/auth';
 import {
   createFixedTankTransfer,
   getAllFixedTankTransfers,
@@ -11,10 +13,10 @@ const router = Router();
 
 // Base path for these routes will be /api/fuel/transfers
 
-router.post('/', createFixedTankTransfer);
-router.get('/', getAllFixedTankTransfers);
-router.get('/:id', getFixedTankTransferById);
-router.put('/:id', updateFixedTankTransfer);
-router.delete('/:id', deleteFixedTankTransfer);
+router.post('/', sensitiveOperationsLimiter, authenticateToken, createFixedTankTransfer);
+router.get('/', sensitiveOperationsLimiter, authenticateToken, getAllFixedTankTransfers);
+router.get('/:id', sensitiveOperationsLimiter, authenticateToken, getFixedTankTransferById);
+router.put('/:id', sensitiveOperationsLimiter, authenticateToken, updateFixedTankTransfer);
+router.delete('/:id', sensitiveOperationsLimiter, authenticateToken, deleteFixedTankTransfer);
 
 export default router;

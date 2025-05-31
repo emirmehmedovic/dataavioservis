@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { apiLimiter } from './middleware/rateLimit';
 
 import authRoutes from './routes/auth';
 import companyRoutes from './routes/company';
@@ -36,6 +37,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Apply global API rate limiter to all routes
+app.use(apiLimiter);
 
 // Služenje statičkih fajlova iz 'public' direktorijuma
 // Npr. fajl public/uploads/vehicles/slika.jpg će biti dostupan na /uploads/vehicles/slika.jpg

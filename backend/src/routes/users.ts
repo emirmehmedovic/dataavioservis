@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { userManagementLimiter } from '../middleware/rateLimit';
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth';
 import { body } from 'express-validator';
 import { getAllUsers, getUserById, updateUser, deleteUser, createUser } from '../controllers/user.controller';
@@ -6,10 +7,11 @@ import { getAllUsers, getUserById, updateUser, deleteUser, createUser } from '..
 const router = Router();
 
 // GET /users (ADMIN only)
-router.get('/', authenticateToken, requireRole('ADMIN'), getAllUsers);
+router.get('/', userManagementLimiter, authenticateToken, requireRole('ADMIN'), getAllUsers);
 
 // POST /users (ADMIN only)
 router.post('/', 
+  userManagementLimiter,
   authenticateToken, 
   requireRole('ADMIN'), 
   [
@@ -21,15 +23,15 @@ router.post('/',
 );
 
 // GET /users/:id (ADMIN only)
-router.get('/:id', authenticateToken, requireRole('ADMIN'), getUserById);
+router.get('/:id', userManagementLimiter, authenticateToken, requireRole('ADMIN'), getUserById);
 
 // PUT /users/:id (ADMIN only)
-router.put('/:id', authenticateToken, requireRole('ADMIN'), [
+router.put('/:id', userManagementLimiter, authenticateToken, requireRole('ADMIN'), [
   body('username').optional().isLength({ min: 3 }).withMessage('Username mora imati najmanje 3 karaktera.'),
   body('role').optional().isIn(['ADMIN', 'SERVICER', 'FUEL_OPERATOR', 'KONTROLA', 'CARINA', 'AERODROM']).withMessage('Nevažeća uloga.')
 ], updateUser);
 
 // DELETE /users/:id (ADMIN only)
-router.delete('/:id', authenticateToken, requireRole('ADMIN'), deleteUser);
+router.delete('/:id', userManagementLimiter, authenticateToken, requireRole('ADMIN'), deleteUser);
 
 export default router;

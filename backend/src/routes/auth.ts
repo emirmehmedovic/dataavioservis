@@ -2,12 +2,14 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import { authenticateToken, requireRole } from '../middleware/auth';
 import { register, login, getMe } from '../controllers/auth.controller';
+import { authLimiter, loginFailureLimiter } from '../middleware/rateLimit';
 
 const router = Router();
 
 // Register (samo ADMIN može registrovati nove korisnike)
 router.post(
   '/register',
+  authLimiter,
   authenticateToken,
   requireRole('ADMIN'),
   [
@@ -21,6 +23,7 @@ router.post(
 // Login
 router.post(
   '/login',
+  authLimiter, // Apply rate limiting to login endpoint
   [
     body('username').isLength({ min: 3 }).withMessage('Username mora imati bar 3 karaktera.'),
     body('password').isLength({ min: 6 }).withMessage('Password mora imati bar 6 karaktera.')

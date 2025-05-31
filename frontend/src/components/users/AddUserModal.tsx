@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { UserRole, CreateUserPayload } from '@/types';
 import { createUser } from '@/lib/apiService';
 import { toast } from 'react-hot-toast';
-import { FiX, FiLoader, FiSave } from 'react-icons/fi';
+import { FiX, FiLoader, FiSave, FiAlertCircle } from 'react-icons/fi';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -18,13 +18,53 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onUserAdde
   const [role, setRole] = useState<UserRole>(UserRole.FUEL_OPERATOR); // Default role
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | ''>('');
+
+  // Validacija jake lozinke
+  const validatePassword = (password: string): { isValid: boolean; message: string } => {
+    if (!password) {
+      return { isValid: false, message: 'Lozinka je obavezna.' };
+    }
+    
+    // Provjera duljine
+    if (password.length < 8) {
+      return { isValid: false, message: 'Lozinka mora imati najmanje 8 karaktera.' };
+    }
+    
+    // Provjera velikih slova
+    if (!/[A-Z]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedno veliko slovo.' };
+    }
+    
+    // Provjera malih slova
+    if (!/[a-z]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedno malo slovo.' };
+    }
+    
+    // Provjera brojeva
+    if (!/[0-9]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedan broj.' };
+    }
+    
+    // Provjera specijalnih znakova
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedan specijalni znak (!@#$%^&*()_+-=[]{};\':"|,.<>/?).' };
+    }
+    
+    return { isValid: true, message: '' };
+  };
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
     if (!username.trim()) newErrors.username = 'Korisničko ime je obavezno.';
     else if (username.trim().length < 3) newErrors.username = 'Korisničko ime mora imati najmanje 3 karaktera.';
-    if (!password) newErrors.password = 'Lozinka je obavezna.';
-    else if (password.length < 6) newErrors.password = 'Lozinka mora imati najmanje 6 karaktera.';
+    
+    // Validacija lozinke
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.message;
+    }
+    
     if (!role) newErrors.role = 'Uloga je obavezna.';
     
     setErrors(newErrors);
@@ -91,10 +131,54 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onUserAdde
               type="password" 
               id="password" 
               value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
+              onChange={(e) => {
+                setPassword(e.target.value);
+                // Provjera snage lozinke
+                const val = e.target.value;
+                if (!val) {
+                  setPasswordStrength('');
+                } else if (validatePassword(val).isValid) {
+                  setPasswordStrength('strong');
+                } else if (val.length >= 8 && 
+                          (/[A-Z]/.test(val) || /[a-z]/.test(val)) && 
+                          /[0-9]/.test(val)) {
+                  setPasswordStrength('medium');
+                } else {
+                  setPasswordStrength('weak');
+                }
+              }} 
               className={`mt-1 block w-full px-3 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
             />
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            
+            {/* Indikator snage lozinke */}
+            {password && (
+              <div className="mt-2">
+                <div className="flex items-center">
+                  <div className="text-xs mr-2">Snaga lozinke:</div>
+                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full ${passwordStrength === 'weak' ? 'bg-red-500' : passwordStrength === 'medium' ? 'bg-yellow-500' : passwordStrength === 'strong' ? 'bg-green-500' : ''}`}
+                      style={{ width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%' }}
+                    ></div>
+                  </div>
+                  <div className="ml-2 text-xs">
+                    {passwordStrength === 'weak' ? 'Slaba' : passwordStrength === 'medium' ? 'Srednja' : 'Jaka'}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-2 text-xs text-gray-500">
+              <p>Lozinka mora sadržavati:</p>
+              <ul className="list-disc pl-5 mt-1 space-y-1">
+                <li>Najmanje 8 karaktera</li>
+                <li>Najmanje jedno veliko slovo (A-Z)</li>
+                <li>Najmanje jedno malo slovo (a-z)</li>
+                <li>Najmanje jedan broj (0-9)</li>
+                <li>Najmanje jedan specijalni znak (!@#$%^&*...)</li>
+              </ul>
+            </div>
           </div>
 
           <div className="mb-6">

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle2, User, Shield, Calendar, Mail, Key } from 'lucide-react';
+import { AlertCircle, CheckCircle2, User, Shield, Calendar, Mail, Key, AlertTriangle } from 'lucide-react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { motion } from 'framer-motion';
 
@@ -24,6 +24,60 @@ export default function ProfilePage() {
     new: false,
     confirm: false
   });
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | ''>('');
+
+  // Validacija jake lozinke
+  const validatePassword = (password: string): { isValid: boolean; message: string } => {
+    if (!password) {
+      return { isValid: false, message: 'Lozinka je obavezna.' };
+    }
+    
+    // Provjera duljine
+    if (password.length < 8) {
+      return { isValid: false, message: 'Lozinka mora imati najmanje 8 karaktera.' };
+    }
+    
+    // Provjera velikih slova
+    if (!/[A-Z]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedno veliko slovo.' };
+    }
+    
+    // Provjera malih slova
+    if (!/[a-z]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedno malo slovo.' };
+    }
+    
+    // Provjera brojeva
+    if (!/[0-9]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedan broj.' };
+    }
+    
+    // Provjera specijalnih znakova
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      return { isValid: false, message: 'Lozinka mora sadržavati barem jedan specijalni znak (!@#$%^&*()_+-=[]{};\':"|,.<>/?).' };
+    }
+    
+    return { isValid: true, message: '' };
+  };
+
+  // Provjera snage lozinke i ažuriranje indikatora
+  const checkPasswordStrength = (password: string) => {
+    if (!password) {
+      setPasswordStrength('');
+      return;
+    }
+    
+    if (validatePassword(password).isValid) {
+      setPasswordStrength('strong');
+    } else if (
+      password.length >= 8 && 
+      ((/[A-Z]/.test(password) && /[a-z]/.test(password)) || /[0-9]/.test(password))
+    ) {
+      setPasswordStrength('medium');
+    } else {
+      setPasswordStrength('weak');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +90,10 @@ export default function ProfilePage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('Nova lozinka mora imati najmanje 6 karaktera.');
+    // Validacija jake lozinke
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.message);
       return;
     }
 
@@ -52,6 +108,7 @@ export default function ProfilePage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setPasswordStrength('');
     } catch (err: any) {
       setError(err.message || 'Greška prilikom promjene lozinke.');
     } finally {
@@ -211,7 +268,10 @@ export default function ProfilePage() {
                           id="newPassword"
                           type={passwordVisible.new ? "text" : "password"}
                           value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value);
+                            checkPasswordStrength(e.target.value);
+                          }}
                           className="pr-10 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                           required
                         />
@@ -232,7 +292,34 @@ export default function ProfilePage() {
                           )}
                         </button>
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">Lozinka mora imati najmanje 6 karaktera</p>
+                      {/* Indikator snage lozinke */}
+                      {newPassword && (
+                        <div className="mt-2">
+                          <div className="flex items-center">
+                            <div className="text-xs mr-2">Snaga lozinke:</div>
+                            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${passwordStrength === 'weak' ? 'bg-red-500' : passwordStrength === 'medium' ? 'bg-yellow-500' : passwordStrength === 'strong' ? 'bg-green-500' : ''}`}
+                                style={{ width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%' }}
+                              ></div>
+                            </div>
+                            <div className="ml-2 text-xs">
+                              {passwordStrength === 'weak' ? 'Slaba' : passwordStrength === 'medium' ? 'Srednja' : 'Jaka'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="mt-2 text-xs text-gray-500">
+                        <p>Lozinka mora sadržavati:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>Najmanje 8 karaktera</li>
+                          <li>Najmanje jedno veliko slovo (A-Z)</li>
+                          <li>Najmanje jedno malo slovo (a-z)</li>
+                          <li>Najmanje jedan broj (0-9)</li>
+                          <li>Najmanje jedan specijalni znak (!@#$%^&*...)</li>
+                        </ul>
+                      </div>
                     </div>
                     
                     <div>
