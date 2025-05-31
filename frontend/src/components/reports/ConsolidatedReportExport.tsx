@@ -398,9 +398,17 @@ const ConsolidatedReportExport: React.FC = () => {
     // Add page number function for all pages
     const addPageNumber = (pageNumber: number) => {
       doc.setFont(FONT_NAME, 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.text(`Stranica ${pageNumber}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
     };
+
+    // Set up auto page break for content that doesn't fit
+    doc.setProperties({
+      title: 'Konsolidovani izvještaj goriva',
+      subject: `Period: ${formatDateForDisplay(startDate)} - ${formatDateForDisplay(endDate)}`,
+      author: 'Avio Servis',
+      creator: 'Avio Servis Informacioni Sistem'
+    });
 
     // 1. FUEL OPERATIONS REPORT
     let currentY = 45;
@@ -464,15 +472,17 @@ const ConsolidatedReportExport: React.FC = () => {
         startY: currentY,
         styles: {
           font: FONT_NAME,
-          fontSize: 9,
+          fontSize: 8, // Reduced from 9
           cellPadding: 2,
         },
         headStyles: {
           fillColor: [229, 62, 62] as [number, number, number],
           textColor: [255, 255, 255] as [number, number, number],
           fontStyle: 'bold' as const,
-          fontSize: 10,
+          fontSize: 9, // Reduced from 10
         },
+        // Enable automatic page breaks for content that doesn't fit
+        margin: { top: 40, bottom: 20 },
         columnStyles: {
           0: { cellWidth: 25 }, // Date/Time
           4: { halign: 'right' as const }, // Quantity L
@@ -516,6 +526,12 @@ const ConsolidatedReportExport: React.FC = () => {
         trafficTypeTotals[trafficType].kg += (op.quantity_kg || 0);
       });
       
+      // Check if we need a new page for the summary section
+      if (currentY > doc.internal.pageSize.height - 100) {
+        doc.addPage();
+        currentY = 20;
+      }
+      
       // Add summary section
       doc.setFont(FONT_NAME, 'bold');
       doc.setFontSize(12);
@@ -523,7 +539,7 @@ const ConsolidatedReportExport: React.FC = () => {
       currentY += 8;
       
       // Display totals
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA', { minimumFractionDigits: 2 })} L`, 14, currentY);
       currentY += 5;
       doc.text(`Ukupno Kilograma: ${totalKg.toLocaleString('bs-BA', { minimumFractionDigits: 2 })} kg`, 14, currentY);
@@ -617,8 +633,9 @@ const ConsolidatedReportExport: React.FC = () => {
         head: [['Datum/Vrijeme', 'Tip Goriva', 'Kategorija', 'Količina', 'Dobavljač', 'Broj Otpremnice']],
         body: fuelIntakeTableData,
         theme: 'grid',
-        headStyles: { fillColor: [79, 70, 229], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 },
-        styles: { font: FONT_NAME, fontSize: 9 },
+        headStyles: { fillColor: [79, 70, 229], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },
+        styles: { font: FONT_NAME, fontSize: 8 },
+        margin: { top: 40, bottom: 20 },
         didDrawPage: (data) => {
           addPageNumber(data.pageNumber);
         }
@@ -691,8 +708,9 @@ const ConsolidatedReportExport: React.FC = () => {
         head: [['Datum/Vrijeme', 'Cisterna', 'Tip Transakcije', 'Količina', 'Napomena']],
         body: tankerTransactionsTableData,
         theme: 'grid',
-        headStyles: { fillColor: [22, 160, 133], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 },
-        styles: { font: FONT_NAME, fontSize: 9 },
+        headStyles: { fillColor: [22, 160, 133], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },
+        styles: { font: FONT_NAME, fontSize: 8 },
+        margin: { top: 40, bottom: 20 },
         didDrawPage: (data) => {
           addPageNumber(data.pageNumber);
         }
@@ -759,8 +777,9 @@ const ConsolidatedReportExport: React.FC = () => {
         head: [['Datum/Vrijeme', 'Tip Izvora', 'Izvor', 'Količina', 'Napomena', 'Korisnik']],
         body: fuelDrainTableData,
         theme: 'grid',
-        headStyles: { fillColor: [220, 38, 38], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 },
-        styles: { font: FONT_NAME, fontSize: 9 },
+        headStyles: { fillColor: [220, 38, 38], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },
+        styles: { font: FONT_NAME, fontSize: 8 },
+        margin: { top: 40, bottom: 20 },
         didDrawPage: (data) => {
           addPageNumber(data.pageNumber);
         }
@@ -769,9 +788,16 @@ const ConsolidatedReportExport: React.FC = () => {
       // Update current Y position
       currentY = (doc as any).lastAutoTable.finalY + 15;
       
+      // Check if we need a new page for the summary
+      if (currentY > doc.internal.pageSize.height - 30) {
+        doc.addPage();
+        currentY = 20;
+        addPageNumber(doc.internal.pages.length);
+      }
+      
       // Add total drained quantity summary
       doc.setFont(FONT_NAME, 'bold');
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.text(`Ukupno drenirano: ${totalDrainedLiters.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L`, 14, currentY);
       currentY += 10;
     }
