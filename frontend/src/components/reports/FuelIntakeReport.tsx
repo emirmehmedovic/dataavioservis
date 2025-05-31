@@ -77,6 +77,7 @@ interface FuelIntakeReportFilters {
   endDate: string;
   supplier_name: string;
   delivery_note_number: string;
+  fuel_category: string;
 }
 
 const FuelIntakeReport: React.FC = () => {
@@ -88,12 +89,27 @@ const FuelIntakeReport: React.FC = () => {
   const [totalLiters, setTotalLiters] = useState<number>(0);
   const [totalKg, setTotalKg] = useState<number>(0);
   const [averageDensity, setAverageDensity] = useState<number>(0);
+  // Helper function to get first day of current month in YYYY-MM-DD format
+  const getFirstDayOfMonth = (): string => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  };
+
+  // Helper function to get last day of current month in YYYY-MM-DD format
+  const getLastDayOfMonth = (): string => {
+    const now = new Date();
+    // Create a date for the first day of the next month, then subtract one day
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+  };
+
   const [filters, setFilters] = useState<FuelIntakeReportFilters>({
     fuel_type: 'all',
-    startDate: '',
-    endDate: '',
+    startDate: getFirstDayOfMonth(),
+    endDate: getLastDayOfMonth(),
     supplier_name: '',
     delivery_note_number: '',
+    fuel_category: 'all',
   });
 
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
@@ -107,10 +123,23 @@ const FuelIntakeReport: React.FC = () => {
       if (filters.fuel_type && filters.fuel_type !== 'all') {
         activeFilters.fuel_type = filters.fuel_type;
       }
-      if (filters.startDate) activeFilters.startDate = filters.startDate;
-      if (filters.endDate) activeFilters.endDate = filters.endDate;
+      if (filters.startDate) {
+        // Set start date to beginning of the day (00:00:00)
+        const startDateObj = new Date(filters.startDate);
+        startDateObj.setHours(0, 0, 0, 0);
+        activeFilters.startDate = startDateObj.toISOString();
+      }
+      if (filters.endDate) {
+        // Set end date to end of the day (23:59:59)
+        const endDateObj = new Date(filters.endDate);
+        endDateObj.setHours(23, 59, 59, 999);
+        activeFilters.endDate = endDateObj.toISOString();
+      }
       if (filters.supplier_name) activeFilters.supplier_name = filters.supplier_name;
       if (filters.delivery_note_number) activeFilters.delivery_note_number = filters.delivery_note_number;
+      if (filters.fuel_category && filters.fuel_category !== 'all') activeFilters.fuel_category = filters.fuel_category;
+      
+      console.log('Active filters:', activeFilters);
 
       const queryParams = new URLSearchParams(activeFilters).toString();
       const url = `/api/fuel/intake-records${queryParams ? `?${queryParams}` : ''}`;
@@ -238,6 +267,11 @@ const FuelIntakeReport: React.FC = () => {
     doc.text('Tip Goriva:', leftMargin, yPos);
     doc.setFont(FONT_NAME, 'normal'); 
     doc.text(record.fuel_type, valueX, yPos); yPos += lineHeight;
+
+    doc.setFont(FONT_NAME, 'bold'); 
+    doc.text('Kategorija:', leftMargin, yPos);
+    doc.setFont(FONT_NAME, 'normal'); 
+    doc.text(record.fuel_category || 'Domaće tržište', valueX, yPos); yPos += lineHeight;
 
     doc.setFont(FONT_NAME, 'bold'); 
     doc.text('Dostavno Vozilo (Reg.):', leftMargin, yPos);
@@ -373,6 +407,7 @@ const FuelIntakeReport: React.FC = () => {
     const tableData = records.map(record => [
       formatDateTimeForReport(record.intake_datetime),
       record.fuel_type,
+      record.fuel_category || 'Domaće tržište',
       record.quantity_liters_received.toLocaleString() + ' L',
       record.supplier_name || 'N/A',
       record.delivery_note_number || 'N/A'
@@ -385,7 +420,7 @@ const FuelIntakeReport: React.FC = () => {
 
     autoTable(doc, {
       startY: 40,
-      head: [['Datum', 'Tip Goriva', 'Količina', 'Dobavljač', 'Br. Otpremnice']],
+      head: [['Datum', 'Tip Goriva', 'Kategorija', 'Količina', 'Dobavljač', 'Br. Otpremnice']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [22, 160, 133], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 }, 
@@ -502,6 +537,23 @@ const FuelIntakeReport: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
+                  <label htmlFor="categoryFilterReport" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Kategorija:</label>
+                  <Select
+                    value={filters.fuel_category}
+                    onValueChange={(value: string) => handleFilterChange('fuel_category', value)}
+                  >
+                    <SelectTrigger id="categoryFilterReport" className="bg-gray-50 dark:bg-gray-900">
+                      <SelectValue placeholder="Sve kategorije" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Sve kategorije</SelectItem>
+                      <SelectItem value="Izvoz">Izvoz</SelectItem>
+                      <SelectItem value="Domaće tržište">Domaće tržište</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
                   <label htmlFor="supplierFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dobavljač:</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -611,6 +663,7 @@ const FuelIntakeReport: React.FC = () => {
                       <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Datum</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tip Goriva</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kategorija</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Količina (L)</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dobavljač</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Br. Otpremnice</th>
@@ -625,6 +678,11 @@ const FuelIntakeReport: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.fuel_type === FuelType.JET_A1 ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' : 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'}`}>
                                 {record.fuel_type}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(record.fuel_category === 'Izvoz') ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'}`}>
+                                {record.fuel_category || 'Domaće tržište'}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">
@@ -657,7 +715,7 @@ const FuelIntakeReport: React.FC = () => {
                           </tr>
                           {expandedRecordId === record.id && record.documents && record.documents.length > 0 && (
                             <tr>
-                              <td colSpan={6} className="p-2 bg-gray-50 dark:bg-gray-700/50">
+                              <td colSpan={7} className="p-2 bg-gray-50 dark:bg-gray-700/50">
                                 <div className="p-2">
                                   <h4 className="text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">Povezani dokumenti:</h4>
                                   <ul className="list-disc pl-5">

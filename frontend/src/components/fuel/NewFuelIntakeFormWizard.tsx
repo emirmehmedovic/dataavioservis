@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FuelType, FixedStorageTank, FuelIntakeRecord } from '../../types/fuel';
+import { FuelType, FuelCategory, FixedStorageTank, FuelIntakeRecord } from '../../types/fuel';
 import {
   getFixedTanks,
   createFuelIntake,
@@ -47,6 +47,7 @@ interface IntakeFormData {
   quantity_kg_received?: number;
   specific_gravity?: number;
   fuel_type?: FuelType;
+  fuel_category?: FuelCategory;
   supplier_name?: string;
   delivery_note_number?: string;
   customs_declaration_number?: string;
@@ -85,6 +86,7 @@ export default function NewFuelIntakeFormWizard() {
   const [formData, setFormData] = useState<Partial<IntakeFormData>>({
     tank_distributions: [{}],
     document_uploads: [], // Initialize document_uploads
+    fuel_category: FuelCategory.DOMESTIC, // Default to Domaće tržište
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -241,6 +243,9 @@ export default function NewFuelIntakeFormWizard() {
     }
     if (!formData.fuel_type) {
       errors.fuel_type = "Tip goriva je obavezan.";
+    }
+    if (!formData.fuel_category) {
+      errors.fuel_category = "Kategorija je obavezna.";
     }
 
     const qL = formData.quantity_liters_received;
@@ -430,7 +435,7 @@ export default function NewFuelIntakeFormWizard() {
 
     if (stepIsValid) {
       // Clear errors for the validated step (simplified placeholder)
-      if (currentStep === STEPS.DELIVERY_DETAILS) setFormErrors(prev => ({...prev, delivery_vehicle_plate: undefined, intake_datetime: undefined, fuel_type: undefined, quantity_liters_received: undefined, quantity_kg_received: undefined, specific_gravity: undefined }));
+      if (currentStep === STEPS.DELIVERY_DETAILS) setFormErrors(prev => ({...prev, delivery_vehicle_plate: undefined, intake_datetime: undefined, fuel_type: undefined, fuel_category: undefined, quantity_liters_received: undefined, quantity_kg_received: undefined, specific_gravity: undefined }));
       if (currentStep === STEPS.TANK_DISTRIBUTION) setFormErrors(prev => ({...prev, tank_distributions: {}, general_tank_distribution: undefined }));
       if (currentStep === STEPS.DOCUMENT_UPLOAD) setFormErrors(prev => ({...prev, document_uploads: {}, general_document_upload: undefined }));
       
@@ -484,7 +489,7 @@ export default function NewFuelIntakeFormWizard() {
       // Prepare payload for createFuelIntake
       // Ensure all required fields for the payload are present and correctly typed.
       // The backend will also validate, but good to ensure structure here.
-      if (!formData.delivery_vehicle_plate || !formData.intake_datetime || !formData.fuel_type ||
+      if (!formData.delivery_vehicle_plate || !formData.intake_datetime || !formData.fuel_type || !formData.fuel_category ||
           formData.quantity_liters_received === undefined || formData.quantity_kg_received === undefined || formData.specific_gravity === undefined) {
         setError("Nedostaju obavezni podaci za kreiranje zapisa. Molimo provjerite Korak 1.");
         setSuccessMessage(null);
@@ -492,28 +497,29 @@ export default function NewFuelIntakeFormWizard() {
         setIsLoading(false);
         return;
       }
-
-      const mainDataPayload: CreateFuelIntakePayload = {
-        delivery_vehicle_plate: formData.delivery_vehicle_plate,
+      
+      const payload: CreateFuelIntakePayload = {
+        delivery_vehicle_plate: formData.delivery_vehicle_plate!,
         delivery_vehicle_driver_name: formData.delivery_vehicle_driver_name || null,
-        intake_datetime: new Date(formData.intake_datetime).toISOString(), // Ensure ISO format
-        quantity_liters_received: formData.quantity_liters_received,
-        quantity_kg_received: formData.quantity_kg_received,
-        specific_gravity: formData.specific_gravity,
-        fuel_type: formData.fuel_type,
+        intake_datetime: formData.intake_datetime!,
+        quantity_liters_received: formData.quantity_liters_received!,
+        quantity_kg_received: formData.quantity_kg_received!,
+        specific_gravity: formData.specific_gravity!,
+        fuel_type: formData.fuel_type ? String(formData.fuel_type) : 'DIESEL', // Send as string, not number
+        fuel_category: formData.fuel_category ? String(formData.fuel_category) : 'Domaće tržište',
         supplier_name: formData.supplier_name || null,
         delivery_note_number: formData.delivery_note_number || null,
         customs_declaration_number: formData.customs_declaration_number || null,
-        tank_distributions: formData.tank_distributions
-          ?.filter(dist => dist.tank_id !== undefined && dist.quantity_liters !== undefined && dist.quantity_liters > 0)
+        tank_distributions: formData.tank_distributions!
+          .filter(dist => dist.tank_id && dist.quantity_liters)
           .map(dist => ({
             tank_id: dist.tank_id!,
             quantity_liters: dist.quantity_liters!,
-          })) || [],
+          })),
       };
 
-      console.log("Submitting main data:", mainDataPayload);
-      const intakeRecord: FuelIntakeRecord = await createFuelIntake(mainDataPayload);
+      console.log("Submitting main data:", payload);
+      const intakeRecord: FuelIntakeRecord = await createFuelIntake(payload);
       const intakeRecordId = intakeRecord.id;
       console.log("Fuel intake record created successfully, ID:", intakeRecordId);
       // TODO: Use toast.success('Zapis o ulazu goriva uspješno kreiran!');
@@ -549,7 +555,6 @@ export default function NewFuelIntakeFormWizard() {
         // TODO: Implement toast.success('Zapis o ulazu goriva i svi dokumenti uspješno sačuvani!')
         router.push('/dashboard/fuel'); // Corrected redirect path
       }
-
     } catch (err: any) {
       console.error("Submission process error:", err);
       let errorMessage = 'Došlo je do greške prilikom čuvanja zapisa o ulazu goriva.';
@@ -795,6 +800,25 @@ export default function NewFuelIntakeFormWizard() {
                     </SelectContent>
                   </Select>
                   {formErrors.fuel_type && <p className="text-xs text-red-500 mt-1">{formErrors.fuel_type}</p>}
+                </div>
+                
+                <div className="mt-4">
+                  <Label htmlFor="fuel_category" className="text-gray-700">Kategorija</Label>
+                  <Select 
+                    name="fuel_category"
+                    onValueChange={(value: string) => handleInputChange(value, 'fuel_category')}
+                    value={formData.fuel_category || FuelCategory.DOMESTIC}
+                  >
+                    <SelectTrigger className={`w-full mt-1 ${formErrors.fuel_category ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder="Odaberite kategoriju" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(FuelCategory).map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.fuel_category && <p className="text-xs text-red-500 mt-1">{formErrors.fuel_category}</p>}
                 </div>
               </div>
 
@@ -1388,6 +1412,10 @@ export default function NewFuelIntakeFormWizard() {
                   <div className="flex">
                     <span className="text-gray-500 w-40">Tip goriva:</span>
                     <span className="font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">{displayValue(formData.fuel_type)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-40">Kategorija:</span>
+                    <span className={`font-medium px-2 py-0.5 rounded-full text-xs ${formData.fuel_category === 'Izvoz' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{displayValue(formData.fuel_category)}</span>
                   </div>
                   <div className="flex">
                     <span className="text-gray-500 w-40">Količina (L):</span>

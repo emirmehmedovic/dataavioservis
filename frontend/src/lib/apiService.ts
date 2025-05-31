@@ -561,15 +561,15 @@ export const createFixedTankToFixedTankTransfer = async (
 export interface CreateFuelIntakePayload {
   delivery_vehicle_plate: string;
   delivery_vehicle_driver_name?: string | null;
-  intake_datetime: string; // ISO string
+  intake_datetime: string; // ISO date-time string
   quantity_liters_received: number;
   quantity_kg_received: number;
   specific_gravity: number;
-  fuel_type: FuelType;
+  fuel_type: string; // Fuel type as string (e.g., 'DIESEL', 'JET_A1')
+  fuel_category: string; // New field for category (Izvoz/Domaće tržište)
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;
-  // Represents the FixedTankTransfers part
   tank_distributions: Array<{
     tank_id: number; // Corresponds to fixed_storage_tank_id in FixedTankTransfers model
     quantity_liters: number; // Corresponds to quantity_liters_transferred

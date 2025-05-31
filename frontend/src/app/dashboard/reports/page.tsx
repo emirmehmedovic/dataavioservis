@@ -8,8 +8,8 @@ import FixedTanksReport from '@/components/reports/FixedTanksReport';
 import TankerVehiclesReport from '@/components/reports/TankerVehiclesReport';
 import FuelIntakeReport from '@/components/reports/FuelIntakeReport';
 import FuelOperationsReport from '@/components/reports/FuelOperationsReport';
-import FuelReports from '@/components/fuel/FuelReports';
 import FuelDrainReport from '@/components/reports/FuelDrainReport';
+import ConsolidatedReportExport from '@/components/reports/ConsolidatedReportExport';
 import { 
   ChartBarIcon, 
   DocumentTextIcon, 
@@ -17,7 +17,8 @@ import {
   BeakerIcon,
   ArrowsRightLeftIcon,
   DocumentDuplicateIcon,
-  ArchiveBoxXMarkIcon
+  ArchiveBoxXMarkIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 export default function ReportsPage() {
@@ -54,7 +55,7 @@ export default function ReportsPage() {
     { id: 'fuel-intake', label: 'Ulaz Goriva', icon: <ArrowsRightLeftIcon className="h-5 w-5" /> },
     { id: 'fuel-operations', label: 'Operacije Točenja', icon: <DocumentTextIcon className="h-5 w-5" /> },
     { id: 'drained-fuel', label: 'Drenirano Gorivo', icon: <ArchiveBoxXMarkIcon className="h-5 w-5" /> },
-    { id: 'statistika', label: 'Statistika', icon: <DocumentDuplicateIcon className="h-5 w-5" /> },
+    { id: 'export-all', label: 'Eksport svih izvještaja', icon: <DocumentArrowDownIcon className="h-5 w-5" /> },
   ];
 
   return (
@@ -90,7 +91,7 @@ export default function ReportsPage() {
                 '#FBBF24', // yellow for fuel-intake
                 '#8B5CF6', // purple for fuel-operations
                 '#3B82F6', // blue for drained-fuel
-                '#F97316'  // orange for statistika
+                '#10B981', // green for export-all
               ];
               const color = colors[index % colors.length];
               
@@ -162,14 +163,15 @@ export default function ReportsPage() {
             </div>
           )}
           
-          {/* Statistika Tab */}
-          {activeTab === 'statistika' && (
+          {/* Export All Reports Tab */}
+          {activeTab === 'export-all' && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-              <div className="p-0 sm:p-2 md:p-4">
-                <FuelReports />
+              <div className="p-4">
+                <ConsolidatedReportExport />
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>

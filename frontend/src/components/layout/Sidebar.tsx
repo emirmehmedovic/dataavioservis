@@ -45,6 +45,7 @@ const baseNavItems = [
   { name: 'Lokacije', href: '/dashboard/locations', icon: MapPin, roles: ['ADMIN'] },
   { name: 'Avio gorivo', href: '/dashboard/fuel', icon: Fuel, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Izvještaji', href: '/dashboard/reports', icon: ClipboardList, roles: ['ADMIN', 'KONTROLA'] },
+  { name: 'Statistika i projekcije', href: '/dashboard/statistics', icon: Activity, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Aktivnosti', href: '/aktivnosti', icon: FileText, roles: ['ADMIN', 'KONTROLA'] },
   { name: 'Carina', href: '/dashboard/customs', icon: ShieldCheck, roles: ['ADMIN', 'CARINA'] },
   { name: 'Aerodrom', href: '/dashboard/airport', icon: Plane, roles: ['ADMIN', 'AERODROM'] },

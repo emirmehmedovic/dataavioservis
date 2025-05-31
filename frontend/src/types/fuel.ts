@@ -6,6 +6,11 @@ export enum FuelType {
   // Add other relevant fuel types here
 }
 
+export enum FuelCategory {
+  EXPORT = 'Izvoz',
+  DOMESTIC = 'Domaće tržište'
+}
+
 export enum FixedTankStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
@@ -93,6 +98,7 @@ export interface FuelIntakeRecord {
   quantity_kg_received: number;
   specific_gravity: number;
   fuel_type: FuelType; // Assuming FuelType enum can be used here
+  fuel_category: FuelCategory; // New field for category (Izvoz/Domaće tržište)
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;
@@ -105,6 +111,7 @@ export interface FuelIntakeRecord {
 // Filters for fetching FuelIntakeRecords
 export interface FuelIntakeFilters {
   fuel_type?: FuelType | string; // Allow string for 'all' or specific enum value
+  fuel_category?: FuelCategory | string; // Allow string for 'all' or specific enum value
   supplier_name?: string;
   delivery_vehicle_plate?: string;
   startDate?: string; // ISO date string or YYYY-MM-DD

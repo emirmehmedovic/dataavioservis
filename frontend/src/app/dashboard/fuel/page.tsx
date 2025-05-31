@@ -10,13 +10,12 @@ const TankManagement = dynamic(() => import('@/components/fuel/TankManagement'),
 const FuelingOperations = dynamic(() => import('@/components/fuel/FuelingOperations'), { ssr: false });
 const DrainedFuelOperations = dynamic(() => import('@/components/fuel/DrainedFuelOperations'), { ssr: false });
 const AirlineManagement = dynamic(() => import('@/components/fuel/AirlineManagement'), { ssr: false });
-const FuelReports = dynamic(() => import('@/components/fuel/FuelReports'), { ssr: false });
 const FixedTanksDisplay = dynamic(() => import('@/components/fuel/FixedTanksDisplay'), { ssr: false });
 const FuelIntakeDisplay = dynamic(() => import('@/components/fuel/FuelIntakeDisplay'), { ssr: false });
 const FuelPrices = dynamic(() => import('@/components/fuel/FuelPrices'), { ssr: false });
 
 // Define the valid category IDs as a type
-type CategoryId = 'fixed-tanks' | 'tanks' | 'fuel-intake' | 'fueling' | 'drained-fuel' | 'airlines' | 'reports' | 'fuel-prices';
+type CategoryId = 'fixed-tanks' | 'tanks' | 'fuel-intake' | 'fueling' | 'drained-fuel' | 'airlines' | 'fuel-prices';
 
 // SVG Icons for categories with proper typing
 const CategoryIcons: Record<CategoryId, React.ReactNode> = {
@@ -70,14 +69,6 @@ const CategoryIcons: Record<CategoryId, React.ReactNode> = {
       <path d="M4 19L11 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
-  'reports': (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 5H6C4.89543 5 4 5.89543 4 7V19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19V7C20 5.89543 19.1046 5 18 5H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M12 12V3M12 12L9 9M12 12L15 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M8 15H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M8 18H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    </svg>
-  ),
 };
 
 function classNames(...classes: string[]) {
@@ -108,7 +99,6 @@ export default function FuelManagement() {
     { id: 'fueling', description: 'Operacije Točenja' },
     { id: 'drained-fuel', description: 'Drenirano Gorivo' },
     { id: 'airlines', description: 'Avio Kompanije' },
-    { id: 'reports', description: 'Izvještaji' },
     { id: 'fuel-prices', description: 'Cijene Goriva' },
   ];
 
@@ -218,16 +208,7 @@ export default function FuelManagement() {
                   </motion.div>
                 </Tab.Panel>
                 
-                <Tab.Panel key="reports" className="p-8 focus:outline-none">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <FuelReports />
-                  </motion.div>
-                </Tab.Panel>
+
                 
                 <Tab.Panel key="fuel-prices" className="p-8 focus:outline-none">
                   <motion.div

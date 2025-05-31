@@ -95,14 +95,28 @@ interface FuelDrainData {
   userName?: string;
 }
 
+// Helper function to get the first day of the current month in YYYY-MM-DD format
+const getFirstDayOfCurrentMonth = (): string => {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  return firstDay.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+};
+
+// Helper function to get the last day of the current month in YYYY-MM-DD format
+const getLastDayOfCurrentMonth = (): string => {
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return lastDay.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+};
+
 const FuelDrainReport = () => {
   const { authUser, authToken } = useAuth();
   const [data, setData] = useState<FuelDrainData[]>([]);
   const [filteredData, setFilteredData] = useState<FuelDrainData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>(getFirstDayOfCurrentMonth());
+  const [endDate, setEndDate] = useState<string>(getLastDayOfCurrentMonth());
   const [selectedSourceType, setSelectedSourceType] = useState<string>('all'); // 'all', 'fixed', 'mobile'
 
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
@@ -181,8 +195,8 @@ const FuelDrainReport = () => {
   };
 
   const resetDateFilters = () => {
-    setStartDate('');
-    setEndDate('');
+    setStartDate(getFirstDayOfCurrentMonth());
+    setEndDate(getLastDayOfCurrentMonth());
   };
 
   const handleSourceTypeChange = (value: string) => {

@@ -292,6 +292,7 @@ model FuelIntakeRecords {
   quantity_kg_received         Float
   specific_gravity             Float
   fuel_type                    String
+  fuel_category                String?               @default("Domaće tržište")
   supplier_name                String?
   delivery_note_number         String?
   customs_declaration_number   String?
@@ -624,4 +625,14 @@ enum ServiceItemType {
   ELECTRICAL
   TIRES
   OTHER
+}
+
+model FuelProjectionPreset {
+  id                    Int      @id @default(autoincrement())
+  name                  String   @unique // Koristit ćemo fiksni naziv, npr. "default_global_projection"
+  description           String?
+  presetData            Json     // Ulazni podaci (airlineId, destination, operations)
+  calculatedResultsData Json?    // Spremljeni rezultati izračuna (tablica projekcija), opcionalno
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }

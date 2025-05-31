@@ -56,7 +56,26 @@ export default function TankManagement() {
   const [transactions, setTransactions] = useState<MobileTankTransaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<MobileTankTransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<MobileTankTransaction[]>([]);
+  // Helper function to get first day of current month in YYYY-MM-DD format
+  const getFirstDayOfMonth = (): string => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  };
+
+  // Helper function to get last day of current month in YYYY-MM-DD format
+  const getLastDayOfMonth = (): string => {
+    const now = new Date();
+    // Create a date for the first day of the next month, then subtract one day
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+  };
+  
+  // Use month-year for the month picker input
   const [dateFilter, setDateFilter] = useState<string>(format(new Date(), 'yyyy-MM'));
+  // Add specific date range filters for more precise filtering
+  const [startDateFilter, setStartDateFilter] = useState<string>(getFirstDayOfMonth());
+  const [endDateFilter, setEndDateFilter] = useState<string>(getLastDayOfMonth());
+  const [tankFilter, setTankFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [loadingTransactions, setLoadingTransactions] = useState(false);
 
@@ -96,7 +115,7 @@ export default function TankManagement() {
   // Apply filters whenever the filter values change
   useEffect(() => {
     applyFilters();
-  }, [dateFilter, typeFilter]);
+  }, [startDateFilter, endDateFilter, typeFilter, tankFilter]);
 
   const fetchTanks = async () => {
     try {
@@ -189,19 +208,28 @@ export default function TankManagement() {
   const applyFilters = (data: MobileTankTransaction[] = transactions) => {
     let filtered = [...data];
     
-    // Apply date filter (yyyy-MM format)
-    if (dateFilter) {
-      const [filterYear, filterMonth] = dateFilter.split('-').map(Number);
+    // Apply date range filter (YYYY-MM-DD to YYYY-MM-DD)
+    if (startDateFilter && endDateFilter) {
+      const startDate = new Date(startDateFilter);
+      startDate.setHours(0, 0, 0, 0); // Start of day
+      
+      const endDate = new Date(endDateFilter);
+      endDate.setHours(23, 59, 59, 999); // End of day
+      
       filtered = filtered.filter(transaction => {
         const transactionDate = new Date(transaction.transaction_datetime);
-        return transactionDate.getFullYear() === filterYear && 
-               transactionDate.getMonth() + 1 === filterMonth; // +1 because getMonth() is 0-indexed
+        return transactionDate >= startDate && transactionDate <= endDate;
       });
     }
     
     // Apply transaction type filter
     if (typeFilter !== 'all') {
       filtered = filtered.filter(transaction => transaction.type === typeFilter);
+    }
+    
+    // Apply tank filter
+    if (tankFilter !== 'all') {
+      filtered = filtered.filter(transaction => transaction.tankIdentifier === tankFilter);
     }
     
     setFilteredTransactions(filtered);
@@ -714,16 +742,30 @@ export default function TankManagement() {
           
           <div className="p-6">
             {/* Filters */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">Mjesec i godina</label>
+                <label htmlFor="start-date-filter" className="block text-sm font-medium text-gray-700 mb-1">Od datuma</label>
                 <input
-                  type="month"
-                  id="date-filter"
+                  type="date"
+                  id="start-date-filter"
                   className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-gray-300 rounded-xl"
-                  value={dateFilter}
+                  value={startDateFilter}
                   onChange={(e) => {
-                    setDateFilter(e.target.value);
+                    setStartDateFilter(e.target.value);
+                    applyFilters();
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="end-date-filter" className="block text-sm font-medium text-gray-700 mb-1">Do datuma</label>
+                <input
+                  type="date"
+                  id="end-date-filter"
+                  className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-gray-300 rounded-xl"
+                  value={endDateFilter}
+                  onChange={(e) => {
+                    setEndDateFilter(e.target.value);
                     applyFilters();
                   }}
                 />
@@ -748,13 +790,33 @@ export default function TankManagement() {
                 </select>
               </div>
               
-              <div className="flex items-end">
+              <div>
+                <label htmlFor="tank-filter" className="block text-sm font-medium text-gray-700 mb-1">Aviocisterna</label>
+                <select
+                  id="tank-filter"
+                  className="shadow-sm focus:ring-[#F08080] focus:border-[#F08080] block w-full sm:text-sm border-gray-300 rounded-xl"
+                  value={tankFilter}
+                  onChange={(e) => {
+                    setTankFilter(e.target.value);
+                    applyFilters();
+                  }}
+                >
+                  <option value="all">Sve cisterne</option>
+                  {tanks.map(tank => (
+                    <option key={tank.id} value={tank.identifier}>{tank.name} ({tank.identifier})</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex items-end md:col-span-4">
                 <button
                   type="button"
                   className="inline-flex items-center px-4 py-2 backdrop-blur-md bg-[#F08080]/30 border border-white/20 text-white shadow-lg hover:bg-[#F08080]/40 transition-all font-medium rounded-xl"
                   onClick={() => {
-                    setDateFilter(format(new Date(), 'yyyy-MM'));
+                    setStartDateFilter(getFirstDayOfMonth());
+                    setEndDateFilter(getLastDayOfMonth());
                     setTypeFilter('all');
+                    setTankFilter('all');
                     applyFilters();
                   }}
                 >

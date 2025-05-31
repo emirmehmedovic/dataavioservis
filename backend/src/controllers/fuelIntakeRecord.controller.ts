@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, FuelIntakeRecords } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from './activity.controller';
 
@@ -16,6 +16,7 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
     quantity_kg_received,
     specific_gravity,
     fuel_type,
+    fuel_category,
     supplier_name,
     delivery_note_number,
     customs_declaration_number,
@@ -70,19 +71,23 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
     console.log("Starting Prisma transaction for fuel intake.");
     const result = await prisma.$transaction(async (tx) => {
       console.log("Inside transaction: Creating FuelIntakeRecords entry.");
+      // Create data object with all fields
+      const recordData: any = {
+        delivery_vehicle_plate,
+        delivery_vehicle_driver_name,
+        intake_datetime: new Date(intake_datetime),
+        quantity_liters_received: parseFloat(quantity_liters_received),
+        quantity_kg_received: parseFloat(quantity_kg_received),
+        specific_gravity: parseFloat(specific_gravity),
+        fuel_type,
+        fuel_category: fuel_category || 'Domaće tržište',
+        supplier_name,
+        delivery_note_number,
+        customs_declaration_number,
+      };
+
       const newFuelIntakeRecord = await tx.fuelIntakeRecords.create({
-        data: {
-          delivery_vehicle_plate,
-          delivery_vehicle_driver_name,
-          intake_datetime: new Date(intake_datetime),
-          quantity_liters_received: parseFloat(quantity_liters_received),
-          quantity_kg_received: parseFloat(quantity_kg_received),
-          specific_gravity: parseFloat(specific_gravity),
-          fuel_type,
-          supplier_name,
-          delivery_note_number,
-          customs_declaration_number,
-        },
+        data: recordData,
       });
       console.log("FuelIntakeRecords entry created, ID:", newFuelIntakeRecord.id);
 
@@ -172,12 +177,13 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
 // GET /api/fuel/intake-records - Dobijanje liste svih zapisa o prijemu goriva
 export const getAllFuelIntakeRecords: RequestHandler<unknown, unknown, unknown, any> = async (req, res, next): Promise<void> => {
   try {
-    const { fuel_type, supplier_name, delivery_vehicle_plate, startDate, endDate } = req.query;
+    const { fuel_type, supplier_name, delivery_vehicle_plate, startDate, endDate, fuel_category } = req.query;
     const filters: any = {};
 
     if (fuel_type) filters.fuel_type = fuel_type as string;
     if (supplier_name) filters.supplier_name = supplier_name as string;
     if (delivery_vehicle_plate) filters.delivery_vehicle_plate = delivery_vehicle_plate as string;
+    if (fuel_category) filters.fuel_category = fuel_category as string;
     if (startDate && endDate) {
       filters.intake_datetime = {
         gte: new Date(startDate as string),
@@ -259,7 +265,7 @@ export const getFuelIntakeRecordById: RequestHandler<{ id: string }, unknown, un
 export const updateFuelIntakeRecord: RequestHandler<{ id: string }, unknown, any, unknown> = async (req, res, next): Promise<void> => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData: any = { ...req.body };
     
     if (Object.keys(updateData).length === 0) {
       res.status(400).json({ message: 'No fields provided for update.' });
@@ -277,6 +283,10 @@ export const updateFuelIntakeRecord: RequestHandler<{ id: string }, unknown, any
     }
     if (updateData.intake_datetime !== undefined) {
         updateData.intake_datetime = new Date(updateData.intake_datetime);
+    }
+    // Handle fuel_category field
+    if (updateData.fuel_category === undefined || updateData.fuel_category === null) {
+        updateData.fuel_category = 'Domaće tržište';
     }
 
     const updatedRecord = await prisma.fuelIntakeRecords.update({
@@ -330,16 +340,47 @@ export const deleteFuelIntakeRecord = async (req: AuthRequest, res: Response, ne
     }
 
     await prisma.$transaction(async (tx) => {
+        // First, reverse the fuel quantities in each affected fixed tank
+        for (const transfer of record.fixedTankTransfers) {
+            const tankId = transfer.affected_fixed_tank_id;
+            const quantityToReverse = transfer.quantity_liters_transferred;
+            
+            console.log(`Reversing ${quantityToReverse} liters from tank ID: ${tankId}`);
+            
+            // Get current tank data
+            const tank = await tx.fixedStorageTanks.findUnique({
+                where: { id: tankId }
+            });
+            
+            if (!tank) {
+                throw new Error(`Tank with ID ${tankId} not found when trying to reverse fuel quantity.`);
+            }
+            
+            // Calculate new quantity (ensuring it doesn't go below 0)
+            const newQuantity = Math.max(0, tank.current_quantity_liters - quantityToReverse);
+            
+            // Update the tank's quantity
+            await tx.fixedStorageTanks.update({
+                where: { id: tankId },
+                data: { current_quantity_liters: newQuantity }
+            });
+            
+            console.log(`Updated tank ${tank.tank_name} (ID: ${tankId}) quantity from ${tank.current_quantity_liters} to ${newQuantity} liters`);
+        }
+        
+        // Then delete the fixed tank transfers
         await tx.fixedTankTransfers.deleteMany({
             where: { fuel_intake_record_id: parsedId }
         });
         console.log(`Deleted FixedTankTransfers for record ID: ${parsedId}`);
 
+        // Delete associated documents
         await tx.fuelIntakeDocuments.deleteMany({
             where: { fuel_intake_record_id: parsedId }
         });
         console.log(`Deleted FuelIntakeDocuments for record ID: ${parsedId}`);
         
+        // Finally delete the intake record itself
         await tx.fuelIntakeRecords.delete({
             where: { id: parsedId },
         });

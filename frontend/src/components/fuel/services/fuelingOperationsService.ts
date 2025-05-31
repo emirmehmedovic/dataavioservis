@@ -1,6 +1,8 @@
 import { fetchWithAuth } from '@/lib/apiService';
 import dayjs from 'dayjs';
-import { FuelingOperation, FuelingOperationsApiResponse, FuelTankFE, AirlineFE } from '../types';
+import { FuelingOperation, FuelingOperationsApiResponse, FuelTankFE, AirlineFE, ProjectionResult, TotalProjection, FuelProjectionPresetData, CalculatedResultsData, FullFuelProjectionPreset } from '../types';
+
+
 
 /**
  * Fetch fueling operations with optional filters
@@ -60,7 +62,7 @@ export const fetchOperations = async (
       }));
       
       // Calculate total liters from operations
-      const total = processedOperations.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
+      const total = processedOperations.reduce((sum, op: FuelingOperation) => sum + (op.quantity_liters || 0), 0);
       return { operations: processedOperations, totalLiters: total };
     } else if (responseData && typeof responseData === 'object' && 'operations' in responseData) {
       // Handle the case where the response matches FuelingOperationsApiResponse
@@ -157,5 +159,54 @@ export const deleteFuelingOperation = async (id: number): Promise<void> => {
   } catch (error) {
     console.error(`Error deleting fueling operation with ID ${id}:`, error);
     throw error;
+  }
+};
+
+// Interface for the data structure of a single row in the fuel projection preset
+
+
+/**
+ * Fetch the global fuel projection preset
+ */
+export const getGlobalFuelProjectionPreset = async (): Promise<FullFuelProjectionPreset | null> => {
+  try {
+    // Backend now returns the full preset object
+    const preset = await fetchWithAuth<FullFuelProjectionPreset>('/api/fuel-projection-presets/default');
+    // Ensure presetData is at least an empty array if preset is null or presetData is missing
+    if (preset && !preset.presetData) {
+      preset.presetData = [];
+    }
+    return preset;
+  } catch (error) {
+    console.error('Error fetching global fuel projection preset:', error);
+    // Return a default structure in case of error, or rethrow if preferred
+    // For now, returning null, which the component should handle
+    return null;
+  }
+};
+
+/**
+ * Save/Update the global fuel projection preset
+ */
+export const saveGlobalFuelProjectionPreset = async (
+  presetData: FuelProjectionPresetData[], 
+  calculatedResultsData?: CalculatedResultsData | null
+): Promise<void> => {
+  try {
+    const body: Partial<FullFuelProjectionPreset> = { presetData };
+    if (calculatedResultsData !== undefined) { // Check for undefined to allow sending null
+      body.calculatedResultsData = calculatedResultsData;
+    }
+
+    await fetchWithAuth('/api/fuel-projection-presets/default', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body), 
+    });
+  } catch (error) {
+    console.error('Error saving global fuel projection preset:', error);
+    throw error; 
   }
 };

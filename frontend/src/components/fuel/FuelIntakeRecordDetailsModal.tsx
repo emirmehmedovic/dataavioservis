@@ -56,6 +56,7 @@ export interface FuelIntakeRecordWithDetails {
   id: number;
   intake_datetime: Date;
   fuel_type: string;
+  fuel_category?: string;
   delivery_vehicle_plate: string;
   delivery_vehicle_driver_name?: string | null;
   quantity_liters_received: number;
@@ -138,6 +139,18 @@ export default function FuelIntakeRecordDetailsModal({
                   <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full text-xs font-medium">
                     {record.fuel_type}
                   </Badge>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-500 w-40 flex-shrink-0">Kategorija:</span>
+                  {record.fuel_category === 'Izvoz' ? (
+                    <Badge className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-100">
+                      Izvoz
+                    </Badge>
+                  ) : (
+                    <Badge className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-100">
+                      Domaće tržište
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-start">
                   <span className="text-gray-500 w-40 flex-shrink-0">Dostavno Vozilo (Reg.):</span>

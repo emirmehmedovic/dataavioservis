@@ -2,11 +2,13 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect as useEffectOriginal } from 'react';
 import dayjs from 'dayjs';
 import {
   FuelIntakeRecord,
   FuelIntakeFilters,
   FuelType,
+  FuelCategory,
 } from '@/types/fuel';
 import { fetchWithAuth } from '@/lib/apiService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +53,7 @@ export default function FuelIntakeDisplay() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Partial<FuelIntakeFilters>>({
     fuel_type: 'all',
+    fuel_category: 'all',
     startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
     endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
   });
@@ -70,8 +73,11 @@ export default function FuelIntakeDisplay() {
       if (filters.fuel_type && filters.fuel_type !== 'all') {
         activeFilters.fuel_type = filters.fuel_type;
       }
-      if (filters.startDate) activeFilters.startDate = filters.startDate;
-      if (filters.endDate) activeFilters.endDate = filters.endDate;
+      if (filters.fuel_category && filters.fuel_category !== 'all') {
+        activeFilters.fuel_category = filters.fuel_category;
+      }
+      if (filters.startDate) activeFilters.startDate = dayjs(filters.startDate).format('YYYY-MM-DD');
+      if (filters.endDate) activeFilters.endDate = dayjs(filters.endDate).add(1, 'day').subtract(1, 'second').format('YYYY-MM-DD[T]HH:mm:ss');
       // Add other filters if they are implemented, e.g. supplier_name, delivery_vehicle_plate
 
       const queryParams = new URLSearchParams(activeFilters).toString();
@@ -81,6 +87,11 @@ export default function FuelIntakeDisplay() {
         url,
         { method: 'GET' }
       );
+      console.log('Fetched records data:', data);
+      // Log each record's full structure
+      data.forEach(record => {
+        console.log(`Record ID ${record.id} - Full record:`, JSON.stringify(record, null, 2));
+      });
       setRecords(data);
     } catch (err: any) {
       setError(err.message || 'Greška pri učitavanju zapisa o prijemu goriva.');
@@ -106,6 +117,7 @@ export default function FuelIntakeDisplay() {
         `${API_URL}/api/fuel/intake-records/${recordId}`,
         { method: 'GET' }
       );
+      console.log('Detailed record data:', detailedRecordData);
       setSelectedRecordForDetails(detailedRecordData);
       setIsDetailsModalOpen(true);
     } catch (err: any) {
@@ -138,6 +150,14 @@ export default function FuelIntakeDisplay() {
     setError(null);
     
     try {
+      // First, get the record details to show in the success message
+      const recordDetails = await fetchWithAuth<FuelIntakeRecordWithDetails>(
+        `${API_URL}/api/fuel/intake-records/${recordToDelete}`,
+        { method: 'GET' }
+      );
+      
+      // Use the same endpoint but with DELETE method to delete the record
+      // The backend will handle reversing the fuel quantities in tanks
       const response = await fetchWithAuth(
         `${API_URL}/api/fuel/intake-records/${recordToDelete}`,
         { method: 'DELETE' }
@@ -147,6 +167,14 @@ export default function FuelIntakeDisplay() {
       setRecords(prevRecords => prevRecords.filter(record => record.id !== recordToDelete));
       setShowDeleteConfirm(false);
       setRecordToDelete(null);
+      
+      // Show success message with details about reversed quantities
+      const totalReversed = recordDetails.fixedTankTransfers?.reduce(
+        (sum, transfer) => sum + transfer.quantity_liters_transferred, 0
+      ) || 0;
+      
+      // Optional: You could add a toast notification here to show success message
+      console.log(`Uspješno obrisan zapis o prijemu goriva. Poništeno ${totalReversed.toFixed(2)} litara goriva iz tankova.`);
     } catch (err: any) {
       console.error('Error deleting fuel intake record:', err);
       setError(err.message || 'Greška pri brisanju zapisa o prijemu goriva.');
@@ -277,6 +305,23 @@ export default function FuelIntakeDisplay() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label htmlFor="categoryFilter" className="block text-sm font-medium text-white mb-1">Kategorija:</label>
+              <Select 
+                value={filters.fuel_category || 'all'} 
+                onValueChange={(value: string) => handleFilterChange('fuel_category', value)}
+              >
+                <SelectTrigger className="w-full sm:w-[200px] bg-white/20 border-white/30 text-white" id="categoryFilter">
+                  <SelectValue placeholder="Sve kategorije" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Sve Kategorije</SelectItem>
+                  {Object.values(FuelCategory).map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
@@ -316,6 +361,7 @@ export default function FuelIntakeDisplay() {
                   <TableHead className="text-right font-semibold">Količina (KG)</TableHead>
                   <TableHead className="text-right font-semibold">Gustoća</TableHead>
                   <TableHead className="font-semibold">Tip Goriva</TableHead>
+                  <TableHead className="font-semibold">Kategorija</TableHead>
                   <TableHead className="font-semibold">Carinski Br.</TableHead>
                   <TableHead className="text-center font-semibold">Akcije</TableHead>
                 </TableRow>
@@ -353,6 +399,18 @@ export default function FuelIntakeDisplay() {
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                           {record.fuel_type}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {/* Display category from backend */}
+                      {record.fuel_category === 'Izvoz' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Izvoz
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Domaće tržište
                         </span>
                       )}
                     </TableCell>

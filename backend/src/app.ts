@@ -23,6 +23,7 @@ import airlineRoutes from './routes/airline.routes'; // Import airline routes
 import documentRoutes from './routes/document.routes'; // Import document routes
 import activityRoutes from './routes/activity.routes';
 import fuelPriceRuleRoutes from './routes/fuelPriceRule.routes'; // Dodane rute za pravila o cijenama goriva
+import fuelProjectionPresetRoutes from './routes/fuelProjectionPreset.routes'; // Rute za spremanje projekcija goriva
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -68,6 +69,7 @@ app.use('/api/airlines', airlineRoutes); // Mount airline routes
 app.use('/api/documents', documentRoutes); // Mount document routes for authenticated document access
 app.use('/api/activities', activityRoutes);
 app.use('/api/fuel-price-rules', fuelPriceRuleRoutes); // Registracija ruta za pravila o cijenama goriva
+app.use('/api/fuel-projection-presets', fuelProjectionPresetRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend radi!');
