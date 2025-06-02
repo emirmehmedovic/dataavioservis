@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PlusIcon, ArrowDownIcon, XMarkIcon, TrashIcon, PencilIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowDownIcon, XMarkIcon, TrashIcon, PencilIcon, ArrowPathIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
 // Define interfaces for our data types
@@ -47,6 +47,7 @@ interface DrainRecord {
   updatedAt: string;
   userId: number;
   userName: string;
+  originalDrainId?: number; // Dodano za praćenje povezanih transakcija
 }
 
 interface DrainFormData {
@@ -66,6 +67,14 @@ interface ReverseTransactionFormData {
   originalDrainId: number;
 }
 
+interface SaleTransactionFormData {
+  date: string;
+  quantity_liters: string;
+  notes: string;
+  originalDrainId: number;
+  buyerName: string;
+}
+
 const DrainedFuelOperations: React.FC = () => {
   // State variables
   const [fixedTanks, setFixedTanks] = useState<FixedTank[]>([]);
@@ -74,6 +83,7 @@ const DrainedFuelOperations: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReverseModalOpen, setIsReverseModalOpen] = useState(false);
+  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
   const [formData, setFormData] = useState<DrainFormData>({
     date: format(new Date(), 'yyyy-MM-dd'),
     sourceType: 'fixed',
@@ -89,6 +99,14 @@ const DrainedFuelOperations: React.FC = () => {
     notes: '',
     originalDrainId: 0
   });
+  
+  const [saleFormData, setSaleFormData] = useState<SaleTransactionFormData>({
+    date: format(new Date(), 'yyyy-MM-dd'),
+    quantity_liters: '',
+    notes: '',
+    originalDrainId: 0,
+    buyerName: ''
+  });
   const [selectedSource, setSelectedSource] = useState<FixedTank | MobileTank | null>(null);
   const [selectedDestination, setSelectedDestination] = useState<FixedTank | MobileTank | null>(null);
   const [activeTab, setActiveTab] = useState<'fixed' | 'mobile'>('fixed');
@@ -103,8 +121,8 @@ const DrainedFuelOperations: React.FC = () => {
   // Fetch data functions
   const fetchFixedTanks = useCallback(async () => {
     try {
-      const data = await fetchWithAuth<FixedTank[]>('/api/fuel/fixed-tanks');
-      setFixedTanks(data);
+      const response = await fetchWithAuth<FixedTank[]>('/api/fuel/fixed-tanks');
+      setFixedTanks(response);
     } catch (error) {
       console.error('Error fetching fixed tanks:', error);
       toast.error('Greška pri dohvaćanju fiksnih tankova');
@@ -113,8 +131,8 @@ const DrainedFuelOperations: React.FC = () => {
 
   const fetchMobileTanks = useCallback(async () => {
     try {
-      const data = await fetchWithAuth<MobileTank[]>('/api/fuel/tanks');
-      setMobileTanks(data);
+      const response = await fetchWithAuth<MobileTank[]>('/api/fuel/tanks');
+      setMobileTanks(response);
     } catch (error) {
       console.error('Error fetching mobile tanks:', error);
       toast.error('Greška pri dohvaćanju mobilnih tankova');
@@ -153,22 +171,34 @@ const DrainedFuelOperations: React.FC = () => {
   useEffect(() => {
     let drainedTotal = 0;
     let returnedTotal = 0;
+    let soldTotal = 0;
     
     drainRecords.forEach(record => {
       // Regular drain records have positive quantities
       if (record.quantityLiters > 0) {
         drainedTotal += record.quantityLiters;
       }
-      // Reverse transactions have negative quantities in the database
+      // Reverse transactions and sales have negative quantities in the database
       else if (record.quantityLiters < 0) {
-        returnedTotal += Math.abs(record.quantityLiters);
+        // Check if it's a sale transaction (contains "Prodaja goriva kupcu")
+        if (record.notes && record.notes.includes('Prodaja goriva kupcu')) {
+          soldTotal += Math.abs(record.quantityLiters);
+        } else {
+          returnedTotal += Math.abs(record.quantityLiters);
+        }
       }
     });
     
     setTotalDrained(drainedTotal);
-    setTotalReturned(returnedTotal);
-    setCurrentBalance(drainedTotal - returnedTotal);
+    setTotalReturned(returnedTotal + soldTotal); // Include sold fuel in the returned total for balance calculation
+    setCurrentBalance(drainedTotal - returnedTotal - soldTotal);
   }, [drainRecords]);
+  
+  // Funkcija za provjeru je li dostupno dovoljno goriva za povrat ili prodaju
+  const isEnoughFuelAvailable = (requestedQuantity: number): boolean => {
+    // Ako je trenutno stanje manje od tražene količine, nema dovoljno goriva
+    return currentBalance >= requestedQuantity;
+  };
 
   // Effect to update selectedSource when formData.sourceId or formData.sourceType changes
   useEffect(() => {
@@ -199,80 +229,212 @@ const DrainedFuelOperations: React.FC = () => {
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({
+      ...formData,
+      [name]: value
+    });
   };
 
   // Handle reverse form input changes
   const handleReverseInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setReverseFormData(prev => ({ ...prev, [name]: value }));
+    setReverseFormData({
+      ...reverseFormData,
+      [name]: value
+    });
   };
-
+  
   const handleSelectChange = (name: string, value: string) => {
-    if (name === 'sourceType') {
-      const newSourceType = value as 'fixed' | 'mobile';
-      setFormData(prev => ({
-        ...prev,
-        sourceType: newSourceType,
-        sourceId: 0, 
-      }));
-      setActiveTab(newSourceType);
+    if (name === 'sourceType' || name === 'destinationType') {
+      if (name === 'sourceType') {
+        setFormData({
+          ...formData,
+          [name]: value as 'fixed' | 'mobile',
+          sourceId: 0
+        });
+        setActiveTab(value as 'fixed' | 'mobile');
+      } else {
+        setReverseFormData({
+          ...reverseFormData,
+          [name]: value as 'fixed' | 'mobile',
+          destinationId: 0
+        });
+        setReverseActiveTab(value as 'fixed' | 'mobile');
+      }
     } else if (name === 'sourceId') {
-      // More robust check for empty, null, undefined, or whitespace-only strings
-      if (!value || value.trim() === '') { 
-        setFormData(prev => ({ ...prev, sourceId: 0 })); 
-        return;
-      }
-      const newSourceId = parseInt(value, 10);
-      if (isNaN(newSourceId)) {
-        // More distinct error message for debugging
-        console.error(`[DEBUG V2] Invalid non-numeric string received for sourceId. Value: '${value}'`); 
-        setFormData(prev => ({ ...prev, sourceId: 0 }));
-        return;
-      }
-      setFormData(prev => ({
-        ...prev,
-        sourceId: newSourceId, 
-      }));
-    } else if (name === 'destinationType') {
-      const newDestType = value as 'fixed' | 'mobile';
-      setReverseFormData(prev => ({
-        ...prev,
-        destinationType: newDestType,
-        destinationId: 0, 
-      }));
-      setReverseActiveTab(newDestType);
+      setFormData({
+        ...formData,
+        sourceId: parseInt(value)
+      });
     } else if (name === 'destinationId') {
-      if (!value || value.trim() === '') { 
-        setReverseFormData(prev => ({ ...prev, destinationId: 0 })); 
-        return;
-      }
-      const newDestId = parseInt(value, 10);
-      if (isNaN(newDestId)) {
-        console.error(`Invalid non-numeric string received for destinationId. Value: '${value}'`); 
-        setReverseFormData(prev => ({ ...prev, destinationId: 0 }));
-        return;
-      }
-      setReverseFormData(prev => ({
-        ...prev,
-        destinationId: newDestId, 
-      }));
+      setReverseFormData({
+        ...reverseFormData,
+        destinationId: parseInt(value)
+      });
     }
   };
 
-  // Open the reverse transaction modal for a specific drain record
-  const openReverseModal = (drainRecord: DrainRecord) => {
+  // Handle sale form input changes
+  const handleSaleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setSaleFormData({
+      ...saleFormData,
+      [name]: value
+    });
+  };
+
+  // Funkcija za izračun preostale količine goriva dostupne za povrat
+  const calculateAvailableQuantity = (drainRecordId: number): number => {
+    // Pronađi originalnu transakciju drenaže
+    const originalDrainRecord = drainRecords.find(record => record.id === drainRecordId);
+    if (!originalDrainRecord || originalDrainRecord.quantityLiters <= 0) return 0;
+    
+    // Pronađi sve povezane transakcije (povrati i prodaje)
+    const relatedTransactions = drainRecords.filter(record => {
+      // Tražimo samo negativne transakcije (povrati i prodaje)
+      if (record.quantityLiters >= 0) return false;
+      
+      // Provjeri je li ova transakcija povezana s originalnom drenažom
+      // 1. Preko originalDrainId polja (ako postoji)
+      if (record.originalDrainId && record.originalDrainId === drainRecordId) return true;
+      
+      // 2. Preko teksta u napomenama
+      if (record.notes) {
+        return (
+          record.notes.includes(`originalDrainId: ${drainRecordId}`) ||
+          record.notes.includes(`Povrat goriva iz drenaže ID: ${drainRecordId}`) ||
+          record.notes.includes(`Povrat iz drenaže #${drainRecordId}`) ||
+          (record.notes.includes('Prodaja goriva kupcu') && record.notes.includes(`${drainRecordId}`))
+        );
+      }
+      
+      return false;
+    });
+    
+    // Izračunaj ukupnu količinu koja je već vraćena ili prodana
+    const returnedAndSoldQuantity = relatedTransactions.reduce(
+      (total, record) => total + Math.abs(record.quantityLiters), 0
+    );
+    
+    // Ispiši debug informacije
+    console.log(`[calculateAvailableQuantity] DrainID: ${drainRecordId}, Original: ${originalDrainRecord.quantityLiters}, Returned/Sold: ${returnedAndSoldQuantity}`);
+    console.log('Related transactions:', relatedTransactions);
+    
+    // Preostala količina dostupna za povrat
+    return Math.max(0, originalDrainRecord.quantityLiters - returnedAndSoldQuantity);
+  };
+
+  // Handle opening the reverse transaction modal
+  const handleOpenReverseModal = (drainRecord: DrainRecord) => {
+    // Postavi maksimalnu dostupnu količinu na trenutno stanje ili originalnu količinu, što god je manje
+    const maxQuantity = Math.min(currentBalance, drainRecord.quantityLiters);
+    
     setSelectedDrainRecord(drainRecord);
     setReverseFormData({
-      date: format(new Date(), 'yyyy-MM-dd'),
-      destinationType: 'fixed', // Default to fixed tank as destination
-      destinationId: 0,
-      quantity_liters: drainRecord.quantityLiters.toString(), // Default to the full drained amount
-      notes: `Povrat filtriranog goriva iz drenaže ID: ${drainRecord.id}`,
-      originalDrainId: drainRecord.id
+      ...reverseFormData,
+      originalDrainId: drainRecord.id,
+      quantity_liters: maxQuantity > 0 ? maxQuantity.toString() : '0'
     });
-    setReverseActiveTab('fixed');
     setIsReverseModalOpen(true);
+  };
+
+  // Handle opening the sale transaction modal
+  const handleOpenSaleModal = (drainRecord: DrainRecord) => {
+    // Postavi maksimalnu dostupnu količinu na trenutno stanje ili originalnu količinu, što god je manje
+    const maxQuantity = Math.min(currentBalance, drainRecord.quantityLiters);
+    
+    setSelectedDrainRecord(drainRecord);
+    setSaleFormData({
+      ...saleFormData,
+      originalDrainId: drainRecord.id,
+      quantity_liters: maxQuantity > 0 ? maxQuantity.toString() : '0'
+    });
+    setIsSaleModalOpen(true);
+  };
+
+  // Handle sale transaction form submission
+  const handleSaleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!saleFormData.buyerName.trim()) {
+      toast.error('Molimo unesite naziv kupca');
+      return;
+    }
+    
+    if (!saleFormData.quantity_liters || parseFloat(saleFormData.quantity_liters) <= 0) {
+      toast.error('Molimo unesite validnu količinu goriva');
+      return;
+    }
+
+    if (!selectedDrainRecord) {
+      toast.error('Nije odabran zapis drenaže za prodaju');
+      return;
+    }
+    
+    const quantityToSell = parseFloat(saleFormData.quantity_liters);
+    
+    // Provjeri ima li dovoljno goriva u ukupnom stanju
+    if (!isEnoughFuelAvailable(quantityToSell)) {
+      toast.error(`Nedovoljno goriva za prodaju. Trenutno stanje: ${currentBalance.toLocaleString('bs-BA')} L`);
+      return;
+    }
+    
+    // Provjeri je li količina za prodaju veća od originalne količine drenaže
+    if (quantityToSell > selectedDrainRecord.quantityLiters) {
+      toast.error(`Količina za prodaju ne može biti veća od originalno drenirane količine (${selectedDrainRecord.quantityLiters.toLocaleString('bs-BA')} L)`);
+      return;
+    }
+    
+    // Provjeri ima li uopće dostupne količine za prodaju
+    if (currentBalance <= 0) {
+      toast.error('Nema dostupnog goriva za prodaju');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Prepare payload for API
+      const payload = {
+        dateTime: new Date(saleFormData.date + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
+        quantityLiters: parseFloat(saleFormData.quantity_liters),
+        notes: `Prodaja goriva kupcu ${saleFormData.buyerName} (originalDrainId: ${saleFormData.originalDrainId})`,
+        originalDrainId: saleFormData.originalDrainId,
+        buyerName: saleFormData.buyerName
+      };
+      
+      const response = await fetchWithAuth<any>(`/api/fuel/drains/sale`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      
+      toast.success('Prodaja filtriranog goriva uspješno evidentirana');
+      setIsSaleModalOpen(false);
+      
+      // Refresh data
+      await Promise.all([
+        fetchFixedTanks(),
+        fetchMobileTanks(),
+        fetchDrainRecords()
+      ]);
+      
+      // Reset form
+      setSaleFormData({
+        date: format(new Date(), 'yyyy-MM-dd'),
+        quantity_liters: '',
+        notes: '',
+        originalDrainId: 0,
+        buyerName: ''
+      });
+      setSelectedDrainRecord(null);
+      
+    } catch (error) {
+      console.error('Error submitting sale transaction:', error);
+      toast.error('Greška pri evidentiranju prodaje filtriranog goriva');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle reverse transaction form submission
@@ -296,9 +458,21 @@ const DrainedFuelOperations: React.FC = () => {
     
     const quantityToReturn = parseFloat(reverseFormData.quantity_liters);
     
-    // Check if quantity to return is not greater than the original drained amount
+    // Provjeri ima li dovoljno goriva u ukupnom stanju
+    if (!isEnoughFuelAvailable(quantityToReturn)) {
+      toast.error(`Nedovoljno goriva za povrat. Trenutno stanje: ${currentBalance.toLocaleString('bs-BA')} L`);
+      return;
+    }
+    
+    // Provjeri je li količina za povrat veća od originalne količine drenaže
     if (quantityToReturn > selectedDrainRecord.quantityLiters) {
-      toast.error(`Količina za povrat ne može biti veća od originalno drenirane količine (${selectedDrainRecord.quantityLiters} L)`);
+      toast.error(`Količina za povrat ne može biti veća od originalno drenirane količine (${selectedDrainRecord.quantityLiters.toLocaleString('bs-BA')} L)`);
+      return;
+    }
+    
+    // Provjeri ima li uopće dostupne količine za povrat
+    if (currentBalance <= 0) {
+      toast.error('Nema dostupnog goriva za povrat');
       return;
     }
     
@@ -337,8 +511,8 @@ const DrainedFuelOperations: React.FC = () => {
         dateTime: new Date(reverseFormData.date + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
         destinationType: reverseFormData.destinationType,
         destinationId: reverseFormData.destinationId,
-        quantityLiters: parseFloat(reverseFormData.quantity_liters),
-        notes: reverseFormData.notes || null,
+        quantityLiters: parseFloat(reverseFormData.quantity_liters), // Šaljemo pozitivan broj, backend će ga tretirati kao povrat
+        notes: (reverseFormData.notes ? reverseFormData.notes + ' ' : '') + `Povrat iz drenaže #${reverseFormData.originalDrainId} originalDrainId: ${reverseFormData.originalDrainId}`, // Dodajemo referencu na originalnu drenažu
         originalDrainId: reverseFormData.originalDrainId
       };
       
@@ -495,60 +669,51 @@ const DrainedFuelOperations: React.FC = () => {
       </div>
       
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Total Drained */}
+        <Card className="bg-black/50 border-white/10 shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium text-gray-700">Ukupno drenirano</CardTitle>
+            <CardTitle className="text-sm font-medium">Ukupno Drenirano</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-red-600">{totalDrained.toLocaleString('bs-BA')} L</p>
+            <div className="text-2xl font-bold">{totalDrained.toLocaleString('bs-BA')} L</div>
           </CardContent>
         </Card>
         
-        <Card>
+        {/* Total Returned/Sold */}
+        <Card className="bg-black/50 border-white/10 shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium text-gray-700">Ukupno vraćeno</CardTitle>
+            <CardTitle className="text-sm font-medium">Ukupno Vraćeno/Prodano</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{totalReturned.toLocaleString('bs-BA')} L</p>
+            <div className="text-2xl font-bold">{totalReturned.toLocaleString('bs-BA')} L</div>
           </CardContent>
         </Card>
         
-        <Card>
+        {/* Current Balance */}
+        <Card className="bg-black/50 border-white/10 shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium text-gray-700">Trenutno stanje</CardTitle>
+            <CardTitle className="text-sm font-medium">Trenutno Stanje</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-blue-600">{currentBalance.toLocaleString('bs-BA')} L</p>
+            <div className="text-2xl font-bold">{currentBalance.toLocaleString('bs-BA')} L</div>
           </CardContent>
         </Card>
       </div>
       
-      <Card>
+      {/* Records Table */}
+      <Card className="bg-black/50 border-white/10 shadow-md">
         <CardHeader>
-          <CardTitle>Evidencija istakanja goriva</CardTitle>
+          <CardTitle>Evidencija Istakanja i Transakcija</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-700"></div>
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin h-8 w-8 border-b-2 border-white rounded-full"></div>
             </div>
           ) : drainRecords.length === 0 ? (
-            <div className="text-center py-10">
-              <ArrowDownIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">Nema podataka</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Još nema evidentiranih istakanja goriva.
-              </p>
-              <div className="mt-6">
-                <Button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  Novo istakanje
-                </Button>
-              </div>
+            <div className="text-center py-8 text-gray-400">
+              Nema evidentiranih istakanja goriva
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -565,39 +730,70 @@ const DrainedFuelOperations: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {drainRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>{format(new Date(record.dateTime), 'dd.MM.yyyy HH:mm')}</TableCell>
-                      <TableCell>{record.sourceName}</TableCell>
-                      <TableCell>
-                        {record.sourceType === 'fixed' ? 'Fiksni rezervoar' : 'Mobilna cisterna'}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {record.quantityLiters.toLocaleString()}
-                      </TableCell>
-                      <TableCell>{record.notes || '-'}</TableCell>
-                      <TableCell>{record.userName}</TableCell>
-                      <TableCell>
-                        {/* Only show Povrat button for regular drain transactions (positive quantity) */}
-                        {record.quantityLiters > 0 && (
-                          <Button
-                            onClick={() => openReverseModal(record)}
-                            variant="outline"
-                            size="sm"
-                            className="text-indigo-600 hover:text-indigo-800"
-                          >
-                            <ArrowPathIcon className="h-4 w-4 mr-1" />
-                            Povrat
-                          </Button>
-                        )}
-                        {record.quantityLiters < 0 && (
-                          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                            Povrat
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {drainRecords.map((record) => {
+                    // Determine if this is a sale transaction
+                    const isSaleTransaction = record.notes && record.notes.includes('Prodaja goriva kupcu');
+                    // Determine if this is a return transaction
+                    const isReturnTransaction = record.quantityLiters < 0 && !isSaleTransaction;
+                    
+                    return (
+                      <TableRow key={record.id}>
+                        <TableCell>{format(new Date(record.dateTime), 'dd.MM.yyyy HH:mm')}</TableCell>
+                        <TableCell>{record.sourceName}</TableCell>
+                        <TableCell>
+                          {record.sourceType === 'fixed' ? 'Fiksni rezervoar' : 'Mobilna cisterna'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {Math.abs(record.quantityLiters).toLocaleString('bs-BA')}
+                          {record.quantityLiters < 0 && ' (-)' /* Show negative indicator */}
+                        </TableCell>
+                        <TableCell>
+                          {isSaleTransaction ? (
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
+                                Prodaja
+                              </Badge>
+                              <span className="ml-2">{record.notes}</span>
+                            </div>
+                          ) : isReturnTransaction ? (
+                            <div className="flex items-center">
+                              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                                Povrat
+                              </Badge>
+                              <span className="ml-2">{record.notes}</span>
+                            </div>
+                          ) : (
+                            record.notes || '-'
+                          )}
+                        </TableCell>
+                        <TableCell>{record.userName}</TableCell>
+                        <TableCell>
+                          {record.quantityLiters > 0 && (
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => handleOpenReverseModal(record)}
+                                size="sm"
+                                variant="outline"
+                                className="flex items-center gap-1 text-xs"
+                              >
+                                <ArrowPathIcon className="h-3 w-3" />
+                                Povrat
+                              </Button>
+                              <Button
+                                onClick={() => handleOpenSaleModal(record)}
+                                size="sm"
+                                variant="outline"
+                                className="flex items-center gap-1 text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/20"
+                              >
+                                <BanknotesIcon className="h-3 w-3" />
+                                Prodaja
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -752,20 +948,137 @@ const DrainedFuelOperations: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Sale Transaction Modal */}
+      <Dialog open={isSaleModalOpen} onOpenChange={setIsSaleModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Prodaja Filtriranog Goriva</DialogTitle>
+            <DialogDescription>
+              Evidentirajte prodaju filtriranog goriva eksternom kupcu
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSaleSubmit}>
+            {selectedDrainRecord && (
+              <div className="mb-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                <h4 className="text-sm font-medium mb-2 text-amber-500">Informacije o originalnoj drenaži</h4>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-white/60">Datum:</span>
+                    <span className="ml-2">{format(new Date(selectedDrainRecord.dateTime), 'dd.MM.yyyy')}</span>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Izvor:</span>
+                    <span className="ml-2">{selectedDrainRecord.sourceName}</span>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Količina:</span>
+                    <span className="ml-2">{selectedDrainRecord.quantityLiters.toLocaleString('bs-BA')} L</span>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Korisnik:</span>
+                    <span className="ml-2">{selectedDrainRecord.userName}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="sale-date" className="text-right">
+                  Datum
+                </Label>
+                <Input
+                  id="sale-date"
+                  name="date"
+                  type="date"
+                  value={saleFormData.date}
+                  onChange={handleSaleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="buyer-name" className="text-right">
+                  Naziv kupca
+                </Label>
+                <Input
+                  id="buyer-name"
+                  name="buyerName"
+                  placeholder="Unesite naziv kupca"
+                  value={saleFormData.buyerName}
+                  onChange={handleSaleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="sale-quantity" className="text-right">
+                  Količina (L)
+                </Label>
+                <Input
+                  id="sale-quantity"
+                  name="quantity_liters"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Unesite količinu"
+                  value={saleFormData.quantity_liters}
+                  onChange={handleSaleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="sale-notes" className="text-right">
+                  Napomena
+                </Label>
+                <Input
+                  id="sale-notes"
+                  name="notes"
+                  placeholder="Opcionalna napomena"
+                  value={saleFormData.notes}
+                  onChange={handleSaleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsSaleModalOpen(false)}
+                className="border-white/10 hover:bg-white/5"
+              >
+                Odustani
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                className="bg-amber-500/80 hover:bg-amber-500 text-white"
+              >
+                {isLoading ? 'Procesiranje...' : 'Evidentiraj prodaju'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Reverse Transaction Modal */}
       <Dialog open={isReverseModalOpen} onOpenChange={setIsReverseModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Povrat filtriranog goriva</DialogTitle>
+            <DialogTitle>Povrat Filtriranog Goriva</DialogTitle>
             <DialogDescription>
-              Evidentirajte povrat filtriranog goriva u fiksni rezervoar ili mobilnu cisternu.
+              Evidentirajte povrat filtriranog goriva u fiksni rezervoar ili mobilni tank
             </DialogDescription>
           </DialogHeader>
           
           {selectedDrainRecord && (
-            <div className="bg-amber-50 p-3 rounded-md mb-4 border border-amber-200">
-              <h4 className="font-medium text-sm text-amber-800">Informacije o originalnoj drenaži</h4>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <div className="mb-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+              <h4 className="text-sm font-medium mb-2 text-amber-500">Informacije o originalnoj drenaži</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-amber-700">Izvor:</span> {selectedDrainRecord.sourceName}
                 </div>

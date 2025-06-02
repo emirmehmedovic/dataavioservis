@@ -1,9 +1,11 @@
 import express from 'express';
 import { createFuelDrainRecord, getAllFuelDrainRecords, getFuelDrainRecordById } from '../controllers/fuelDrain.controller';
 import { reverseFuelDrainTransaction } from '../controllers/fuelDrainReverse.controller';
+import { processFuelDrainSale } from '../controllers/fuelDrainSale.controller';
 import { authenticateToken } from '../middleware/auth';
 import { validateDrainRecord } from '../validators/fuelDrain.validator';
 import { validateDrainReverseTransaction } from '../validators/fuelDrainReverse.validator';
+import { validateDrainSaleTransaction } from '../validators/fuelDrainSale.validator';
 import { Request, Response, NextFunction } from 'express';
 
 const router = express.Router();
@@ -29,5 +31,8 @@ router.get('/records/:id', getFuelDrainRecordById);
 
 // POST /api/fuel/drains/reverse - Process a reverse transaction for drained fuel
 router.post('/reverse', logRequestBody, validateDrainReverseTransaction, reverseFuelDrainTransaction);
+
+// POST /api/fuel/drains/sale - Process a sale transaction for drained fuel
+router.post('/sale', logRequestBody, validateDrainSaleTransaction, processFuelDrainSale);
 
 export default router;
