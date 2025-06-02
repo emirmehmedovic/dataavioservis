@@ -198,7 +198,14 @@ export default function NewFuelIntakeFormWizard() {
       const currentEntry = { ...newDistributions[index] };
       
       if (field === 'quantity_liters') {
-        currentEntry[field] = value === '' ? undefined : parseFloat(value as string);
+        // Koristi Number umjesto parseFloat i zaokruži na 2 decimale za veću preciznost
+        if (value === '') {
+          currentEntry[field] = undefined;
+        } else {
+          // Pretvaranje u broj i zaokruživanje na 2 decimale
+          const numValue = typeof value === 'string' ? Number(value) : value;
+          currentEntry[field] = Math.round(numValue * 100) / 100;
+        }
       } else if (field === 'tank_id') {
         currentEntry[field] = value === '' ? undefined : parseInt(value as string, 10);
       }
@@ -219,14 +226,33 @@ export default function NewFuelIntakeFormWizard() {
   // Memoized filtered tanks for Step 2 dropdowns
   const filteredAvailableTanks = useMemo(() => {
     if (!formData.fuel_type) return availableTanks; // Show all if fuel type in step 1 not chosen
-    return availableTanks.filter(tank => tank.fuel_type === formData.fuel_type);
+    // Handle both possible structures: tank.fuel_type or tank.fuelType.name
+    return availableTanks.filter(tank => {
+      // Use type assertion to handle potential extended properties
+      const tankAny = tank as any;
+      if (tankAny.fuelType && tankAny.fuelType.name) {
+        return tankAny.fuelType.name === formData.fuel_type;
+      }
+      return tank.fuel_type === formData.fuel_type;
+    });
   }, [availableTanks, formData.fuel_type]);
 
   const getTankDisplayInfo = (tankId?: number) => {
     const tank = availableTanks.find(t => t.id === tankId);
     if (!tank) return 'N/A';
+    
+    // Use type assertion to handle potential extended properties
+    const tankAny = tank as any;
+    
+    // Get the correct name and identifier based on available properties
+    const tankName = tankAny.name || tank.tank_name;
+    const tankIdentifier = tankAny.identifier || tank.tank_identifier;
+    
+    // Get the correct fuel type based on available properties
+    const fuelTypeName = tankAny.fuelType?.name || tank.fuel_type;
+    
     const freeCapacity = tank.capacity_liters - tank.current_quantity_liters;
-    return `${tank.tank_name} (${tank.tank_identifier}) / ${tank.fuel_type} / Kap: ${tank.capacity_liters.toFixed(0)}L / Tren: ${tank.current_quantity_liters.toFixed(0)}L / Slob: ${freeCapacity.toFixed(0)}L`;
+    return `${tankName} (${tankIdentifier}) / ${fuelTypeName} / Kap: ${tank.capacity_liters.toFixed(0)}L / Tren: ${tank.current_quantity_liters.toFixed(0)}L / Slob: ${freeCapacity.toFixed(0)}L`;
   };
 
   const totalDistributedQuantity = useMemo(() => {
@@ -288,9 +314,18 @@ export default function NewFuelIntakeFormWizard() {
           }
           selectedTankIds.add(dist.tank_id);
           const tankDetails = availableTanks.find(t => t.id === dist.tank_id);
-          if (tankDetails && formData.fuel_type && tankDetails.fuel_type !== formData.fuel_type) {
-            itemErrors.tank_id = `Tank ${tankDetails.tank_name} ne podržava ${formData.fuel_type}.`;
-            isValid = false;
+          if (tankDetails && formData.fuel_type) {
+            // Use type assertion to handle potential extended properties
+            const tankAny = tankDetails as any;
+            // Get the correct fuel type based on available properties
+            const tankFuelType = tankAny.fuelType?.name || tankDetails.fuel_type;
+            
+            if (tankFuelType !== formData.fuel_type) {
+              // Get the correct tank name based on available properties
+              const tankName = tankAny.name || tankDetails.tank_name;
+              itemErrors.tank_id = `Tank ${tankName} ne podržava ${formData.fuel_type}.`;
+              isValid = false;
+            }
           }
           if (tankDetails && dist.quantity_liters !== undefined && dist.quantity_liters > (tankDetails.capacity_liters - tankDetails.current_quantity_liters)) {
             itemErrors.quantity_liters = `Količina premašuje slobodni kapacitet tanka (${(tankDetails.capacity_liters - tankDetails.current_quantity_liters).toFixed(2)} L).`;
@@ -1087,7 +1122,7 @@ export default function NewFuelIntakeFormWizard() {
                             <SelectValue placeholder="Odaberite fiksni tank..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {selectableTanks.length === 0 && !currentTankId && <SelectItem value="" disabled>Nema dostupnih tankova ovog tipa ili su svi već odabrani.</SelectItem>}
+                            {selectableTanks.length === 0 && !currentTankId && <SelectItem value="no-tanks" disabled>Nema dostupnih tankova ovog tipa ili su svi već odabrani.</SelectItem>}
                             {selectableTanks.map(tank => (
                               <SelectItem key={tank.id} value={tank.id.toString()}>
                                 {getTankDisplayInfo(tank.id)}

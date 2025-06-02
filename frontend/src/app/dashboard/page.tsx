@@ -28,8 +28,27 @@ import {
   Activity,
   DropletIcon
 } from 'lucide-react';
-import { getTotalFuelSummary, getTotalFixedTankIntake, getFixedTanks } from '@/lib/apiService';
-import { FixedStorageTank } from '@/types/fuel';
+import { getTotalFuelSummary, getTotalFixedTankIntake, getFixedTanks, getFuelIntakes, getFixedTankHistory } from '@/lib/apiService';
+import { FixedStorageTank, TankTransaction, FuelIntakeRecord } from '@/types/fuel';
+
+// Helper function to format numbers with thousand separators
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('bs-BA');
+};
+
+// Helper function to calculate fill percentage
+const calculateFillPercentage = (current: number, capacity: number): number => {
+  return Math.round((current / capacity) * 100);
+};
+
+// Helper function to get color based on fill percentage
+const getFillColor = (percentage: number): string => {
+  if (percentage < 20) return 'bg-red-500';
+  if (percentage < 40) return 'bg-orange-500';
+  if (percentage < 60) return 'bg-yellow-500';
+  if (percentage < 80) return 'bg-blue-500';
+  return 'bg-green-500';
+};
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +59,8 @@ export default function DashboardPage() {
   } | null>(null);
   // We don't need monthly intake anymore as we'll show total fuel status instead
   const [fixedTanks, setFixedTanks] = useState<FixedStorageTank[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [fuelAlerts, setFuelAlerts] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
@@ -51,11 +72,122 @@ export default function DashboardPage() {
         const summary = await getTotalFuelSummary();
         setFuelSummary(summary);
         
-        // We don't need to fetch monthly intake as we're showing total fuel status instead
-        
         // Fetch fixed tanks
         const tanks = await getFixedTanks();
         setFixedTanks(tanks);
+        
+        // Fetch recent fuel intakes
+        const intakes = await getFuelIntakes();
+        
+        // Generate alerts based on tank levels
+        const alerts = [];
+        for (const tank of tanks) {
+          const fillPercentage = (tank.current_quantity_liters / tank.capacity_liters) * 100;
+          if (fillPercentage < 20) {
+            alerts.push({
+              id: `tank-low-${tank.id}`,
+              title: 'Nizak nivo goriva',
+              description: `Tank ${tank.tank_name} (${tank.tank_identifier}) ima manje od 20% kapaciteta`,
+              severity: 'high'
+            });
+          }
+        }
+        
+        // Add alerts for tanks with high levels (over 90%)
+        for (const tank of tanks) {
+          const fillPercentage = (tank.current_quantity_liters / tank.capacity_liters) * 100;
+          if (fillPercentage > 90) {
+            alerts.push({
+              id: `tank-high-${tank.id}`,
+              title: 'Visok nivo goriva',
+              description: `Tank ${tank.tank_name} (${tank.tank_identifier}) je na preko 90% kapaciteta`,
+              severity: 'medium'
+            });
+          }
+        }
+        
+        // Limit to 3 alerts
+        setFuelAlerts(alerts.slice(0, 3));
+        
+        // Fetch recent tank transactions for all tanks
+        let allTransactions: (TankTransaction & { tankName?: string; tankIdentifier?: string })[] = [];
+        for (const tank of tanks.slice(0, 2)) { // Limit to first 2 tanks to avoid too many requests
+          try {
+            const tankHistory = await getFixedTankHistory(tank.id);
+            // Add tank name to each transaction
+            const transactionsWithTankName = tankHistory.map(tx => ({
+              ...tx,
+              tankName: tank.tank_name,
+              tankIdentifier: tank.tank_identifier
+            }));
+            allTransactions = [...allTransactions, ...transactionsWithTankName];
+          } catch (error) {
+            console.error(`Error fetching history for tank ${tank.id}:`, error);
+          }
+        }
+        
+        // Sort transactions by date (newest first) and take the first 5
+        allTransactions.sort((a, b) => 
+          new Date(b.transaction_datetime).getTime() - new Date(a.transaction_datetime).getTime()
+        );
+        
+        // Convert transactions to activity format
+        const activities = allTransactions.slice(0, 5).map(tx => {
+          // Determine activity type and details based on transaction type
+          let type = '';
+          let details = '';
+          let status = 'success';
+          
+          const tankName = tx.tankName || 'Nepoznat tank';
+          const tankIdentifier = tx.tankIdentifier || '';
+          
+          switch(tx.type) {
+            case 'intake':
+              type = 'Unos goriva';
+              details = `Unos ${tx.quantityLiters.toLocaleString('bs-BA')}L u tank ${tankName} (${tankIdentifier})`;
+              break;
+            case 'transfer_to_mobile':
+              type = 'Transfer goriva';
+              details = `Transfer ${tx.quantityLiters.toLocaleString('bs-BA')}L iz tanka ${tankName} (${tankIdentifier}) u mobilnu cisternu`;
+              break;
+            case 'fuel_drain':
+              type = 'Drenaža goriva';
+              details = `Drenaža ${Math.abs(tx.quantityLiters).toLocaleString('bs-BA')}L iz tanka ${tankName} (${tankIdentifier})`;
+              status = 'warning';
+              break;
+            case 'internal_transfer_in':
+              type = 'Interni transfer';
+              details = `Primljeno ${tx.quantityLiters.toLocaleString('bs-BA')}L u tank ${tankName} (${tankIdentifier})`;
+              break;
+            case 'internal_transfer_out':
+              type = 'Interni transfer';
+              details = `Poslano ${Math.abs(tx.quantityLiters).toLocaleString('bs-BA')}L iz tanka ${tankName} (${tankIdentifier})`;
+              break;
+            default:
+              type = 'Operacija s gorivom';
+              details = `${tx.quantityLiters.toLocaleString('bs-BA')}L, tank ${tankName} (${tankIdentifier})`;
+          }
+          
+          // Format date to dd.mm.yyyy format with time
+          const date = new Date(tx.transaction_datetime);
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          const hours = date.getHours().toString().padStart(2, '0');
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          const formattedDate = `${day}.${month}.${year} ${hours}:${minutes}`;
+          
+          return {
+            id: tx.id,
+            type,
+            details,
+            timestamp: formattedDate,
+            user: tx.user || 'sistem',
+            status
+          };
+        });
+        
+        setRecentActivities(activities);
         
       } catch (err: any) {
         console.error('Error fetching dashboard data:', err);
@@ -68,63 +200,7 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
-  // Mock data for recent activities
-  const recentFuelActivities = [
-    { 
-      id: 1, 
-      type: 'Unos goriva', 
-      details: 'Unos 5000L JET A-1 u tank T-101', 
-      timestamp: '27.05.2025 09:15', 
-      user: 'admin',
-      status: 'success'
-    },
-    { 
-      id: 2, 
-      type: 'Transfer goriva', 
-      details: 'Transfer 1200L JET A-1 iz tanka T-101 u mobilnu cisternu C-01', 
-      timestamp: '26.05.2025 14:30', 
-      user: 'operator1',
-      status: 'success'
-    },
-    { 
-      id: 3, 
-      type: 'Točenje goriva', 
-      details: 'Točenje 800L JET A-1 u avion A320 (JA-123)', 
-      timestamp: '26.05.2025 11:45', 
-      user: 'operator2',
-      status: 'success'
-    },
-    { 
-      id: 4, 
-      type: 'Drenaža goriva', 
-      details: 'Drenaža 50L JET A-1 iz tanka T-102', 
-      timestamp: '25.05.2025 16:20', 
-      user: 'admin',
-      status: 'warning'
-    },
-  ];
 
-  // Mock data for alerts
-  const fuelAlerts = [
-    { 
-      id: 1, 
-      title: 'Nizak nivo goriva', 
-      description: 'Tank T-103 ima manje od 20% kapaciteta', 
-      severity: 'high' 
-    },
-    { 
-      id: 2, 
-      title: 'Potrebna kalibracija', 
-      description: 'Mobilna cisterna C-02 zahtijeva kalibraciju u narednih 7 dana', 
-      severity: 'medium' 
-    },
-    { 
-      id: 3, 
-      title: 'Zakazana isporuka goriva', 
-      description: 'Isporuka 10000L JET A-1 zakazana za 30.05.2025', 
-      severity: 'low' 
-    },
-  ];
 
   if (isLoading) {
     return (
@@ -440,7 +516,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="space-y-4">
-              {recentFuelActivities.map((activity, index) => (
+              {recentActivities.length > 0 ? recentActivities.map((activity, index) => (
                 <motion.div 
                   key={activity.id} 
                   className="flex items-start pb-4 border-b border-white/10 last:border-0 last:pb-0"
@@ -467,7 +543,11 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </motion.div>
-              ))}
+              )) : (
+                <motion.div className="flex items-center justify-center py-8 text-muted-foreground">
+                  Nema nedavnih aktivnosti za prikaz
+                </motion.div>
+              )}
             </div>
             <div className="mt-4 flex justify-center">
               <Button variant="outline" size="sm" asChild>

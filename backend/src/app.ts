@@ -39,7 +39,8 @@ app.use(cors({
 app.use(express.json());
 
 // Apply global API rate limiter to all routes
-app.use(apiLimiter);
+// Privremeno isključen rate limiting za testiranje i seed skriptu
+// app.use(apiLimiter);
 
 // Služenje statičkih fajlova iz 'public' direktorijuma
 // Npr. fajl public/uploads/vehicles/slika.jpg će biti dostupan na /uploads/vehicles/slika.jpg

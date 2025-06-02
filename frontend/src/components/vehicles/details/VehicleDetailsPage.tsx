@@ -3,17 +3,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getVehicleById, getVehicleServiceRecords, createServiceRecordWithDocument } from '@/lib/apiService';
-import { Vehicle, VehicleStatus, VehicleImage as VehicleImageType, ServiceRecord } from '@/types';
+import { Vehicle, VehicleStatus, VehicleImage as VehicleImageType, ServiceRecord, ServiceItemType } from '@/types';
 import Modal from '@/components/ui/Modal';
 import ServiceRecordForm from '@/components/forms/ServiceRecordForm';
 import { toast } from 'react-toastify';
 import { FiArrowLeft } from 'react-icons/fi';
-import { FaCar, FaExternalLinkAlt, FaIdCard, FaHashtag, FaMapMarkerAlt, FaBuilding } from 'react-icons/fa';
+import { FaCar, FaExternalLinkAlt, FaIdCard, FaHashtag, FaMapMarkerAlt, FaBuilding, FaFileAlt, FaTools } from 'react-icons/fa';
 import withAuth from '@/components/auth/withAuth';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Loader2, Car } from 'lucide-react';
-
 // Import our new components
 import SectionNavigation from './SectionNavigation';
 import GeneralInfoSection from './GeneralInfoSection';
@@ -25,6 +24,9 @@ import CalibrationSection from './CalibrationSection';
 import NotesSection from './NotesSection';
 import ServiceRecordsSection from './ServiceRecordsSection';
 import VehicleImagesSection from './VehicleImagesSection';
+import WorkOrderForm from './WorkOrderForm';
+import WorkOrderView from './WorkOrderView';
+import ServiceRecordDetailsView from './ServiceRecordDetailsView';
 import ReportsSection from './ReportsSection';
 import { formatServiceCategory, formatDateForDisplay } from './serviceHelpers';
 
@@ -46,6 +48,8 @@ const VehicleDetailsPage: React.FC = () => {
   const [showAddServiceRecordModal, setShowAddServiceRecordModal] = useState(false);
   const [selectedServiceRecordForModal, setSelectedServiceRecordForModal] = useState<ServiceRecord | null>(null);
   const [showViewServiceRecordModal, setShowViewServiceRecordModal] = useState(false);
+  const [showAddWorkOrderModal, setShowAddWorkOrderModal] = useState(false);
+  const [showViewWorkOrderModal, setShowViewWorkOrderModal] = useState(false);
   const [selectedImageForModal, setSelectedImageForModal] = useState<VehicleImageType | null>(null);
   const [mainImageChanged, setMainImageChanged] = useState(false);
 
@@ -138,10 +142,16 @@ const VehicleDetailsPage: React.FC = () => {
     setSelectedImageForModal(image);
   };
 
-  // Handle view service record
+  // Handle viewing a service record
   const handleViewServiceRecord = (record: ServiceRecord) => {
-    setSelectedServiceRecordForModal(record);
-    setShowViewServiceRecordModal(true);
+    // Ako je radni nalog, prikaži ga u posebnom modalu
+    if (record.serviceItems.some(item => item.type === ServiceItemType.WORK_ORDER)) {
+      setSelectedServiceRecordForModal(record);
+      setShowViewWorkOrderModal(true);
+    } else {
+      setSelectedServiceRecordForModal(record);
+      setShowViewServiceRecordModal(true);
+    }
   };
 
   // If loading, show loading indicator
@@ -301,19 +311,43 @@ const VehicleDetailsPage: React.FC = () => {
           )}
 
           {activeSection === 'tanker' && (
-            <TankerSpecificationSection vehicle={vehicle} onUpdate={fetchVehicleDetails} />
+            <TankerSpecificationSection 
+              vehicle={vehicle} 
+              onUpdate={fetchVehicleDetails}
+              serviceRecords={serviceRecords}
+              isLoadingServiceRecords={isLoadingServiceRecords}
+              onViewRecord={handleViewServiceRecord} 
+            />
           )}
 
           {activeSection === 'filter' && (
-            <FilterDataSection vehicle={vehicle} onUpdate={fetchVehicleDetails} />
+            <FilterDataSection 
+              vehicle={vehicle} 
+              onUpdate={fetchVehicleDetails}
+              serviceRecords={serviceRecords}
+              isLoadingServiceRecords={isLoadingServiceRecords}
+              onViewRecord={handleViewServiceRecord} 
+            />
           )}
 
           {activeSection === 'hoses' && (
-            <HosesSection vehicle={vehicle} onUpdate={fetchVehicleDetails} />
+            <HosesSection 
+              vehicle={vehicle} 
+              onUpdate={fetchVehicleDetails}
+              serviceRecords={serviceRecords}
+              isLoadingServiceRecords={isLoadingServiceRecords}
+              onViewRecord={handleViewServiceRecord} 
+            />
           )}
 
           {activeSection === 'calibration' && (
-            <CalibrationSection vehicle={vehicle} onUpdate={fetchVehicleDetails} />
+            <CalibrationSection 
+              vehicle={vehicle} 
+              onUpdate={fetchVehicleDetails}
+              serviceRecords={serviceRecords}
+              isLoadingServiceRecords={isLoadingServiceRecords}
+              onViewRecord={handleViewServiceRecord} 
+            />
           )}
 
           {activeSection === 'notes' && (
@@ -328,6 +362,7 @@ const VehicleDetailsPage: React.FC = () => {
               onViewRecord={handleViewServiceRecord}
               onAddRecord={() => setShowAddServiceRecordModal(true)}
               onRecordDeleted={fetchServiceRecords}
+              onAddWorkOrder={() => setShowAddWorkOrderModal(true)}
             />
           )}
 
@@ -396,47 +431,34 @@ const VehicleDetailsPage: React.FC = () => {
       {/* Modal for viewing service record details */}
       {showViewServiceRecordModal && selectedServiceRecordForModal && (
         <Modal onClose={() => setShowViewServiceRecordModal(false)} title="Detalji Servisnog Zapisa">
-          <div className="space-y-3 p-1">
-            <p><strong className="font-medium text-gray-700">Datum servisa:</strong> {formatDateForDisplay(selectedServiceRecordForModal.serviceDate)}</p>
-            <p><strong className="font-medium text-gray-700">Kategorija:</strong> {formatServiceCategory(selectedServiceRecordForModal.category)}</p>
-            <div>
-              <strong className="font-medium text-gray-700">Opis:</strong>
-              <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap bg-gray-50 p-2 rounded-md">{selectedServiceRecordForModal.description}</p>
-            </div>
-            {selectedServiceRecordForModal.serviceItems && selectedServiceRecordForModal.serviceItems.length > 0 && (
-              <div>
-                <strong className="font-medium text-gray-700">Stavke servisa:</strong>
-                <ul className="list-disc list-inside pl-4 mt-1 space-y-1 bg-gray-50 p-2 rounded-md">
-                  {selectedServiceRecordForModal.serviceItems.map((item, index) => (
-                    <li key={index} className="text-sm text-gray-600">
-                      {item.type} {item.description ? `- ${item.description}` : ''} {item.replaced ? '(Zamijenjeno)': ''}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {selectedServiceRecordForModal.documentUrl && (
-              <div>
-                <strong className="font-medium text-gray-700">Dokument:</strong>
-                <a 
-                  href={`${process.env.NEXT_PUBLIC_API_BASE_URL}${selectedServiceRecordForModal.documentUrl}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center mt-1 text-indigo-600 hover:text-indigo-800 hover:underline"
-                >
-                  <FaExternalLinkAlt className="mr-1.5 h-4 w-4" /> Preuzmi/Otvori dokument
-                </a>
-              </div>
-            )}
-            <div className="mt-6 flex justify-end">
-              <button 
-                onClick={() => setShowViewServiceRecordModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              >
-                Zatvori
-              </button>
-            </div>
-          </div>
+          <ServiceRecordDetailsView 
+            record={selectedServiceRecordForModal} 
+            onClose={() => setShowViewServiceRecordModal(false)} 
+          />
+        </Modal>
+      )}
+
+      {/* Work Order Form Modal */}
+      {showAddWorkOrderModal && (
+        <Modal onClose={() => setShowAddWorkOrderModal(false)} title="Kreiraj Radni Nalog">
+          <WorkOrderForm
+            vehicleId={vehicle.id}
+            onSubmit={() => {
+              setShowAddWorkOrderModal(false);
+              fetchServiceRecords();
+            }}
+            onClose={() => setShowAddWorkOrderModal(false)}
+          />
+        </Modal>
+      )}
+
+      {/* Work Order View Modal */}
+      {showViewWorkOrderModal && selectedServiceRecordForModal && (
+        <Modal onClose={() => setShowViewWorkOrderModal(false)} title="Pregled Radnog Naloga">
+          <WorkOrderView
+            serviceRecord={selectedServiceRecordForModal}
+            onClose={() => setShowViewWorkOrderModal(false)}
+          />
         </Modal>
       )}
     </motion.div>

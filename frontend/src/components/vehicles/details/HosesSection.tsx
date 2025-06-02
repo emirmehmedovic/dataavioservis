@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Vehicle, HoseDocument } from '@/types';
+import { Vehicle, HoseDocument, ServiceRecord, ServiceItemType } from '@/types';
 import { 
   FaShippingFast, 
   FaCalendarAlt,
@@ -29,13 +29,23 @@ import DatePairItem from './DatePairItem';
 import EditableItem from './EditableItem';
 import { toast } from 'react-toastify';
 import { uploadHoseDocument, deleteHoseDocument } from '@/lib/apiService';
+import ServiceRecordsByType from './ServiceRecordsByType';
 
 interface HosesSectionProps {
   vehicle: Vehicle;
   onUpdate: () => void;
+  serviceRecords?: ServiceRecord[];
+  isLoadingServiceRecords?: boolean;
+  onViewRecord?: (record: ServiceRecord) => void;
 }
 
-const HosesSection: React.FC<HosesSectionProps> = ({ vehicle, onUpdate }) => {
+const HosesSection: React.FC<HosesSectionProps> = ({ 
+  vehicle, 
+  onUpdate, 
+  serviceRecords = [], 
+  isLoadingServiceRecords = false, 
+  onViewRecord = () => {}
+}) => {
   const [isUploading, setIsUploading] = useState(false);
   const [documentTitle, setDocumentTitle] = useState('');
   const [documentType, setDocumentType] = useState('hose_manual');
@@ -471,6 +481,33 @@ const HosesSection: React.FC<HosesSectionProps> = ({ vehicle, onUpdate }) => {
           </table>
         </div>
       </div>
+
+      {/* Zasebna sekcija za prikaz servisnih zapisa crijeva */}
+      {serviceRecords.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
+            Historija servisnih zapisa crijeva
+          </h3>
+          
+          <ServiceRecordsByType
+            serviceRecords={serviceRecords}
+            isLoading={isLoadingServiceRecords}
+            onViewRecord={onViewRecord}
+            serviceItemTypes={[
+              ServiceItemType.HOSE_HD63,
+              ServiceItemType.HOSE_HD38,
+              ServiceItemType.HOSE_TW75,
+              ServiceItemType.HOSE_LEAK_TEST,
+              ServiceItemType.OVERWING_HOSE_TEST,
+              ServiceItemType.UNDERWING_HOSE_TEST,
+              ServiceItemType.HD38_PRESSURE_TEST,
+              ServiceItemType.HD63_PRESSURE_TEST,
+              ServiceItemType.TW75_PRESSURE_TEST
+            ]}
+            title="Servisni zapisi crijeva"
+          />
+        </div>
+      )}
     </Card>
   );
 };

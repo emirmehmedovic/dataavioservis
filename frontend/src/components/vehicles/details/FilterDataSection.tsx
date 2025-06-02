@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Vehicle, FilterDocument } from '@/types';
+import { Vehicle, FilterDocument, ServiceRecord, ServiceItemType } from '@/types';
 import { 
   FaFilter, 
   FaCheckSquare, 
@@ -25,13 +25,23 @@ import EditableItem from './EditableItem';
 import DatePairItem from './DatePairItem';
 import { toast } from 'react-toastify';
 import { uploadFilterDocument, deleteFilterDocument } from '@/lib/apiService';
+import ServiceRecordsByType from './ServiceRecordsByType';
 
 interface FilterDataSectionProps {
   vehicle: Vehicle;
   onUpdate: () => void;
+  serviceRecords?: ServiceRecord[];
+  isLoadingServiceRecords?: boolean;
+  onViewRecord?: (record: ServiceRecord) => void;
 }
 
-const FilterDataSection: React.FC<FilterDataSectionProps> = ({ vehicle, onUpdate }) => {
+const FilterDataSection: React.FC<FilterDataSectionProps> = ({ 
+  vehicle, 
+  onUpdate, 
+  serviceRecords = [], 
+  isLoadingServiceRecords = false, 
+  onViewRecord = () => {}
+}) => {
   const [isUploading, setIsUploading] = useState(false);
   const [documentTitle, setDocumentTitle] = useState('');
   const [documentType, setDocumentType] = useState('filter_manual');
@@ -398,6 +408,27 @@ const FilterDataSection: React.FC<FilterDataSectionProps> = ({ vehicle, onUpdate
           </table>
         </div>
       </div>
+
+      {/* Zasebna sekcija za prikaz servisnih zapisa filtera */}
+      {serviceRecords.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
+            Historija servisnih zapisa filtera
+          </h3>
+          
+          <ServiceRecordsByType
+            serviceRecords={serviceRecords}
+            isLoading={isLoadingServiceRecords}
+            onViewRecord={onViewRecord}
+            serviceItemTypes={[
+              ServiceItemType.FILTER,
+              ServiceItemType.FILTER_ANNUAL_INSPECTION,
+              ServiceItemType.FILTER_EW_SENSOR_INSPECTION
+            ]}
+            title="Servisni zapisi filtera"
+          />
+        </div>
+      )}
     </Card>
   );
 };

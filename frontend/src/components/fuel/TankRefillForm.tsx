@@ -92,7 +92,7 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
     setFormData({
       ...formData,
       [name]: name.includes('_liters') || name.includes('price') 
-        ? parseFloat(value) || 0 
+        ? value === '' ? 0 : Math.round(Number(value) * 100) / 100 // Konverzija u broj i zaokruživanje na 2 decimale
         : value,
       // Ensure supplier-specific fields are reset if switching away from supplier
       ...(refillSourceType !== 'supplier' && name === 'refillSourceType' && { supplier: '', invoice_number: '', price_per_liter: 0 })

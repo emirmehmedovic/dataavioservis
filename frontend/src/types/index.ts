@@ -274,20 +274,63 @@ export enum ServiceRecordCategory {
 
 // Define ServiceItemType Enum - items that can be serviced
 export enum ServiceItemType {
-  FILTER = 'FILTER',
+  // Existing hose types
   HOSE_HD63 = 'HOSE_HD63',
   HOSE_HD38 = 'HOSE_HD38',
   HOSE_TW75 = 'HOSE_TW75',
   HOSE_LEAK_TEST = 'HOSE_LEAK_TEST',
+  
+  // Calibration items
   VOLUMETER = 'VOLUMETER',
   MANOMETER = 'MANOMETER',
   HECPV_ILCPV = 'HECPV_ILCPV',
   SIX_MONTH_CHECK = 'SIX_MONTH_CHECK',
+  
+  // Filter related
+  FILTER = 'FILTER',
+  FILTER_ANNUAL_INSPECTION = 'FILTER_ANNUAL_INSPECTION',
+  FILTER_EW_SENSOR_INSPECTION = 'FILTER_EW_SENSOR_INSPECTION',
+  
+  // Tanker related
+  TANKER_PRESSURE_TEST = 'TANKER_PRESSURE_TEST',
+  TANKER_FIRE_SAFETY_TEST = 'TANKER_FIRE_SAFETY_TEST',
+  TANKER_CALIBRATION = 'TANKER_CALIBRATION',
+  
+  // Meter calibrations
+  CONDUCTIVITY_METER_CALIBRATION = 'CONDUCTIVITY_METER_CALIBRATION',
+  HYDROMETER_CALIBRATION = 'HYDROMETER_CALIBRATION',
+  MAIN_FLOW_METER_CALIBRATION = 'MAIN_FLOW_METER_CALIBRATION',
+  RESISTANCE_METER_CALIBRATION = 'RESISTANCE_METER_CALIBRATION',
+  THERMOMETER_CALIBRATION = 'THERMOMETER_CALIBRATION',
+  TORQUE_WRENCH_CALIBRATION = 'TORQUE_WRENCH_CALIBRATION',
+  
+  // Hose tests
+  OVERWING_HOSE_TEST = 'OVERWING_HOSE_TEST',
+  UNDERWING_HOSE_TEST = 'UNDERWING_HOSE_TEST',
+  HD38_PRESSURE_TEST = 'HD38_PRESSURE_TEST',
+  HD63_PRESSURE_TEST = 'HD63_PRESSURE_TEST',
+  TW75_PRESSURE_TEST = 'TW75_PRESSURE_TEST',
+  
+  // Regular checks
+  QUARTERLY_INSPECTION = 'QUARTERLY_INSPECTION',  // tromjesecni_pregled
+  WATER_CHEMICAL_TEST = 'WATER_CHEMICAL_TEST',
+  
+  // Vehicle components
+  TACHOGRAPH_CALIBRATION = 'TACHOGRAPH_CALIBRATION',  // tahograf_kalibracija
+  ADR_CERTIFICATION = 'ADR_CERTIFICATION',  // adr_vazi_do
+  CWD_EXPIRY = 'CWD_EXPIRY',  // datum_isteka_cwd
+  
+  // Standard vehicle service items
   ENGINE = 'ENGINE',
   BRAKES = 'BRAKES',
   TRANSMISSION = 'TRANSMISSION',
   ELECTRICAL = 'ELECTRICAL',
   TIRES = 'TIRES',
+  
+  // Work orders
+  WORK_ORDER = 'WORK_ORDER',
+
+  // Fallback
   OTHER = 'OTHER'
 }
 
@@ -296,6 +339,8 @@ export interface ServiceItem {
   type: ServiceItemType;
   description?: string;
   replaced?: boolean;
+  currentDate?: Date | string | null;  // Current service/replacement date
+  nextDate?: Date | string | null;     // Next scheduled service/replacement date
 }
 
 // Interface for service records

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Vehicle } from '@/types';
+import { Vehicle, ServiceRecord, ServiceItemType } from '@/types';
 import { 
   FaGasPump, 
   FaRulerVertical, 
@@ -20,13 +20,23 @@ import {
 } from 'react-icons/fa';
 import Card from './Card';
 import EditableItem from './EditableItem';
+import ServiceRecordsByType from './ServiceRecordsByType';
 
 interface TankerSpecificationSectionProps {
   vehicle: Vehicle;
   onUpdate: () => void;
+  serviceRecords?: ServiceRecord[];
+  isLoadingServiceRecords?: boolean;
+  onViewRecord?: (record: ServiceRecord) => void;
 }
 
-const TankerSpecificationSection: React.FC<TankerSpecificationSectionProps> = ({ vehicle, onUpdate }) => {
+const TankerSpecificationSection: React.FC<TankerSpecificationSectionProps> = ({ 
+  vehicle, 
+  onUpdate, 
+  serviceRecords = [], 
+  isLoadingServiceRecords = false, 
+  onViewRecord = () => {}
+}) => {
   return (
     <Card title="Specifikacija cisterne" icon={<FaGasPump />} className="mb-6">
       <div className="space-y-6">
@@ -230,6 +240,27 @@ const TankerSpecificationSection: React.FC<TankerSpecificationSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Zasebna sekcija za prikaz servisnih zapisa cisterne */}
+      {serviceRecords.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
+            Historija servisnih zapisa cisterne
+          </h3>
+          
+          <ServiceRecordsByType
+            serviceRecords={serviceRecords}
+            isLoading={isLoadingServiceRecords}
+            onViewRecord={onViewRecord}
+            serviceItemTypes={[
+              ServiceItemType.TANKER_CALIBRATION,
+              ServiceItemType.TANKER_PRESSURE_TEST,
+              ServiceItemType.TANKER_FIRE_SAFETY_TEST
+            ]}
+            title="Servisni zapisi cisterne"
+          />
+        </div>
+      )}
     </Card>
   );
 };

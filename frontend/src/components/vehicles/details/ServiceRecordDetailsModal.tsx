@@ -175,19 +175,24 @@ const ServiceRecordDetailsModal: React.FC<ServiceRecordDetailsModalProps> = ({ o
         
         // Create table for service items
         const tableColumn = language === 'bs' 
-          ? ['Tip', 'Opis', 'Status'] 
-          : ['Type', 'Description', 'Status'];
+          ? ['Tip', 'Opis', 'Status', 'Trenutni datum', 'Sljedeći datum'] 
+          : ['Type', 'Description', 'Status', 'Current Date', 'Next Date'];
           
-        const tableRows = record.serviceItems.map(item => [
-          formatServiceItemType(item.type, language),
-          // Osigurati da se opis u tabeli također prelama ako je predugačak
-          item.description || (language === 'bs' ? 'Nema opisa' : 'No description'),
-          typeof item.replaced === 'boolean' 
-            ? (item.replaced 
-              ? (language === 'bs' ? 'Zamijenjeno' : 'Replaced') 
-              : (language === 'bs' ? 'Nije zamijenjeno' : 'Not replaced'))
-            : (language === 'bs' ? 'N/A' : 'N/A')
-        ]);
+        const tableRows = record.serviceItems.map(item => {
+          const row = [
+            formatServiceItemType(item.type, language),
+            // Osigurati da se opis u tabeli također prelama ako je predugačak
+            item.description || (language === 'bs' ? 'Nema opisa' : 'No description'),
+            typeof item.replaced === 'boolean' 
+              ? (item.replaced 
+                ? (language === 'bs' ? 'Zamijenjeno' : 'Replaced') 
+                : (language === 'bs' ? 'Nije zamijenjeno' : 'Not replaced'))
+              : (language === 'bs' ? 'N/A' : 'N/A'),
+            item.currentDate ? formatDateForDisplay(item.currentDate) : (language === 'bs' ? 'Nije postavljeno' : 'Not set'),
+            item.nextDate ? formatDateForDisplay(item.nextDate) : (language === 'bs' ? 'Nije postavljeno' : 'Not set')
+          ];
+          return row;
+        });
         
         autoTable(doc, {
           head: [tableColumn],
@@ -323,15 +328,35 @@ const ServiceRecordDetailsModal: React.FC<ServiceRecordDetailsModalProps> = ({ o
             {record.serviceItems && record.serviceItems.length > 0 ? (
               <ul className="divide-y divide-white/10 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
                 {record.serviceItems.map((item, idx) => (
-                  <li key={idx} className="px-4 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <span className="font-semibold text-[#F08080]">{item.type}</span>
-                      {item.description && <span className="ml-2 text-gray-200">{item.description}</span>}
+                  <li key={idx} className="px-4 py-3 flex flex-col">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
+                      <div>
+                        <span className="font-semibold text-[#F08080]">{item.type}</span>
+                        {item.description && <span className="ml-2 text-gray-200">{item.description}</span>}
+                      </div>
+                      {typeof item.replaced === 'boolean' && (
+                        <span className={item.replaced ? 'inline-block px-2 py-0.5 bg-green-600/80 text-white text-xs rounded mt-2 sm:mt-0' : 'inline-block px-2 py-0.5 bg-red-600/80 text-white text-xs rounded mt-2 sm:mt-0'}>
+                          {item.replaced ? 'Zamijenjeno' : 'Nije zamijenjeno'}
+                        </span>
+                      )}
                     </div>
-                    {typeof item.replaced === 'boolean' && (
-                      <span className={item.replaced ? 'inline-block px-2 py-0.5 bg-green-600/80 text-white text-xs rounded mt-2 sm:mt-0' : 'inline-block px-2 py-0.5 bg-red-600/80 text-white text-xs rounded mt-2 sm:mt-0'}>
-                        {item.replaced ? 'Zamijenjeno' : 'Nije zamijenjeno'}
-                      </span>
+                    
+                    {/* Display date fields if they exist */}
+                    {(item.currentDate || item.nextDate) && (
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-300">
+                        {item.currentDate && (
+                          <div>
+                            <span className="font-medium">Trenutni datum: </span>
+                            <span>{formatDateForDisplay(item.currentDate)}</span>
+                          </div>
+                        )}
+                        {item.nextDate && (
+                          <div>
+                            <span className="font-medium">Sljedeći datum: </span>
+                            <span>{formatDateForDisplay(item.nextDate)}</span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </li>
                 ))}

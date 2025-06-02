@@ -365,6 +365,8 @@ model ServiceItem {
   type            ServiceItemType
   description     String?
   replaced        Boolean         @default(false)
+  currentDate     DateTime?       // Datum kada je servis izvršen
+  nextDate        DateTime?       // Datum kada je sljedeći servis planiran
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   serviceRecord   ServiceRecord   @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
@@ -608,19 +610,59 @@ enum ServiceRecordCategory {
 }
 
 enum ServiceItemType {
-  FILTER
+  // Existing hose types
   HOSE_HD63
   HOSE_HD38
   HOSE_TW75
   HOSE_LEAK_TEST
+  
+  // Calibration items
   VOLUMETER
   MANOMETER
   HECPV_ILCPV
   SIX_MONTH_CHECK
-  ENGINE
-  BRAKES
-  TRANSMISSION
-  ELECTRICAL
-  TIRES
+  
+  // Filter related
+  FILTER
+  FILTER_ANNUAL_INSPECTION
+  FILTER_EW_SENSOR_INSPECTION
+  
+  // Calibration and tests
+  THERMOMETER_CALIBRATION
+  HYDROMETER_CALIBRATION
+  CONDUCTIVITY_METER_CALIBRATION
+  RESISTANCE_METER_CALIBRATION
+  MAIN_FLOW_METER_CALIBRATION
+  TORQUE_WRENCH_CALIBRATION
+  
+  // Hose tests
+  OVERWING_HOSE_TEST
+  UNDERWING_HOSE_TEST
+  HD38_PRESSURE_TEST
+  HD63_PRESSURE_TEST
+  TW75_PRESSURE_TEST
+  
+  // Regular checks
+  QUARTERLY_INSPECTION  // tromjesecni_pregled
+  WATER_CHEMICAL_TEST
+  
+  // Vehicle components
+  TACHOGRAPH_CALIBRATION
+  OIL_CHANGE
+  BRAKE_SERVICE
+  TIRE_REPLACEMENT
+  ENGINE_SERVICE
+  ELECTRICAL_SERVICE
+  GENERAL_SERVICE
+  
+  // Tanker tests
+  TANKER_CALIBRATION
+  TANKER_PRESSURE_TEST
+  TANKER_FIRE_SAFETY_TEST
+  
+  // Work orders
+  WORK_ORDER
+  
+  // Other
   OTHER
 }

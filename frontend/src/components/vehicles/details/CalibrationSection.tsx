@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Vehicle } from '@/types';
+import { Vehicle, ServiceRecord, ServiceItemType } from '@/types';
 import { 
   FaBalanceScale, 
   FaCalendarAlt,
@@ -15,13 +15,23 @@ import {
 } from 'react-icons/fa';
 import Card from './Card';
 import DatePairItem from './DatePairItem';
+import CalibrationServiceRecords from './CalibrationServiceRecords';
 
 interface CalibrationSectionProps {
   vehicle: Vehicle;
   onUpdate: () => void;
+  serviceRecords?: ServiceRecord[];
+  isLoadingServiceRecords?: boolean;
+  onViewRecord?: (record: ServiceRecord) => void;
 }
 
-const CalibrationSection: React.FC<CalibrationSectionProps> = ({ vehicle, onUpdate }) => {
+const CalibrationSection: React.FC<CalibrationSectionProps> = ({ 
+  vehicle, 
+  onUpdate, 
+  serviceRecords = [], 
+  isLoadingServiceRecords = false, 
+  onViewRecord = () => {}
+}) => {
   return (
     <Card title="Kalibracije i testovi" icon={<FaBalanceScale />} className="mb-6">
       <div className="mb-6">
@@ -139,6 +149,97 @@ const CalibrationSection: React.FC<CalibrationSectionProps> = ({ vehicle, onUpda
           />
         </div>
       </div>
+
+      {/* Zasebna sekcija za prikaz servisnih zapisa kalibracija */}
+      {serviceRecords.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
+            Historija servisnih zapisa kalibracija
+          </h3>
+          
+          <div className="space-y-6">
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.TORQUE_WRENCH_CALIBRATION}
+              title="Moment ključ"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.THERMOMETER_CALIBRATION}
+              title="Termometar"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.HYDROMETER_CALIBRATION}
+              title="Hidrometar"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.CONDUCTIVITY_METER_CALIBRATION}
+              title="Mjerač električne provodljivosti"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.RESISTANCE_METER_CALIBRATION}
+              title="Mjerač otpora"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.MAIN_FLOW_METER_CALIBRATION}
+              title="Glavni mjerač protoka"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.TANKER_CALIBRATION}
+              title="Kalibracija cisterne"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.TANKER_PRESSURE_TEST}
+              title="Test pritiska cisterne"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.TANKER_FIRE_SAFETY_TEST}
+              title="Test sigurnosti od požara"
+            />
+            
+            <CalibrationServiceRecords
+              serviceRecords={serviceRecords}
+              isLoading={isLoadingServiceRecords}
+              onViewRecord={onViewRecord}
+              calibrationType={ServiceItemType.WATER_CHEMICAL_TEST}
+              title="Hemijski test na vodu"
+            />
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
