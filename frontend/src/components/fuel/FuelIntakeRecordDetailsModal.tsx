@@ -62,6 +62,7 @@ export interface FuelIntakeRecordWithDetails {
   quantity_liters_received: number;
   quantity_kg_received: number;
   specific_gravity: number;
+  refinery_name?: string | null;
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;
@@ -171,6 +172,10 @@ export default function FuelIntakeRecordDetailsModal({
                 <div className="flex items-start">
                   <span className="text-gray-500 w-40 flex-shrink-0">Specifična Gustoća:</span>
                   <span className="font-medium text-gray-900">{record.specific_gravity.toFixed(4)}</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="text-gray-500 w-40 flex-shrink-0">Rafinerija:</span>
+                  <span className="font-medium text-gray-900">{record.refinery_name || 'N/A'}</span>
                 </div>
                 <div className="flex items-start">
                   <span className="text-gray-500 w-40 flex-shrink-0">Dobavljač:</span>

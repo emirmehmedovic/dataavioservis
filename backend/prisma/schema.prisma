@@ -280,6 +280,7 @@ model FuelIntakeRecords {
   quantity_kg_received         Float
   specific_gravity             Float
   fuel_type                    String
+  refinery_name                String?
   supplier_name                String?
   delivery_note_number         String?
   customs_declaration_number   String?

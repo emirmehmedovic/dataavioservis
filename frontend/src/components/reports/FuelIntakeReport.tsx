@@ -76,6 +76,7 @@ interface FuelIntakeReportFilters {
   startDate: string;
   endDate: string;
   supplier_name: string;
+  refinery_name: string;
   delivery_note_number: string;
   fuel_category: string;
 }
@@ -108,6 +109,7 @@ const FuelIntakeReport: React.FC = () => {
     startDate: getFirstDayOfMonth(),
     endDate: getLastDayOfMonth(),
     supplier_name: '',
+    refinery_name: '',
     delivery_note_number: '',
     fuel_category: 'all',
   });
@@ -136,6 +138,7 @@ const FuelIntakeReport: React.FC = () => {
         activeFilters.endDate = endDateObj.toISOString();
       }
       if (filters.supplier_name) activeFilters.supplier_name = filters.supplier_name;
+      if (filters.refinery_name) activeFilters.refinery_name = filters.refinery_name;
       if (filters.delivery_note_number) activeFilters.delivery_note_number = filters.delivery_note_number;
       if (filters.fuel_category && filters.fuel_category !== 'all') activeFilters.fuel_category = filters.fuel_category;
       
@@ -313,6 +316,11 @@ const FuelIntakeReport: React.FC = () => {
     doc.setFont(FONT_NAME, 'normal'); 
     doc.text(record.customs_declaration_number || 'N/A', valueX, yPos); yPos += lineHeight;
 
+    doc.setFont(FONT_NAME, 'bold'); 
+    doc.text('Rafinerija:', leftMargin, yPos);
+    doc.setFont(FONT_NAME, 'normal'); 
+    doc.text(record.refinery_name || 'N/A', valueX, yPos); yPos += lineHeight;
+
     yPos += 10;
 
     if (record.fixedTankTransfers && record.fixedTankTransfers.length > 0) {
@@ -409,6 +417,7 @@ const FuelIntakeReport: React.FC = () => {
       record.fuel_type,
       record.fuel_category || 'Domaće tržište',
       record.quantity_liters_received.toLocaleString() + ' L',
+      record.refinery_name || 'N/A',
       record.supplier_name || 'N/A',
       record.delivery_note_number || 'N/A'
     ]);
@@ -420,7 +429,7 @@ const FuelIntakeReport: React.FC = () => {
 
     autoTable(doc, {
       startY: 40,
-      head: [['Datum', 'Tip Goriva', 'Kategorija', 'Količina', 'Dobavljač', 'Br. Otpremnice']],
+      head: [['Datum', 'Tip Goriva', 'Kategorija', 'Količina', 'Rafinerija', 'Br. Otpremnice']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [22, 160, 133], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 }, 
@@ -554,6 +563,25 @@ const FuelIntakeReport: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
+                  <label htmlFor="refineryFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Rafinerija:</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <Input
+                      type="text"
+                      id="refineryFilter"
+                      className="pl-10 bg-gray-50 dark:bg-gray-900"
+                      placeholder="Naziv rafinerije"
+                      value={filters.refinery_name}
+                      onChange={(e) => handleFilterChange('refinery_name', e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
                   <label htmlFor="supplierFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dobavljač:</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -665,6 +693,7 @@ const FuelIntakeReport: React.FC = () => {
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tip Goriva</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kategorija</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Količina (L)</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rafinerija</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dobavljač</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Br. Otpremnice</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Akcije</th>
@@ -688,6 +717,7 @@ const FuelIntakeReport: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">
                               {record.quantity_liters_received.toLocaleString('hr-HR')} L
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{record.refinery_name || 'N/A'}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{record.supplier_name}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{record.delivery_note_number}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 flex space-x-2">

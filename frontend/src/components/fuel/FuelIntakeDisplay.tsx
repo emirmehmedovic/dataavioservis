@@ -54,6 +54,7 @@ export default function FuelIntakeDisplay() {
   const [filters, setFilters] = useState<Partial<FuelIntakeFilters>>({
     fuel_type: 'all',
     fuel_category: 'all',
+    refinery_name: '',
     startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
     endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
   });
@@ -75,6 +76,9 @@ export default function FuelIntakeDisplay() {
       }
       if (filters.fuel_category && filters.fuel_category !== 'all') {
         activeFilters.fuel_category = filters.fuel_category;
+      }
+      if (filters.refinery_name && filters.refinery_name.trim() !== '') {
+        activeFilters.refinery_name = filters.refinery_name.trim();
       }
       if (filters.startDate) activeFilters.startDate = dayjs(filters.startDate).format('YYYY-MM-DD');
       if (filters.endDate) activeFilters.endDate = dayjs(filters.endDate).add(1, 'day').subtract(1, 'second').format('YYYY-MM-DD[T]HH:mm:ss');
@@ -322,6 +326,16 @@ export default function FuelIntakeDisplay() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label htmlFor="refineryFilter" className="block text-sm font-medium text-white mb-1">Rafinerija:</label>
+              <Input
+                id="refineryFilter"
+                value={filters.refinery_name || ''}
+                onChange={(e) => handleFilterChange('refinery_name', e.target.value)}
+                placeholder="Filtriraj po rafineriji"
+                className="w-full sm:w-[200px] bg-white/20 border-white/30 text-white placeholder:text-white/50"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -362,6 +376,7 @@ export default function FuelIntakeDisplay() {
                   <TableHead className="text-right font-semibold">Gustoća</TableHead>
                   <TableHead className="font-semibold">Tip Goriva</TableHead>
                   <TableHead className="font-semibold">Kategorija</TableHead>
+                  <TableHead className="font-semibold">Rafinerija</TableHead>
                   <TableHead className="font-semibold">Carinski Br.</TableHead>
                   <TableHead className="text-center font-semibold">Akcije</TableHead>
                 </TableRow>
@@ -412,6 +427,13 @@ export default function FuelIntakeDisplay() {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           Domaće tržište
                         </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {record.refinery_name ? (
+                        <span className="text-gray-900">{record.refinery_name}</span>
+                      ) : (
+                        <span className="text-gray-400 italic">N/A</span>
                       )}
                     </TableCell>
                     <TableCell>

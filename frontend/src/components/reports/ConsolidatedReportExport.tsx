@@ -124,6 +124,7 @@ interface FuelIntakeRecord {
   fuel_category?: string;
   fuel_type?: string;
   quantity_liters_received?: number;
+  refinery_name?: string;
   supplier_name?: string;
   delivery_note_number?: string;
 }
@@ -623,6 +624,7 @@ const ConsolidatedReportExport: React.FC = () => {
           : (intake.quantityLiters !== undefined && intake.quantityLiters !== null)
             ? intake.quantityLiters.toLocaleString() + ' L'
             : '0 L',
+        intake.refinery_name || 'N/A',
         intake.supplier_name || intake.supplier?.name || 'N/A',
         intake.delivery_note_number || intake.invoiceNumber || 'N/A'
       ]);
@@ -630,7 +632,7 @@ const ConsolidatedReportExport: React.FC = () => {
       // Generate table for fuel intake - match headers from FuelIntakeReport.tsx
       autoTable(doc, {
         startY: currentY,
-        head: [['Datum/Vrijeme', 'Tip Goriva', 'Kategorija', 'Količina', 'Dobavljač', 'Broj Otpremnice']],
+        head: [['Datum/Vrijeme', 'Tip Goriva', 'Kategorija', 'Količina', 'Rafinerija', 'Dobavljač', 'Broj Otpremnice']],
         body: fuelIntakeTableData,
         theme: 'grid',
         headStyles: { fillColor: [79, 70, 229], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },

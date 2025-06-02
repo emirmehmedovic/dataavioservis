@@ -17,6 +17,7 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
     specific_gravity,
     fuel_type,
     fuel_category,
+    refinery_name,
     supplier_name,
     delivery_note_number,
     customs_declaration_number,
@@ -81,6 +82,7 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
         specific_gravity: parseFloat(specific_gravity),
         fuel_type,
         fuel_category: fuel_category || 'Domaće tržište',
+        refinery_name,
         supplier_name,
         delivery_note_number,
         customs_declaration_number,
@@ -177,13 +179,19 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
 // GET /api/fuel/intake-records - Dobijanje liste svih zapisa o prijemu goriva
 export const getAllFuelIntakeRecords: RequestHandler<unknown, unknown, unknown, any> = async (req, res, next): Promise<void> => {
   try {
-    const { fuel_type, supplier_name, delivery_vehicle_plate, startDate, endDate, fuel_category } = req.query;
+    const { fuel_type, supplier_name, delivery_vehicle_plate, startDate, endDate, fuel_category, refinery_name } = req.query;
     const filters: any = {};
 
     if (fuel_type) filters.fuel_type = fuel_type as string;
     if (supplier_name) filters.supplier_name = supplier_name as string;
     if (delivery_vehicle_plate) filters.delivery_vehicle_plate = delivery_vehicle_plate as string;
     if (fuel_category) filters.fuel_category = fuel_category as string;
+    if (refinery_name) {
+      filters.refinery_name = {
+        contains: refinery_name as string,
+        mode: 'insensitive' // Case-insensitive search
+      };
+    }
     if (startDate && endDate) {
       filters.intake_datetime = {
         gte: new Date(startDate as string),

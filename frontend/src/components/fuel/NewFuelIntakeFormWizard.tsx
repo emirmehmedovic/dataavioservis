@@ -48,6 +48,7 @@ interface IntakeFormData {
   specific_gravity?: number;
   fuel_type?: FuelType;
   fuel_category?: FuelCategory;
+  refinery_name?: string;
   supplier_name?: string;
   delivery_note_number?: string;
   customs_declaration_number?: string;
@@ -542,6 +543,7 @@ export default function NewFuelIntakeFormWizard() {
         specific_gravity: formData.specific_gravity!,
         fuel_type: formData.fuel_type ? String(formData.fuel_type) : 'DIESEL', // Send as string, not number
         fuel_category: formData.fuel_category ? String(formData.fuel_category) : 'Domaće tržište',
+        refinery_name: formData.refinery_name || null,
         supplier_name: formData.supplier_name || null,
         delivery_note_number: formData.delivery_note_number || null,
         customs_declaration_number: formData.customs_declaration_number || null,
@@ -870,6 +872,26 @@ export default function NewFuelIntakeFormWizard() {
                   Dokumentacija
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="refinery_name" className="text-gray-700">Rafinerija</Label>
+                    <div className="relative">
+                      <Input 
+                        id="refinery_name" 
+                        name="refinery_name" 
+                        value={formData.refinery_name || ''} 
+                        onChange={handleInputChange} 
+                        className="mt-1 pl-9 focus:ring-blue-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"/>
+                          <path d="M7 8h10"/>
+                          <path d="M7 12h10"/>
+                          <path d="M7 16h10"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                   <div>
                     <Label htmlFor="supplier_name" className="text-gray-700">Dobavljač (opciono)</Label>
                     <div className="relative">

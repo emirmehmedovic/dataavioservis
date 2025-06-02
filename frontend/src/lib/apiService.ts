@@ -567,6 +567,7 @@ export interface CreateFuelIntakePayload {
   specific_gravity: number;
   fuel_type: string; // Fuel type as string (e.g., 'DIESEL', 'JET_A1')
   fuel_category: string; // New field for category (Izvoz/Domaće tržište)
+  refinery_name?: string | null; // Added refinery_name field
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;

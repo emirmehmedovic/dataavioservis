@@ -99,6 +99,7 @@ export interface FuelIntakeRecord {
   specific_gravity: number;
   fuel_type: FuelType; // Assuming FuelType enum can be used here
   fuel_category: FuelCategory; // New field for category (Izvoz/Domaće tržište)
+  refinery_name?: string | null; // New field for refinery name
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;
@@ -112,11 +113,34 @@ export interface FuelIntakeRecord {
 export interface FuelIntakeFilters {
   fuel_type?: FuelType | string; // Allow string for 'all' or specific enum value
   fuel_category?: FuelCategory | string; // Allow string for 'all' or specific enum value
+  refinery_name?: string; // Filter by refinery name
   supplier_name?: string;
   delivery_vehicle_plate?: string;
   startDate?: string; // ISO date string or YYYY-MM-DD
   endDate?: string;   // ISO date string or YYYY-MM-DD
   // Add other potential filters like customs_declaration_number if needed
+}
+
+// Payload for creating a new Fuel Intake Record
+export interface CreateFuelIntakePayload {
+  delivery_vehicle_plate: string;
+  delivery_vehicle_driver_name?: string | null;
+  intake_datetime: string; // ISO date-time string
+  quantity_liters_received: number;
+  quantity_kg_received: number;
+  specific_gravity: number;
+  fuel_type: string; // Fuel type as string (e.g., 'DIESEL', 'JET_A1')
+  fuel_category: string; // Category as string (e.g., 'Izvoz', 'Domaće tržište')
+  refinery_name?: string | null; // New field for refinery name
+  supplier_name?: string | null;
+  delivery_note_number?: string | null;
+  customs_declaration_number?: string | null;
+  tank_distributions: Array<{
+    tank_id: number; // Corresponds to fixed_storage_tank_id in FixedTankTransfers model
+    quantity_liters: number; // Corresponds to quantity_liters_transferred
+    // transfer_datetime will be set by backend (DEFAULT NOW() or from intake_datetime)
+    // notes are optional and not currently captured in the wizard's TankDistributionData
+  }>;
 }
 
 // --- Airline and Fuel Price Rules --- //
