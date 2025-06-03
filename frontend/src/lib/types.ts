@@ -56,6 +56,7 @@ export interface FuelOperation {
   tip_saobracaja?: string | null; // Npr. 'Izvoz', 'Unutarnji saobraćaj'
   createdAt?: string;
   updatedAt?: string;
+  delivery_note_number?: string | null; // Broj dostavnice
 
   // Polja koja trenutno nedostaju u API odgovoru, ali mogu biti korisna
   fuel_type?: string | null; 

@@ -51,6 +51,7 @@ export default function FuelIntakeDisplay() {
   const [records, setRecords] = useState<FuelIntakeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalFuelIntake, setTotalFuelIntake] = useState<number>(0);
   const [filters, setFilters] = useState<Partial<FuelIntakeFilters>>({
     fuel_type: 'all',
     fuel_category: 'all',
@@ -97,9 +98,16 @@ export default function FuelIntakeDisplay() {
         console.log(`Record ID ${record.id} - Full record:`, JSON.stringify(record, null, 2));
       });
       setRecords(data);
+      
+      // Calculate total fuel intake
+      const total = data.reduce((sum, record) => {
+        return sum + (record.quantity_liters_received || 0);
+      }, 0);
+      setTotalFuelIntake(total);
     } catch (err: any) {
       setError(err.message || 'Greška pri učitavanju zapisa o prijemu goriva.');
       setRecords([]);
+      setTotalFuelIntake(0);
     } finally {
       setLoading(false);
     }
@@ -488,6 +496,50 @@ export default function FuelIntakeDisplay() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* Summary Card for Total Fuel Intake */}
+        {!loading && !error && records.length > 0 && (
+          <div className="mt-6 p-6 bg-[#1a1a1a]/90 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+            <div className="flex flex-col space-y-2">
+              <h3 className="text-lg font-semibold text-white">Ukupni Prijem Goriva za Filtrirani Period</h3>
+              <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
+                <div className="p-4 bg-[#F08080]/30 rounded-xl border border-[#F08080]/20 w-full md:w-auto">
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-8 h-8 text-[#F08080]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6H4C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H20C21.1046 18 22 17.1046 22 16V8C22 6.89543 21.1046 6 20 6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm text-white/70">Ukupna količina</p>
+                      <p className="text-2xl font-bold text-white">{totalFuelIntake.toLocaleString('bs-BA')} L</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-[#4d4c4c]/50 rounded-xl border border-white/10 flex-1 w-full md:w-auto">
+                  <div className="text-sm text-white/70">Period</div>
+                  <div className="text-white font-medium">
+                    {dayjs(filters.startDate).format('DD.MM.YYYY')} - {dayjs(filters.endDate).format('DD.MM.YYYY')}
+                  </div>
+                </div>
+                
+                {filters.fuel_type && filters.fuel_type !== 'all' && (
+                  <div className="p-4 bg-[#4d4c4c]/50 rounded-xl border border-white/10 w-full md:w-auto">
+                    <div className="text-sm text-white/70">Tip goriva</div>
+                    <div className="text-white font-medium">{filters.fuel_type}</div>
+                  </div>
+                )}
+                
+                {filters.fuel_category && filters.fuel_category !== 'all' && (
+                  <div className="p-4 bg-[#4d4c4c]/50 rounded-xl border border-white/10 w-full md:w-auto">
+                    <div className="text-sm text-white/70">Kategorija</div>
+                    <div className="text-white font-medium">{filters.fuel_category}</div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       

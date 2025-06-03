@@ -49,6 +49,7 @@ interface TankerTransaction {
   destination_id?: number;
   supplier_name?: string;
   invoice_number?: string;
+  delivery_note_number?: string;
   price_per_liter?: number;
   notes?: string;
   user?: string;
@@ -169,8 +170,67 @@ const TankerVehiclesReport: React.FC = () => {
           })
       ));
 
-      const combinedTransactions = tanksData.flat();
-      console.log('Combined transactions:', combinedTransactions);
+      let combinedTransactions = tanksData.flat();
+      
+      // For aircraft_fueling transactions, fetch delivery note numbers from fueling operations
+      const aircraftFuelingTransactions = combinedTransactions.filter(t => t.type === 'aircraft_fueling');
+      
+      if (aircraftFuelingTransactions.length > 0) {
+        try {
+          // Fetch all fueling operations
+          const fuelingOperationsResponse = await fetchWithAuth<any>('/api/fuel/fueling-operations');
+          let fuelingOperations: any[] = [];
+          
+          // Check if the response has operations property (FuelingOperationsApiResponse) or is an array
+          if (fuelingOperationsResponse.operations) {
+            fuelingOperations = fuelingOperationsResponse.operations;
+          } else if (Array.isArray(fuelingOperationsResponse)) {
+            fuelingOperations = fuelingOperationsResponse;
+          }
+          
+          // Map delivery note numbers to aircraft fueling transactions based on matching criteria
+          // (matching by date, destination, and quantity)
+          combinedTransactions = combinedTransactions.map(transaction => {
+            if (transaction.type === 'aircraft_fueling') {
+              // Find matching fueling operation
+              const matchingOperation = fuelingOperations.find((op: any) => {
+                const transactionDate = new Date(transaction.transaction_datetime);
+                const operationDate = new Date(op.dateTime);
+                
+                // Check if dates are within 1 minute of each other and quantities match
+                const timeDiff = Math.abs(transactionDate.getTime() - operationDate.getTime());
+                const isDateClose = timeDiff < 60000; // 60000 ms = 1 minute
+                
+                // Check if destination matches aircraft registration or destination_name
+                const destinationMatches = 
+                  (op.aircraft_registration && transaction.destination_name && 
+                   transaction.destination_name.includes(op.aircraft_registration)) ||
+                  (op.aircraft && transaction.destination_name && 
+                   transaction.destination_name.includes(op.aircraft.registration));
+                
+                // Check if quantities are close enough (allowing for small rounding differences)
+                const quantityDiff = Math.abs(transaction.quantity_liters - op.quantity_liters);
+                const isQuantityClose = quantityDiff < 1; // Less than 1 liter difference
+                
+                return isDateClose && (destinationMatches || isQuantityClose);
+              });
+              
+              if (matchingOperation) {
+                return {
+                  ...transaction,
+                  delivery_note_number: matchingOperation.delivery_note_number || null
+                };
+              }
+            }
+            return transaction;
+          });
+        } catch (error) {
+          console.error('Error fetching fueling operations:', error);
+          // Continue with existing transactions if fueling operations fetch fails
+        }
+      }
+      
+      console.log('Combined transactions with delivery notes:', combinedTransactions);
       setAllTransactions(combinedTransactions);
       setTransactions(combinedTransactions);
       applyFilters(combinedTransactions);
@@ -359,37 +419,51 @@ const TankerVehiclesReport: React.FC = () => {
       getTransactionTypeDisplay(transaction.type),
       transaction.quantity_liters.toLocaleString('hr-HR', { minimumFractionDigits: 2 }) + ' L',
       getSourceDestinationDisplay(transaction),
-      transaction.invoice_number || '-',
+      transaction.type === 'aircraft_fueling' ? (transaction.delivery_note_number || '-') : (transaction.invoice_number || '-'),
       transaction.notes || '-'
     ]);
 
     // Calculate total quantity
     const totalQuantity = filteredTransactions.reduce((sum, transaction) => sum + transaction.quantity_liters, 0);
 
+    // Create a variable to store the last table end position
+    let lastTableEndY = 0;
+  
     // Generate table
     autoTable(doc, {
       startY: filterText ? 42 : 36,
-      head: [['Datum/Vrijeme', 'Cisterna', 'Tip Transakcije', 'Količina', 'Izvor/Odredište', 'Broj Fakture', 'Napomena']],
+      head: [['Datum/Vrijeme', 'Cisterna', 'Tip Transakcije', 'Količina', 'Izvor/Odredište', 'Broj Dostavnice', 'Napomena']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [22, 160, 133], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 },
       styles: { font: FONT_NAME, fontSize: 9 },
       didDrawPage: function(data) {
-        // Add footer with total information
-        doc.setFont(FONT_NAME, 'bold');
-        doc.setFontSize(10);
-        
-        // Display totals in the footer
+        // Add page number on all pages
         const footerY = doc.internal.pageSize.height - 20;
-        doc.text(`Ukupno Transakcija: ${filteredTransactions.length}`, data.settings.margin.left, footerY - 8);
-        doc.text(`Ukupna Količina: ${totalQuantity.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L`, data.settings.margin.left, footerY - 4);
-        
-        // Add page number
         doc.setFont(FONT_NAME, 'normal');
         doc.setFontSize(8);
         doc.text(`Stranica ${data.pageNumber}`, doc.internal.pageSize.width - 20, footerY);
+      },
+      didDrawCell: function(data) {
+        // Track the last cell position to know where the table ends
+        lastTableEndY = Math.max(lastTableEndY, data.cell.y + data.cell.height);
       }
     });
+  
+    // Add a new page for the summary if we're close to the bottom of the page
+    if (lastTableEndY > doc.internal.pageSize.height - 40) {
+      doc.addPage();
+      lastTableEndY = 20; // Reset Y position on new page
+    }
+  
+    // Add summary at the end of the document (after the table)
+    // This ensures it only appears once at the end
+    const summaryY = lastTableEndY + 10;
+    doc.setFont(FONT_NAME, 'bold');
+    doc.setFontSize(10);
+    doc.text('Sumarni Podaci:', 14, summaryY);
+    doc.text(`Ukupno Transakcija: ${filteredTransactions.length}`, 14, summaryY + 6);
+    doc.text(`Ukupna Količina: ${totalQuantity.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} L`, 14, summaryY + 12);
 
     // Save the PDF
     doc.save(`Izvjestaj_Transakcije_Cisterni_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -714,7 +788,7 @@ const TankerVehiclesReport: React.FC = () => {
                           <TableHead className="bg-gray-50 dark:bg-gray-800">Tip transakcije</TableHead>
                           <TableHead className="bg-gray-50 dark:bg-gray-800 text-right">Količina (L)</TableHead>
                           <TableHead className="bg-gray-50 dark:bg-gray-800">Izvor/Odredište</TableHead>
-                          <TableHead className="bg-gray-50 dark:bg-gray-800">Broj fakture</TableHead>
+                          <TableHead className="bg-gray-50 dark:bg-gray-800">Broj dostavnice</TableHead>
                           <TableHead className="bg-gray-50 dark:bg-gray-800">Napomena</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -739,7 +813,7 @@ const TankerVehiclesReport: React.FC = () => {
                               {getSourceDestinationDisplay(transaction)}
                             </TableCell>
                             <TableCell>
-                              {transaction.invoice_number || '-'}
+                              {transaction.type === 'aircraft_fueling' ? (transaction.delivery_note_number || '-') : (transaction.invoice_number || '-')}
                             </TableCell>
                             <TableCell>
                               {transaction.notes || '-'}

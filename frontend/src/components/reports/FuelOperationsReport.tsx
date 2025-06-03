@@ -441,7 +441,7 @@ export default function FuelOperationsReport() {
       "Tip Goriva", 
       "Tank", 
       "Let", 
-      "Operator", 
+      "Broj dostavnice", 
       "Tip Saobraćaja"
     ];
     const tableRows: any[][] = [];
@@ -460,7 +460,7 @@ export default function FuelOperationsReport() {
         op.tank?.fuel_type || 'N/A', 
         `${op.tank?.identifier || 'N/A'} ${op.tank?.name ? `(${op.tank.name})` : ''}`.trim(),
         op.flight_number || 'N/A',
-        op.operator_name || 'N/A',
+        op.delivery_note_number || 'N/A',
         op.tip_saobracaja || 'N/A'
       ];
       tableRows.push(operationData);
@@ -562,7 +562,7 @@ export default function FuelOperationsReport() {
         9: { cellWidth: 18, halign: 'center' },  // Tip Goriva
         10: { cellWidth: 20, halign: 'center' }, // Tank
         11: { cellWidth: 12, halign: 'center' }, // Let
-        12: { cellWidth: 20, halign: 'center' }, // Operator
+        12: { cellWidth: 20, halign: 'center' }, // Broj dostavnice
         13: { cellWidth: 20, halign: 'center' }  // Tip Saobraćaja
       },
       didDrawPage: function (data) {
@@ -881,7 +881,7 @@ export default function FuelOperationsReport() {
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Tip Goriva</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Cisterna</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Br. Leta</th>
-                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Operater</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Broj dostavnice</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Tip Saob.</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '9%' }}>Dokumenti</th>
                       </tr>
@@ -925,7 +925,7 @@ export default function FuelOperationsReport() {
                             </span>
                           ) : <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
                           <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.flight_number || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
-                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.operator_name || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.delivery_note_number || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
                           <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">
                             {op.tip_saobracaja ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium text-[0.65rem] bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
