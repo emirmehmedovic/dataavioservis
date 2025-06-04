@@ -38,6 +38,13 @@ interface DocumentUploadData {
 }
 
 // Placeholder for form data structure - will be expanded
+// Currency enum for price input
+enum Currency {
+  BAM = "BAM",
+  EUR = "EUR",
+  USD = "USD"
+}
+
 interface IntakeFormData {
   // Step 1
   delivery_vehicle_plate?: string;
@@ -52,6 +59,11 @@ interface IntakeFormData {
   supplier_name?: string;
   delivery_note_number?: string;
   customs_declaration_number?: string;
+  
+  // Price related fields
+  price_per_kg?: number;
+  currency?: Currency;
+  total_price?: number; // Calculated field
   
   // Step 2
   tank_distributions?: TankDistributionData[];
@@ -88,6 +100,7 @@ export default function NewFuelIntakeFormWizard() {
     tank_distributions: [{}],
     document_uploads: [], // Initialize document_uploads
     fuel_category: FuelCategory.DOMESTIC, // Default to Domaće tržište
+    currency: Currency.BAM, // Default currency to BAM
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,13 +151,29 @@ export default function NewFuelIntakeFormWizard() {
       value = target.type === 'checkbox' ? target.checked : target.value;
     }
 
-    const numericFields: (keyof IntakeFormData)[] = ['quantity_liters_received', 'quantity_kg_received', 'specific_gravity'];
+    const numericFields: (keyof IntakeFormData)[] = ['quantity_liters_received', 'quantity_kg_received', 'specific_gravity', 'price_per_kg'];
 
     if (numericFields.includes(name)) {
       value = value === '' ? undefined : parseFloat(value);
     }
     
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Update form data with the new value
+    setFormData(prev => {
+      const updatedData = { ...prev, [name]: value };
+      
+      // Recalculate total price if either quantity_kg_received or price_per_kg changes
+      if (name === 'quantity_kg_received' || name === 'price_per_kg') {
+        const kg = name === 'quantity_kg_received' ? value : updatedData.quantity_kg_received;
+        const price = name === 'price_per_kg' ? value : updatedData.price_per_kg;
+        
+        if (kg !== undefined && kg !== null && price !== undefined && price !== null) {
+          updatedData.total_price = kg * price;
+        }
+      }
+      
+      return updatedData;
+    });
+    
     // Clear validation error for this field when user starts typing
     if (formErrors[name as keyof Omit<IntakeFormData, 'tank_distributions' | 'document_uploads'>]) {
       setFormErrors(prev => ({ ...prev, [name as keyof Omit<IntakeFormData, 'tank_distributions' | 'document_uploads'>]: undefined }));
@@ -285,6 +314,19 @@ export default function NewFuelIntakeFormWizard() {
     } else {
       if (qL <= 0) errors.quantity_liters_received = "Količina (L) mora biti pozitivna.";
       if (qKg <= 0) errors.quantity_kg_received = "Količina (KG) mora biti pozitivna.";
+    }
+    
+    // Validate price-related fields
+    const pricePerKg = formData.price_per_kg;
+    if (pricePerKg !== undefined && pricePerKg !== null) {
+      if (pricePerKg <= 0) {
+        errors.price_per_kg = "Cijena po KG mora biti pozitivna.";
+      }
+      
+      // If price is provided, currency is required
+      if (!formData.currency) {
+        errors.currency = "Valuta je obavezna kada je cijena unesena.";
+      }
     }
 
     setFormErrors(errors);
@@ -547,6 +589,10 @@ export default function NewFuelIntakeFormWizard() {
         supplier_name: formData.supplier_name || null,
         delivery_note_number: formData.delivery_note_number || null,
         customs_declaration_number: formData.customs_declaration_number || null,
+        // Add price-related fields
+        price_per_kg: formData.price_per_kg !== undefined ? formData.price_per_kg : null,
+        currency: formData.currency ? String(formData.currency) : null,
+        total_price: formData.total_price !== undefined ? formData.total_price : null,
         tank_distributions: formData.tank_distributions!
           .filter(dist => dist.tank_id && dist.quantity_liters)
           .map(dist => ({
@@ -820,6 +866,97 @@ export default function NewFuelIntakeFormWizard() {
                 </div>
                 <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-100">Unesite količinu u litrama i kilogramima, a specifična gustoća će biti automatski izračunata.</p>
                 
+                {/* Price Information Card */}
+                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                  <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-yellow-600">
+                      <line x1="12" y1="1" x2="12" y2="23"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    Informacije o cijeni
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="price_per_kg" className="text-gray-700">Cijena po KG</Label>
+                      <div className="relative">
+                        <Input 
+                          id="price_per_kg" 
+                          name="price_per_kg" 
+                          type="number" 
+                          step="0.001"
+                          min="0"
+                          value={formData.price_per_kg || ''} 
+                          onChange={(e) => {
+                            handleInputChange(e);
+                            // Calculate total price if both price and quantity are available
+                            const pricePerKg = parseFloat(e.target.value);
+                            if (!isNaN(pricePerKg) && formData.quantity_kg_received) {
+                              setFormData(prev => ({
+                                ...prev,
+                                total_price: pricePerKg * formData.quantity_kg_received!
+                              }));
+                            }
+                          }}
+                          className="mt-1 pl-9 focus:ring-blue-500"
+                        />
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                          </svg>
+                        </div>
+                      </div>
+                      {formErrors.price_per_kg && <p className="text-xs text-red-500 mt-1">{formErrors.price_per_kg}</p>}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="currency" className="text-gray-700">Valuta</Label>
+                      <Select 
+                        name="currency"
+                        onValueChange={(value: string) => {
+                          handleInputChange(value, 'currency');
+                        }}
+                        value={formData.currency || Currency.BAM}
+                      >
+                        <SelectTrigger className={`w-full mt-1 ${formErrors.currency ? 'border-red-500' : ''}`}>
+                          <SelectValue placeholder="Odaberite valutu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(Currency).map(currency => (
+                            <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {formErrors.currency && <p className="text-xs text-red-500 mt-1">{formErrors.currency}</p>}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="total_price" className="text-gray-700">Ukupna cijena</Label>
+                      <div className="relative">
+                        <Input 
+                          id="total_price" 
+                          name="total_price" 
+                          type="number" 
+                          step="0.01"
+                          min="0"
+                          value={formData.total_price || ''} 
+                          readOnly
+                          className="mt-1 pl-9 bg-gray-50 text-gray-700 font-medium"
+                        />
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="M12 8v8"/>
+                            <path d="M16 12H8"/>
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 italic">Automatski izračunato</p>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="mt-4">
                   <Label htmlFor="fuel_type" className="text-gray-700">Tip goriva</Label>
                   <Select 
@@ -933,7 +1070,7 @@ export default function NewFuelIntakeFormWizard() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="customs_declaration_number" className="text-gray-700">Broj carinske deklaracije (opciono)</Label>
+                    <Label htmlFor="customs_declaration_number" className="text-gray-700">Broj carinske prijave/MRN (opciono)</Label>
                     <div className="relative">
                       <Input 
                         id="customs_declaration_number" 

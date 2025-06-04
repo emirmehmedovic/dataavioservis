@@ -7,8 +7,14 @@ export enum FuelType {
 }
 
 export enum FuelCategory {
-  EXPORT = 'Izvoz',
-  DOMESTIC = 'Domaće tržište'
+  EXPORT = "Izvoz",
+  DOMESTIC = "Domaće tržište",
+}
+
+export enum Currency {
+  BAM = "BAM",
+  EUR = "EUR",
+  USD = "USD",
 }
 
 export enum FixedTankStatus {
@@ -103,6 +109,9 @@ export interface FuelIntakeRecord {
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;
+  price_per_kg?: number | null; // Price per kilogram
+  currency?: Currency | null; // Currency (BAM, EUR, USD)
+  total_price?: number | null; // Total price calculated as price_per_kg * quantity_kg_received
   createdAt: string; // ISO date-time string
   updatedAt: string; // ISO date-time string
   documents?: FuelIntakeDocument[];      // Included by backend controller

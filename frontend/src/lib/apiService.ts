@@ -571,6 +571,9 @@ export interface CreateFuelIntakePayload {
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;
+  price_per_kg?: number | null; // Price per kilogram
+  currency?: string | null; // Currency (BAM, EUR, USD)
+  total_price?: number | null; // Total price calculated as price_per_kg * quantity_kg_received
   tank_distributions: Array<{
     tank_id: number; // Corresponds to fixed_storage_tank_id in FixedTankTransfers model
     quantity_liters: number; // Corresponds to quantity_liters_transferred

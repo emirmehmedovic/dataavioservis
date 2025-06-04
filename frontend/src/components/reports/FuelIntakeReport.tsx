@@ -75,9 +75,9 @@ interface FuelIntakeReportFilters {
   fuel_type: FuelType | 'all';
   startDate: string;
   endDate: string;
-  supplier_name: string;
+  customs_declaration_number: string;
   refinery_name: string;
-  delivery_note_number: string;
+  currency: string;
   fuel_category: string;
 }
 
@@ -108,9 +108,9 @@ const FuelIntakeReport: React.FC = () => {
     fuel_type: 'all',
     startDate: getFirstDayOfMonth(),
     endDate: getLastDayOfMonth(),
-    supplier_name: '',
+    customs_declaration_number: '',
     refinery_name: '',
-    delivery_note_number: '',
+    currency: '',
     fuel_category: 'all',
   });
 
@@ -137,16 +137,30 @@ const FuelIntakeReport: React.FC = () => {
         endDateObj.setHours(23, 59, 59, 999);
         activeFilters.endDate = endDateObj.toISOString();
       }
-      if (filters.supplier_name) activeFilters.supplier_name = filters.supplier_name;
+      if (filters.customs_declaration_number) activeFilters.customs_declaration_number = filters.customs_declaration_number;
       if (filters.refinery_name) activeFilters.refinery_name = filters.refinery_name;
-      if (filters.delivery_note_number) activeFilters.delivery_note_number = filters.delivery_note_number;
+      if (filters.currency) activeFilters.currency = filters.currency;
       if (filters.fuel_category && filters.fuel_category !== 'all') activeFilters.fuel_category = filters.fuel_category;
       
       console.log('Active filters:', activeFilters);
+      console.log('Filters object:', filters);
+      
+      // Debug: Test if the customs_declaration_number and currency filters are working
+      if (filters.customs_declaration_number) {
+        console.log('MRN filter is set to:', filters.customs_declaration_number);
+      }
+      
+      if (filters.currency) {
+        console.log('Currency filter is set to:', filters.currency);
+      }
 
       const queryParams = new URLSearchParams(activeFilters).toString();
       const url = `/api/fuel/intake-records${queryParams ? `?${queryParams}` : ''}`;
+      console.log('API URL:', url);
+      
       const data = await fetchWithAuth<FuelIntakeRecord[]>(url);
+      console.log('API Response:', data);
+      
       setRecords(data);
       
       // Calculate totals
@@ -161,14 +175,11 @@ const FuelIntakeReport: React.FC = () => {
             return sum + record.quantity_kg_received;
           }
           // Otherwise calculate from liters and specific gravity
-          else if (record.quantity_liters_received && record.specific_gravity) {
-            return sum + (record.quantity_liters_received * record.specific_gravity);
-          }
-          return sum;
+          return sum + (record.quantity_liters_received * record.specific_gravity || 0);
         }, 0);
         
         // Calculate average density
-        const avgDensity = totalLitersValue > 0 ? totalKgValue / totalLitersValue : 0;
+        const avgDensity = data.reduce((sum, record) => sum + (record.specific_gravity || 0), 0) / data.length;
         
         setTotalLiters(totalLitersValue);
         setTotalKg(totalKgValue);
@@ -179,10 +190,10 @@ const FuelIntakeReport: React.FC = () => {
         setTotalKg(0);
         setAverageDensity(0);
       }
-    } catch (err) {
-      console.error('Error fetching fuel intake records:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Nepoznata greška.';
-      setError(`Greška pri učitavanju zapisa o ulazu goriva: ${errorMessage}`);
+    } catch (error: any) {
+      console.error('Error fetching records:', error);
+      const errorMessage = error.message || 'Greška prilikom dohvatanja zapisa';
+      setError(errorMessage);
       toast.error(`Greška: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -312,7 +323,7 @@ const FuelIntakeReport: React.FC = () => {
     doc.text(record.delivery_note_number || 'N/A', valueX, yPos); yPos += lineHeight;
 
     doc.setFont(FONT_NAME, 'bold'); 
-    doc.text('Carinska Deklaracija:', leftMargin, yPos);
+    doc.text('Broj carinske prijave/MRN:', leftMargin, yPos);
     doc.setFont(FONT_NAME, 'normal'); 
     doc.text(record.customs_declaration_number || 'N/A', valueX, yPos); yPos += lineHeight;
 
@@ -320,6 +331,29 @@ const FuelIntakeReport: React.FC = () => {
     doc.text('Rafinerija:', leftMargin, yPos);
     doc.setFont(FONT_NAME, 'normal'); 
     doc.text(record.refinery_name || 'N/A', valueX, yPos); yPos += lineHeight;
+    
+    // Add price-related fields
+    if (typeof record.price_per_kg === 'number') {
+      doc.setFont(FONT_NAME, 'bold'); 
+      doc.text('Cijena po KG:', leftMargin, yPos);
+      doc.setFont(FONT_NAME, 'normal'); 
+      doc.text(`${record.price_per_kg.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, valueX, yPos); yPos += lineHeight;
+      
+      doc.setFont(FONT_NAME, 'bold'); 
+      doc.text('Valuta:', leftMargin, yPos);
+      doc.setFont(FONT_NAME, 'normal'); 
+      doc.text(record.currency || 'N/A', valueX, yPos); yPos += lineHeight;
+      
+      doc.setFont(FONT_NAME, 'bold'); 
+      doc.text('Ukupna cijena:', leftMargin, yPos);
+      doc.setFont(FONT_NAME, 'normal'); 
+      if (typeof record.total_price === 'number') {
+        doc.text(`${record.total_price.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${record.currency || ''}`, valueX, yPos);
+      } else {
+        doc.text('N/A', valueX, yPos);
+      }
+      yPos += lineHeight;
+    }
 
     yPos += 10;
 
@@ -331,7 +365,7 @@ const FuelIntakeReport: React.FC = () => {
       doc.setFontSize(10);
       doc.setFont(FONT_NAME, 'normal'); 
 
-      const transferTableBody = record.fixedTankTransfers.map(t => [
+      const transferTableBody = record.fixedTankTransfers.map((t: any) => [
         t.affectedFixedTank?.tank_name || 'N/A',
         t.affectedFixedTank?.tank_identifier || 'N/A',
         t.quantity_liters_transferred.toLocaleString('bs-BA'),
@@ -365,7 +399,7 @@ const FuelIntakeReport: React.FC = () => {
       doc.setFontSize(10);
       doc.setFont(FONT_NAME, 'normal'); 
 
-      const docTableBody = record.documents.map(d => [
+      const docTableBody = record.documents.map((d: any) => [
         d.document_name,
         d.document_type,
         d.file_size_bytes ? `${(d.file_size_bytes / 1024).toFixed(2)} KB` : 'N/A'
@@ -398,7 +432,11 @@ const FuelIntakeReport: React.FC = () => {
       return;
     }
 
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
     registerFont(doc);
 
     doc.setFontSize(16);
@@ -414,9 +452,15 @@ const FuelIntakeReport: React.FC = () => {
 
     const tableData = records.map(record => [
       formatDateTimeForReport(record.intake_datetime),
+      record.customs_declaration_number || 'N/A',
       record.fuel_type,
       record.fuel_category || 'Domaće tržište',
       record.quantity_liters_received.toLocaleString() + ' L',
+      record.quantity_kg_received.toLocaleString() + ' kg',
+      record.specific_gravity.toFixed(4),
+      typeof record.price_per_kg === 'number' ? record.price_per_kg.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A',
+      record.currency || 'N/A',
+      typeof record.total_price === 'number' ? record.total_price.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + (record.currency ? ` ${record.currency}` : '') : 'N/A',
       record.refinery_name || 'N/A',
       record.supplier_name || 'N/A',
       record.delivery_note_number || 'N/A'
@@ -426,24 +470,46 @@ const FuelIntakeReport: React.FC = () => {
     const totalLiters = records.reduce((sum, record) => sum + (record.quantity_liters_received || 0), 0);
     const totalKg = records.reduce((sum, record) => sum + (record.quantity_kg_received || 0), 0);
     const averageDensity = totalLiters > 0 ? totalKg / totalLiters : 0;
+    const totalPrice = records.reduce((sum, record) => sum + (record.total_price || 0), 0);
 
     autoTable(doc, {
       startY: 40,
-      head: [['Datum', 'Tip Goriva', 'Kategorija', 'Količina', 'Rafinerija', 'Br. Otpremnice']],
+      head: [['Datum', 'MRN', 'Tip Goriva', 'Kategorija', 'Količina (L)', 'Količina (kg)', 'Gustoća', 'Cijena/KG', 'Valuta', 'Ukupna Cijena', 'Rafinerija', 'Dobavljač', 'Br. Otpremnice']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [22, 160, 133], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 }, 
       styles: { font: FONT_NAME, fontSize: 9 },
-      didDrawPage: function(data) {
+      didDrawPage: function(data: any) {
         // Add footer with total information
         doc.setFont(FONT_NAME, 'bold');
         doc.setFontSize(10);
         
         // Display totals in the footer
         const footerY = doc.internal.pageSize.height - 20;
-        doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA')} L`, data.settings.margin.left, footerY - 8);
-        doc.text(`Ukupno Kilograma: ${totalKg.toLocaleString('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, data.settings.margin.left, footerY - 4);
-        doc.text(`Prosječna Gustoća: ${averageDensity.toLocaleString('bs-BA', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg/L`, data.settings.margin.left, footerY);
+        doc.text(`Ukupno Litara: ${totalLiters.toLocaleString('bs-BA')} L`, data.settings.margin.left, footerY - 12);
+        doc.text(`Ukupno Kilograma: ${totalKg.toLocaleString('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`, data.settings.margin.left, footerY - 8);
+        doc.text(`Prosječna Gustoća: ${averageDensity.toLocaleString('bs-BA', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg/L`, data.settings.margin.left, footerY - 4);
+        
+        // Add total price if there are records with price information
+        if (totalPrice > 0) {
+          // Find the most common currency
+          const currencyCounts: Record<string, number> = {};
+          records.forEach(record => {
+            if (record.currency) {
+              currencyCounts[record.currency] = (currencyCounts[record.currency] || 0) + 1;
+            }
+          });
+          let mostCommonCurrency = '';
+          let maxCount = 0;
+          for (const currency in currencyCounts) {
+            if (currencyCounts[currency] > maxCount) {
+              maxCount = currencyCounts[currency];
+              mostCommonCurrency = currency;
+            }
+          }
+          
+          doc.text(`Ukupna Cijena: ${totalPrice.toLocaleString('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${mostCommonCurrency}`, data.settings.margin.left, footerY);
+        }
         
         // Add page number
         doc.setFont(FONT_NAME, 'normal');
@@ -582,26 +648,7 @@ const FuelIntakeReport: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="supplierFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dobavljač:</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <Input
-                      type="text"
-                      id="supplierFilter"
-                      className="pl-10 bg-gray-50 dark:bg-gray-900"
-                      placeholder="Naziv dobavljača"
-                      value={filters.supplier_name}
-                      onChange={(e) => handleFilterChange('supplier_name', e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="deliveryNoteFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Br. Otpremnice:</label>
+                  <label htmlFor="mrnFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">MRN:</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -610,11 +657,30 @@ const FuelIntakeReport: React.FC = () => {
                     </div>
                     <Input
                       type="text"
-                      id="deliveryNoteFilter"
+                      id="mrnFilter"
                       className="pl-10 bg-gray-50 dark:bg-gray-900"
-                      placeholder="Broj otpremnice"
-                      value={filters.delivery_note_number}
-                      onChange={(e) => handleFilterChange('delivery_note_number', e.target.value)}
+                      placeholder="MRN broj"
+                      value={filters.customs_declaration_number}
+                      onChange={(e) => handleFilterChange('customs_declaration_number', e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="currencyFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Valuta:</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <Input
+                      type="text"
+                      id="currencyFilter"
+                      className="pl-10 bg-gray-50 dark:bg-gray-900"
+                      placeholder="Valuta (npr. EUR, BAM)"
+                      value={filters.currency}
+                      onChange={(e) => handleFilterChange('currency', e.target.value)}
                     />
                   </div>
                 </div>
@@ -689,56 +755,70 @@ const FuelIntakeReport: React.FC = () => {
                   <table className="w-full table-auto divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Datum</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tip Goriva</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kategorija</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Količina (L)</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rafinerija</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dobavljač</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Br. Otpremnice</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Akcije</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">Datum</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">MRN</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Tip Goriva</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Kategorija</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Količina (L)</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Cijena/KG</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12">Valuta</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Ukupno</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">Rafinerija</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">Dobavljač</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Br. Otpr.</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12">Akcije</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {records.map((record) => (
                         <React.Fragment key={record.id}>
                           <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{formatDateTimeForReport(record.intake_datetime)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.fuel_type === FuelType.JET_A1 ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' : 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'}`}>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">{formatDateTimeForReport(record.intake_datetime)}</td>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">{record.customs_declaration_number || 'N/A'}</td>
+                            <td className="px-2 py-2">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${record.fuel_type === FuelType.JET_A1 ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' : 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'}`}>
                                 {record.fuel_type}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(record.fuel_category === 'Izvoz') ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'}`}>
+                            <td className="px-2 py-2">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${(record.fuel_category === 'Izvoz') ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'}`}>
                                 {record.fuel_category || 'Domaće tržište'}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300 font-medium">
                               {record.quantity_liters_received.toLocaleString('hr-HR')} L
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{record.refinery_name || 'N/A'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{record.supplier_name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{record.delivery_note_number}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 flex space-x-2">
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">
+                              {typeof record.price_per_kg === 'number' ? record.price_per_kg.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'}
+                            </td>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">
+                              {record.currency || 'N/A'}
+                            </td>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">
+                              {typeof record.total_price === 'number' ? record.total_price.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'}
+                            </td>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">{record.refinery_name || 'N/A'}</td>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">{record.supplier_name}</td>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">{record.delivery_note_number}</td>
+                            <td className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 flex flex-col space-y-1">
                               {record.documents && record.documents.length > 0 && (
                                 <Button 
                                   variant="outline" 
                                   size="sm"
                                   onClick={() => setExpandedRecordId(expandedRecordId === record.id ? null : record.id)}
-                                  className="border-indigo-500 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
+                                  className="border-indigo-500 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-900/20 px-2 py-1 text-xs"
                                 >
-                                  <DocumentTextIcon className="h-4 w-4 mr-1" /> 
-                                  Dokumenti ({record.documents.length})
+                                  <DocumentTextIcon className="h-3 w-3 mr-1" /> 
+                                  Dok ({record.documents.length})
                                 </Button>
                               )}
                               <Button 
                                 variant="outline" 
                                 size="sm" 
                                 onClick={() => handleExportSingleRecordToPdf(record)}
-                                className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20 px-2 py-1 text-xs"
                               >
-                                <FileText className="h-4 w-4 mr-1" />
+                                <FileText className="h-3 w-3 mr-1" />
                                 PDF
                               </Button>
                             </td>

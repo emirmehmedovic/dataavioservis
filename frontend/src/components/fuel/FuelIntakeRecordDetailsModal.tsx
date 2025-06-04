@@ -66,6 +66,9 @@ export interface FuelIntakeRecordWithDetails {
   supplier_name?: string | null;
   delivery_note_number?: string | null;
   customs_declaration_number?: string | null;
+  price_per_kg?: number | null;
+  currency?: string | null;
+  total_price?: number | null;
   documents: ManualFuelIntakeDocument[];
   fixedTankTransfers: ManualFixedTankTransfer[];
   // Dodati ostala polja iz FuelIntakeRecords modela po potrebi
@@ -186,8 +189,26 @@ export default function FuelIntakeRecordDetailsModal({
                   <span className="font-medium text-gray-900">{record.delivery_note_number || 'N/A'}</span>
                 </div>
                 <div className="flex items-start">
-                  <span className="text-gray-500 w-40 flex-shrink-0">Carinska Deklaracija:</span>
+                  <span className="text-gray-500 w-40 flex-shrink-0">Broj carinske prijave/MRN:</span>
                   <span className="font-medium text-gray-900">{record.customs_declaration_number || 'N/A'}</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="text-gray-500 w-40 flex-shrink-0">Cijena po KG:</span>
+                  <span className="font-medium text-gray-900">
+                    {typeof record.price_per_kg === 'number' ? record.price_per_kg.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'}
+                    {record.currency ? ` ${record.currency}` : ''}
+                  </span>
+                </div>
+                <div className="flex items-start">
+                  <span className="text-gray-500 w-40 flex-shrink-0">Valuta:</span>
+                  <span className="font-medium text-gray-900">{record.currency || 'N/A'}</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="text-gray-500 w-40 flex-shrink-0">Ukupna cijena:</span>
+                  <span className="font-medium text-gray-900">
+                    {typeof record.total_price === 'number' ? record.total_price.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'}
+                    {record.currency ? ` ${record.currency}` : ''}
+                  </span>
                 </div>
               </div>
             </div>

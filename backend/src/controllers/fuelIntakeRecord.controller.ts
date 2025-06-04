@@ -21,6 +21,9 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
     supplier_name,
     delivery_note_number,
     customs_declaration_number,
+    price_per_kg,
+    currency,
+    total_price,
     tank_distributions,
   } = req.body;
 
@@ -86,6 +89,9 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
         supplier_name,
         delivery_note_number,
         customs_declaration_number,
+        price_per_kg: price_per_kg ? parseFloat(price_per_kg) : null,
+        currency: currency || null,
+        total_price: total_price ? parseFloat(total_price) : null,
       };
 
       const newFuelIntakeRecord = await tx.fuelIntakeRecords.create({
@@ -179,13 +185,33 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
 // GET /api/fuel/intake-records - Dobijanje liste svih zapisa o prijemu goriva
 export const getAllFuelIntakeRecords: RequestHandler<unknown, unknown, unknown, any> = async (req, res, next): Promise<void> => {
   try {
-    const { fuel_type, supplier_name, delivery_vehicle_plate, startDate, endDate, fuel_category, refinery_name } = req.query;
+    console.log('Query parameters received:', req.query);
+    
+    const { fuel_type, supplier_name, delivery_vehicle_plate, startDate, endDate, fuel_category, refinery_name, customs_declaration_number, currency, delivery_note_number } = req.query;
     const filters: any = {};
 
     if (fuel_type) filters.fuel_type = fuel_type as string;
     if (supplier_name) filters.supplier_name = supplier_name as string;
     if (delivery_vehicle_plate) filters.delivery_vehicle_plate = delivery_vehicle_plate as string;
     if (fuel_category) filters.fuel_category = fuel_category as string;
+    // Debug customs_declaration_number filter
+    if (customs_declaration_number) {
+      console.log('Filtering by customs_declaration_number:', customs_declaration_number);
+      filters.customs_declaration_number = {
+        contains: customs_declaration_number as string,
+        mode: 'insensitive' // Case-insensitive search
+      };
+    }
+    
+    // Debug currency filter
+    if (currency) {
+      console.log('Filtering by currency:', currency);
+      filters.currency = {
+        contains: currency as string,
+        mode: 'insensitive' // Case-insensitive search
+      };
+    }
+    if (delivery_note_number) filters.delivery_note_number = delivery_note_number as string;
     if (refinery_name) {
       filters.refinery_name = {
         contains: refinery_name as string,
@@ -198,6 +224,8 @@ export const getAllFuelIntakeRecords: RequestHandler<unknown, unknown, unknown, 
         lte: new Date(endDate as string),
       };
     }
+    
+    console.log('Constructed filters for Prisma:', filters);
 
     const records = await prisma.fuelIntakeRecords.findMany({
       where: filters,

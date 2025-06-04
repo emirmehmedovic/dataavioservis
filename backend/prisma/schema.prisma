@@ -284,6 +284,9 @@ model FuelIntakeRecords {
   supplier_name                String?
   delivery_note_number         String?
   customs_declaration_number   String?
+  price_per_kg                 Float?
+  currency                     String?
+  total_price                  Float?
   createdAt                    DateTime              @default(now())
   updatedAt                    DateTime              @updatedAt
   fuel_category                String?               @default("Domaće tržište")

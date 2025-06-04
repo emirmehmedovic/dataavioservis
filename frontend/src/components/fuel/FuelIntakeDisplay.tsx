@@ -378,14 +378,17 @@ export default function FuelIntakeDisplay() {
               <TableHeader className="bg-gray-50">
                 <TableRow>
                   <TableHead className="font-semibold">Datum</TableHead>
-                  <TableHead className="font-semibold">Dost. Cisterna</TableHead>
+                  <TableHead className="font-semibold">MRN</TableHead>
+                  <TableHead className="font-semibold">Rafinerija</TableHead>
                   <TableHead className="text-right font-semibold">Količina (L)</TableHead>
                   <TableHead className="text-right font-semibold">Količina (KG)</TableHead>
                   <TableHead className="text-right font-semibold">Gustoća</TableHead>
+                  <TableHead className="text-right font-semibold">Cijena/KG</TableHead>
+                  <TableHead className="font-semibold">Valuta</TableHead>
+                  <TableHead className="text-right font-semibold">Ukupna Cijena</TableHead>
                   <TableHead className="font-semibold">Tip Goriva</TableHead>
                   <TableHead className="font-semibold">Kategorija</TableHead>
-                  <TableHead className="font-semibold">Rafinerija</TableHead>
-                  <TableHead className="font-semibold">Carinski Br.</TableHead>
+                  <TableHead className="font-semibold">Dost. Cisterna</TableHead>
                   <TableHead className="text-center font-semibold">Akcije</TableHead>
                 </TableRow>
               </TableHeader>
@@ -397,19 +400,48 @@ export default function FuelIntakeDisplay() {
                   >
                     <TableCell>{formatDate(record.intake_datetime)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center">
-                        <svg className="w-4 h-4 text-gray-400 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M3 8H21L19 16H5L3 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M7 8V6C7 4.89543 7.89543 4 9 4H15C16.1046 4 17 4.89543 17 6V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <circle cx="7" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
-                          <circle cx="17" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
-                        </svg>
-                        {record.delivery_vehicle_plate}
-                      </div>
+                      {record.customs_declaration_number ? (
+                        <span className="text-gray-900">{record.customs_declaration_number}</span>
+                      ) : (
+                        <span className="text-gray-400 italic">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {record.refinery_name ? (
+                        <span className="text-gray-900">{record.refinery_name}</span>
+                      ) : (
+                        <span className="text-gray-400 italic">N/A</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-medium">{record.quantity_liters_received.toLocaleString()} L</TableCell>
                     <TableCell className="text-right">{record.quantity_kg_received.toLocaleString()} kg</TableCell>
                     <TableCell className="text-right">{record.specific_gravity.toFixed(4)}</TableCell>
+                    <TableCell className="text-right">
+                      {typeof record.price_per_kg === 'number' ? (
+                        record.price_per_kg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+                      ) : (
+                        <span className="text-gray-400 italic">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {record.currency ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {record.currency}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 italic">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {typeof record.total_price === 'number' ? (
+                        <span className="font-medium">
+                          {record.total_price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          {record.currency ? ` ${record.currency}` : ''}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 italic">N/A</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {record.fuel_type?.toLowerCase() === 'jet a-1'.toLowerCase() ? (
                         <div className="flex items-center">
@@ -438,18 +470,15 @@ export default function FuelIntakeDisplay() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {record.refinery_name ? (
-                        <span className="text-gray-900">{record.refinery_name}</span>
-                      ) : (
-                        <span className="text-gray-400 italic">N/A</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {record.customs_declaration_number ? (
-                        <span className="text-gray-900">{record.customs_declaration_number}</span>
-                      ) : (
-                        <span className="text-gray-400 italic">N/A</span>
-                      )}
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 text-gray-400 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 8H21L19 16H5L3 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M7 8V6C7 4.89543 7.89543 4 9 4H15C16.1046 4 17 4.89543 17 6V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="7" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
+                          <circle cx="17" cy="19" r="2" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                        {record.delivery_vehicle_plate}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center space-x-2">
