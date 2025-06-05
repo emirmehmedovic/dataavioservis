@@ -76,12 +76,18 @@ export const generatePDFInvoice = (operation: FuelingOperation): void => {
     
     doc.setFontSize(20);
     doc.setTextColor(0, 51, 102);
-    doc.text('AVIOSERVIS d.o.o.', 14, 20);
+    doc.text('HIFA-PETROL d.o.o. Sarajevo', 14, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
-    doc.text('Međunarodni aerodrom Sarajevo', 14, 28);
-    doc.text('71210 Ilidža, Bosna i Hercegovina', 14, 34);
+    doc.text('71320 Vogosca, Hotonj bb', 14, 28);
+    doc.text('tel: 033 584 370', 14, 34);
+    doc.text('fax: 033 584 382', pageWidth / 3, 34);
+    doc.text('direktor: 033 584 445, 061 799 755', 2 * pageWidth / 3, 34, { align: 'center' });
+    doc.text('PDV: 200999090005', 14, 40);
+    doc.text('ID: 4200999090005', pageWidth / 3, 40);
+    doc.text('email: info@hifapetrol.ba', 2 * pageWidth / 3, 40);
+    doc.text('www.hifapetrol.ba', pageWidth - 14, 40, { align: 'right' });
     
     // Dodaj broj fakture i datum u gornjem desnom uglu
     const invoiceNumber = `INV-${operation.id}-${new Date().getFullYear()}`;
@@ -112,13 +118,16 @@ export const generatePDFInvoice = (operation: FuelingOperation): void => {
     
     doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
-    doc.text('AVIOSERVIS d.o.o.', 14, 77);
-    doc.text('Međunarodni aerodrom Sarajevo', 14, 83);
-    doc.text('71210 Ilidža, Bosna i Hercegovina', 14, 89);
-    doc.text('ID No.: 4200468210006', 14, 95);
-    doc.text('VAT No.: 200468210006', 14, 101);
-    doc.text('Phone: +387 33 289 100', 14, 107);
-    
+    doc.text('HIFA-PETROL d.o.o.', 14, 77);
+    doc.text('Sarajevo', 14, 83);
+    doc.text('71320 Vogosca, Hotonj bb', 14, 89);
+    doc.text('ID No.: 4200999090005', 14, 95);
+    doc.text('VAT No.: 200999090005', 14, 101);
+    doc.text('Phone: 033 584 370', 14, 107);
+    doc.text('Fax: 033 584 382', 14, 113);
+    doc.text('Direktor: 033 584 445, 061 799 755', 14, 119);
+    doc.text('Email: info@hifapetrol.ba', 14, 125);
+    doc.text('Web: www.hifapetrol.ba', 14, 131);
     // Dodaj informacije o kupcu (desno)
     doc.setFontSize(11);
     doc.setTextColor(0, 51, 102);
@@ -126,10 +135,10 @@ export const generatePDFInvoice = (operation: FuelingOperation): void => {
     
     doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
-    doc.text(`${operation.airline.name}`, pageWidth / 2 + 10, 77);
-    doc.text(`${operation.airline.address || 'N/A'}`, pageWidth / 2 + 10, 83);
-    doc.text(`ID/VAT No.: ${operation.airline.taxId || 'N/A'}`, pageWidth / 2 + 10, 89);
-    doc.text(`Contact: ${operation.airline.contact_details || 'N/A'}`, pageWidth / 2 + 10, 95);
+    doc.text(`${operation.airline?.name || 'N/A'}`, pageWidth / 2 + 10, 77);
+    doc.text(`${operation.airline?.address || 'N/A'}`, pageWidth / 2 + 10, 83);
+    doc.text(`ID/VAT No.: ${operation.airline?.taxId || 'N/A'}`, pageWidth / 2 + 10, 89);
+    doc.text(`Contact: ${operation.airline?.contact_details || 'N/A'}`, pageWidth / 2 + 10, 95);
     doc.text(`Aircraft Registration: ${operation.aircraft_registration || 'N/A'}`, pageWidth / 2 + 10, 101);
     doc.text(`Destination: ${operation.destination}`, pageWidth / 2 + 10, 107);
     doc.text(`Flight Number: ${operation.flight_number || 'N/A'}`, pageWidth / 2 + 10, 113);
@@ -281,19 +290,84 @@ export const generatePDFInvoice = (operation: FuelingOperation): void => {
     const bankInfoY = yPosAfterVatNote + 10; // 10pt spacing before bank details box
     doc.setFontSize(9);
     doc.setFillColor(245, 245, 255);
-    doc.rect(14, bankInfoY, pageWidth - 28, 25, 'F');
+    doc.rect(14, bankInfoY, pageWidth - 28, 35, 'F');
     
     doc.setTextColor(0, 51, 102);
     doc.text('PAYMENT DETAILS:', 16, bankInfoY + 7);
     
     doc.setTextColor(0, 0, 0);
-    doc.text('Bank: UniCredit Bank d.d.', 16, bankInfoY + 14);
-    doc.text('IBAN: BA39 3389 0022 0000 0000', 16, bankInfoY + 21);
-    doc.text('SWIFT: UNCRBA22', pageWidth / 2 + 10, bankInfoY + 14);
-    doc.text('Reference No.: ' + invoiceNumber, pageWidth / 2 + 10, bankInfoY + 21);
+    doc.text('Reference No.: ' + invoiceNumber, pageWidth - 16, bankInfoY + 7, { align: 'right' });
+    
+    // Add bank account details in the payment details box
+    const bankFontSize = 7;
+    doc.setFontSize(bankFontSize);
+    
+    // First column of bank accounts
+    let bankY = bankInfoY + 14;
+    const bankColWidth = (pageWidth - 28) / 3;
+    
+    doc.text('Unicredit banka DD Mostar', 16, bankY);
+    doc.text('3385502203296597', 16 + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('Raiffeisen Bank DD Sarajevo', 16, bankY);
+    doc.text('1610000055460052', 16 + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('NLB Razojna banka AD Banja Luka', 16, bankY);
+    doc.text('5620068100579520', 16 + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('Bosna Bank International DD Sarajevo', 16, bankY);
+    doc.text('1410010012321008', 16 + bankColWidth - 5, bankY, { align: 'right' });
+    
+    // Second column of bank accounts
+    bankY = bankInfoY + 14;
+    const col2X = 16 + bankColWidth;
+    
+    doc.text('Intesa Sanpaolo banka Sarajevo', col2X, bankY);
+    doc.text('1542602004690547', col2X + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('Privredna banka Sarajevo dd Sarajevo', col2X, bankY);
+    doc.text('1011040053464252', col2X + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('ZiraatBank Bank BH dd Sarajevo', col2X, bankY);
+    doc.text('1861440310884661', col2X + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('NLB Tuzlanska banka DD Tuzla', col2X, bankY);
+    doc.text('1322602004200445', col2X + bankColWidth - 5, bankY, { align: 'right' });
+    
+    // Third column of bank accounts
+    bankY = bankInfoY + 14;
+    const col3X = 16 + 2 * bankColWidth;
+    
+    doc.text('Sparkasse banka DD Sarajevo', col3X, bankY);
+    doc.text('1990490086998668', col3X + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('ASA Banka DD Sarajevo', col3X, bankY);
+    doc.text('1346651006886807', col3X + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('Union banka DD Sarajevo', col3X, bankY);
+    doc.text('1020320000019213', col3X + bankColWidth - 5, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    
+    doc.text('Nova banka AD Banja Luka', col3X, bankY);
+    doc.text('5556000036056073', col3X + bankColWidth - 5, bankY, { align: 'right' });
+    
+    // IBAN and SWIFT at the bottom
+    bankY += bankFontSize * 1.2;
+    doc.text('IBAN: BA393389104805286885', 16, bankY);
+    doc.text('Addiko Bank d.d. Sarajevo: 3060003143014340', pageWidth - 16, bankY, { align: 'right' });
+    bankY += bankFontSize * 0.9;
+    doc.text('SWIFT: UNCRBA22', 16, bankY);
     
     // Dodaj podnožje - pozicionirano na dnu stranice ili nakon bankovnih podataka
-    const footerY = Math.max(bankInfoY + 35, 275); // Uzimamo veću vrijednost da izbjegnemo preklapanje
+    const footerY = Math.max(bankY + 10, 275); // Uzimamo veću vrijednost da izbjegnemo preklapanje
     doc.setDrawColor(200, 200, 220);
     doc.setLineWidth(0.5);
     doc.line(14, footerY, pageWidth - 14, footerY);
@@ -302,14 +376,14 @@ export const generatePDFInvoice = (operation: FuelingOperation): void => {
     doc.setTextColor(100, 100, 100);
     
     // Razdvojiti footer u više redova da se izbjegne sasiječeni tekst
-    doc.text('AVIOSERVIS d.o.o.', pageWidth / 2, footerY + 5, { align: 'center' });
-    doc.text('Međunarodni aerodrom Sarajevo', pageWidth / 2, footerY + 10, { align: 'center' });
-    doc.text('Phone: +387 33 289 100 | www.avioservis.ba | info@avioservis.ba', pageWidth / 2, footerY + 15, { align: 'center' });
+    doc.text('HIFA-PETROL d.o.o. Sarajevo', pageWidth / 2, footerY + 5, { align: 'center' });
+    doc.text('71320 Vogosca, Hotonj bb', pageWidth / 2, footerY + 10, { align: 'center' });
+    doc.text('Phone: 033 584 370 | Fax: 033 584 382 | www.hifapetrol.ba | info@hifapetrol.ba', pageWidth / 2, footerY + 15, { align: 'center' });
     
     // Dodaj napomenu o PDV-u
     doc.setFontSize(7);
-    doc.text('Note: Prices are shown without VAT. VAT is calculated according to applicable regulations.', 14, footerY + 15);
-    doc.text(`Invoice generated: ${new Date().toLocaleString('en-US')}`, pageWidth / 2, footerY + 20, { align: 'center' });
+    doc.text('Note: Prices are shown without VAT. VAT is calculated according to applicable regulations.', 14, footerY + 20);
+    doc.text(`Invoice generated: ${new Date().toLocaleString('en-US')}`, pageWidth - 14, footerY + 20, { align: 'right' });
     
     // Save the PDF
     doc.save(`Invoice-${invoiceNumber}.pdf`);

@@ -247,8 +247,8 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                   >
                     <option value="">Odaberite tanker</option>
                     {tanks.map((tank) => (
-                      <option key={tank.id} value={tank.id} disabled={tank.current_liters <= 0}>
-                        {tank.identifier} - {tank.name} ({tank.current_liters.toLocaleString('hr-HR')} L)
+                      <option key={tank.id} value={tank.id} disabled={(tank.current_quantity_liters || 0) <= 0}>
+                        {tank.identifier} - {tank.name} ({(tank.current_quantity_liters || 0).toLocaleString('hr-HR')} L)
                       </option>
                     ))}
                   </select>

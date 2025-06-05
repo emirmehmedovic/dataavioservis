@@ -175,13 +175,10 @@ export default function FuelOperationsReport() {
       operator_name: operation.operator_name || '',
       documents: operation.documents ? operation.documents.map(doc => ({
         id: doc.id,
-        originalFilename: doc.originalFilename,
-        mimeType: doc.mimeType,
-        sizeBytes: doc.sizeBytes,
-        storagePath: doc.storagePath,
-        uploadedAt: doc.uploadedAt,
-        fuelReceiptId: doc.fuelReceiptId,
-        fuelingOperationId: doc.fuelingOperationId || 0,
+        name: doc.originalFilename,
+        url: doc.storagePath,
+        type: doc.mimeType,
+        size: doc.sizeBytes
       })) : [],
       createdAt: operation.createdAt || '',
       updatedAt: operation.updatedAt || '',

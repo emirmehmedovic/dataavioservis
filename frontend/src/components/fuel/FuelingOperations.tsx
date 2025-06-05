@@ -119,7 +119,7 @@ export default function FuelingOperations() {
     try {
       const data = await fetchTanks();
       setTanks(data);
-      setFormData(prev => {
+      setFormData((prev: FuelingOperationFormData) => {
         if (data.length > 0 && !prev.tankId) {
           return { ...prev, tankId: data[0].id.toString() };
         }
@@ -136,7 +136,7 @@ export default function FuelingOperations() {
     try {
       const data = await fetchAirlines();
       setAirlines(data);
-      setFormData(prev => {
+      setFormData((prev: FuelingOperationFormData) => {
         // Set default airline only if not already set and airlines are fetched
         if (data.length > 0 && !prev.airlineId) {
           const firstAirline = data[0];
@@ -220,7 +220,7 @@ export default function FuelingOperations() {
     const formKey = name as keyof typeof formData;
 
     // Handle numeric inputs that are now text inputs
-    if (['quantity_liters', 'quantity_kg', 'price_per_kg', 'discount_percentage'].includes(formKey)) {
+    if (['quantity_liters', 'quantity_kg', 'price_per_kg', 'discount_percentage'].includes(formKey as string)) {
       // Provjera valjanosti unosa za sva tekstualna polja s brojevima
       const validationPatterns = {
         'quantity_liters': /^\d*(\.\d{0,2})?$/,
@@ -452,7 +452,7 @@ export default function FuelingOperations() {
     e.stopPropagation(); // Prevent row click event
     
     // Confirm deletion
-    if (!confirm(`Jeste li sigurni da želite obrisati operaciju točenja za ${operation.airline.name} (${operation.aircraft_registration})? \n\nOva akcija će vratiti ${operation.quantity_liters.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} litara goriva u cisternu ${operation.tank?.name || 'N/A'}.`)) {
+    if (!confirm(`Jeste li sigurni da želite obrisati operaciju točenja za ${operation.airline?.name || 'N/A'} (${operation.aircraft_registration || 'N/A'})? \n\nOva akcija će vratiti ${operation.quantity_liters ? operation.quantity_liters.toLocaleString('hr-HR', { minimumFractionDigits: 2 }) : '0'} litara goriva u cisternu ${operation.tank?.name || 'N/A'}.`)) {
       return;
     }
     

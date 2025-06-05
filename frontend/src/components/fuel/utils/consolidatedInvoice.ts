@@ -128,10 +128,10 @@ export const generateConsolidatedPDFInvoice = (operations: FuelingOperation[], f
     
     doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
-    doc.text(`${airline.name}`, pageWidth / 2 + 10, 77);
-    doc.text(`${airline.address || 'N/A'}`, pageWidth / 2 + 10, 83);
-    doc.text(`ID/VAT No.: ${airline.taxId || 'N/A'}`, pageWidth / 2 + 10, 89);
-    doc.text(`Contact: ${airline.contact_details || 'N/A'}`, pageWidth / 2 + 10, 95);
+    doc.text(`${airline?.name || 'N/A'}`, pageWidth / 2 + 10, 77);
+    doc.text(`${airline?.address || 'N/A'}`, pageWidth / 2 + 10, 83);
+    doc.text(`ID/VAT No.: ${airline?.taxId || 'N/A'}`, pageWidth / 2 + 10, 89);
+    doc.text(`Contact: ${airline?.contact_details || 'N/A'}`, pageWidth / 2 + 10, 95);
     doc.text('Parity - CPT Tuzla Airport', pageWidth / 2 + 10, 101);
     
     // Dodaj liniju iznad tabele
@@ -219,7 +219,7 @@ export const generateConsolidatedPDFInvoice = (operations: FuelingOperation[], f
     autoTable(doc, {
       startY: 135,
       head: [tableColumn],
-      body: tableRows,
+      body: tableRows as any[][],
       theme: 'grid',
       headStyles: { 
         fillColor: [240, 240, 250],

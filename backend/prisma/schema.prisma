@@ -192,6 +192,7 @@ model Vehicle {
   mobileTankRefills                                    MobileTankRefills[] @relation("TargetMobileTankForRefill")
   serviceRecords                                       ServiceRecord[]
   technicalDocuments                                   TechnicalDocument[]
+  valveTestRecords                                     ValveTestRecord[]
   company                                              Company             @relation(fields: [companyId], references: [id])
   location                                             Location            @relation(fields: [locationId], references: [id])
   images                                               VehicleImage[]
@@ -369,11 +370,35 @@ model ServiceItem {
   type            ServiceItemType
   description     String?
   replaced        Boolean         @default(false)
-  currentDate     DateTime?       // Datum kada je servis izvršen
-  nextDate        DateTime?       // Datum kada je sljedeći servis planiran
+  currentDate     DateTime?
+  nextDate        DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   serviceRecord   ServiceRecord   @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+}
+
+model ValveTestRecord {
+  id                        Int           @id @default(autoincrement())
+  vehicleId                 Int
+  testType                  ValveTestType
+  testDate                  DateTime
+  vehicleNumber             String
+  fuelHoseType              String
+  fuelHoseProductionDate    DateTime?
+  maxFlowRate               Float?
+  pressureReading           Float?
+  maxPressureDuringClosing  Float?
+  pressureAtZeroFlow        Float?
+  pressureAfterThirtySeconds Float?
+  pressureIncrease          Float?
+  notes                     String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  vehicle                   Vehicle       @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId])
+  @@index([testDate])
+  @@index([testType])
 }
 
 model FuelTank {
@@ -611,6 +636,11 @@ enum ServiceRecordCategory {
   HOSE_REPLACEMENT
   CALIBRATION
   OTHER
+}
+
+enum ValveTestType {
+  HECPV
+  ILPCV
 }
 
 enum ServiceItemType {

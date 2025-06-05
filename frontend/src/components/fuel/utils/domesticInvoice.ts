@@ -98,10 +98,10 @@ export const generateDomesticPDFInvoice = (operation: FuelingOperation): void =>
     doc.text('KUPAC:', 14, 65);
     doc.setFont(FONT_NAME, 'normal');
     doc.setFontSize(10);
-    doc.text(`${operation.airline.name}`, 14, 70);
-    doc.text(`${operation.airline.address || 'N/A'}`, 14, 75);
-    doc.text(`ID/PDV: ${operation.airline.taxId || 'N/A'}`, 14, 80);
-    doc.text(`Tel: ${operation.airline.contact_details || 'N/A'}`, 14, 85);
+    doc.text(`${operation.airline?.name || 'N/A'}`, 14, 70);
+    doc.text(`${operation.airline?.address || 'N/A'}`, 14, 75);
+    doc.text(`ID/PDV: ${operation.airline?.taxId || 'N/A'}`, 14, 80);
+    doc.text(`Tel: ${operation.airline?.contact_details || 'N/A'}`, 14, 85);
     
     // Add company information on the right side
     doc.setFontSize(11);
@@ -175,7 +175,7 @@ export const generateDomesticPDFInvoice = (operation: FuelingOperation): void =>
     // Apply autoTable for transaction details
     autoTable(doc, {
       head: [tableColumn],
-      body: tableRows,
+      body: tableRows as any[][],
       startY: 125,
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2, font: FONT_NAME },
@@ -544,7 +544,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
       // Apply autoTable for operations with multi-page support
       autoTable(doc, {
         head: [tableColumn],
-        body: tableRows,
+        body: tableRows as any[][],
         startY: newPageY + 5,
         theme: 'grid',
         styles: { fontSize: 8, cellPadding: 2, font: FONT_NAME },
@@ -569,7 +569,7 @@ export const generateConsolidatedDomesticPDFInvoice = (operations: FuelingOperat
       // Apply autoTable for operations with multi-page support on the same page
       autoTable(doc, {
         head: [tableColumn],
-        body: tableRows,
+        body: tableRows as any[][],
         startY: summaryFinalY + 5,
         theme: 'grid',
         styles: { fontSize: 8, cellPadding: 2, font: FONT_NAME },

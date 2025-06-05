@@ -54,26 +54,81 @@ export interface FullFuelProjectionPreset {
 export interface AirlineFE {
   id: number;
   name: string;
-  operatingDestinations?: string[]; // Added based on usage in FuelProjections
+  operatingDestinations?: string[];
+  address?: string;
+  taxId?: string;
+  contact_details?: string;
   // ... other properties
 }
 
 export interface FuelTankFE {
   id: number;
   name: string;
+  identifier: string;
+  current_quantity_liters?: number;
+  fuel_type?: string;
   // ... other properties
 }
 
 export interface FuelingOperation {
   id: number;
   quantity_liters?: number;
-  delivery_note_number?: string | null; // Added based on usage in service
-  dateTime: string; // Added for sorting historical operations
-  // ... other properties like airline, destination, date, etc.
+  delivery_note_number?: string | null;
+  dateTime: string;
+  aircraft_registration?: string;
+  airline?: AirlineFE;
+  airlineId?: string | number; // Added for xmlInvoice.ts
+  destination?: string;
+  tank?: FuelTankFE;
+  tankId?: number;
+  flight_number?: string;
+  operator_name?: string;
+  notes?: string;
+  tip_saobracaja?: string;
+  specific_density?: number;
+  quantity_kg?: number;
+  price_per_kg?: number;
+  discount_percentage?: number;
+  currency?: string;
+  total_amount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  aircraft?: { // Added for OperationDetailsModal.tsx
+    registration?: string;
+    type?: string;
+  };
+  documents?: Array<{
+    id: number;
+    name: string;
+    url: string;
+    type?: string;
+    size?: number;
+  }>;
 }
 
 export interface FuelingOperationsApiResponse {
   operations: FuelingOperation[];
   totalLiters: number;
   // ... other properties like pagination details if any
+}
+
+// Form data interface for fueling operations
+export interface FuelingOperationFormData {
+  dateTime: string;
+  aircraft_registration: string;
+  airlineId: string;
+  destination: string;
+  quantity_liters: number;
+  specific_density: number;
+  quantity_kg: number;
+  price_per_kg: number;
+  discount_percentage: number;
+  currency: string;
+  total_amount: number;
+  tankId: string;
+  flight_number: string;
+  operator_name: string;
+  notes: string;
+  tip_saobracaja: string;
+  delivery_note_number: string;
 }

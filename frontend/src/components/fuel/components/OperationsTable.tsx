@@ -46,7 +46,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ operations, handleRow
               <td className="px-3 py-4 text-sm text-gray-500 table-cell-wrap">
                 {operation.aircraft_registration || 'N/A (Sistemska letjelica)'}
               </td>
-              <td className="px-3 py-4 text-sm font-medium text-gray-900 table-cell-wrap">{operation.airline.name}</td>
+              <td className="px-3 py-4 text-sm font-medium text-gray-900 table-cell-wrap">{operation.airline?.name || 'N/A'}</td>
               <td className="px-3 py-4 text-sm text-gray-500 table-cell-wrap">{operation.destination}</td>
               <td className="px-3 py-4 text-sm text-center table-cell-wrap">
                 {operation.tank?.fuel_type?.toLowerCase() === 'jet a-1'.toLowerCase() ? (

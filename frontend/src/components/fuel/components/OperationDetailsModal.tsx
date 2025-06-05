@@ -91,7 +91,7 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avio Kompanija</div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.airline.name}</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.airline?.name || 'N/A'}</div>
                   </div>
                   <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Registracija Aviona</div>
@@ -125,7 +125,7 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                 {operation.aircraft && (
                   <div className="mt-3 bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sistemska Letjelica</div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.aircraft.vehicle_name} ({operation.aircraft.license_plate})</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.aircraft.type || 'N/A'} ({operation.aircraft.registration || 'N/A'})</div>
                   </div>
                 )}
               </div>
@@ -330,7 +330,7 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
               </div>
               <div className="p-4">
                 <div className="space-y-4">
-                  {operation.documents?.map((doc) => (
+                  {operation.documents?.map((doc: any) => (
                     <div key={doc.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex items-center">

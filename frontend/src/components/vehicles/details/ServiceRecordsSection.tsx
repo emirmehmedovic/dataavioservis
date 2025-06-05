@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import ServiceRecordDetailsModal from './ServiceRecordDetailsModal';
 import { ServiceRecord, ServiceItemType } from '@/types';
-import { FaEye, FaTrash, FaPlus, FaFileMedical, FaFileAlt, FaFileDownload } from 'react-icons/fa';
+import { ValveTestRecord, ValveTestType } from '@/types/valve';
+import { FaEye, FaTrash, FaPlus, FaFileMedical, FaFileAlt, FaFileDownload, FaVial } from 'react-icons/fa';
 import { formatServiceCategory, formatDateForDisplay } from './serviceHelpers';
-import Card from './Card';
+import Card from '@/components/vehicles/details/Card';
 import { toast } from 'react-toastify';
 import { deleteServiceRecord } from '@/lib/apiService';
 import { Loader2, FileText } from 'lucide-react';
@@ -14,6 +15,8 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { notoSansRegularBase64 } from '@/lib/fonts';
 import { notoSansBoldBase64 } from '@/lib/notoSansBoldBase64';
+import ValveTestSection from './ValveTestSection';
+import ValveTestDetailsModal from './ValveTestDetailsModal';
 
 interface ServiceRecordsSectionProps {
   vehicleId: number;
@@ -37,7 +40,10 @@ const ServiceRecordsSection: React.FC<ServiceRecordsSectionProps> = ({
   onAddWorkOrder
 }) => {
   const [deletingRecordId, setDeletingRecordId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'service' | 'workorder'>('service');
+  const [activeTab, setActiveTab] = useState<'service' | 'workorder' | 'valvetest'>('service');
+  const [selectedValveTest, setSelectedValveTest] = useState<ValveTestRecord | null>(null);
+  const [isValveTestModalOpen, setIsValveTestModalOpen] = useState<boolean>(false);
+  const [isEditingValveTest, setIsEditingValveTest] = useState<boolean>(false);
   
   // Filtriranje servisnih zapisa i radnih naloga
   const workOrders = serviceRecords.filter(record => 
@@ -217,56 +223,87 @@ const ServiceRecordsSection: React.FC<ServiceRecordsSectionProps> = ({
       <div className="mb-4 flex justify-between items-center">
         <div className="flex items-center space-x-4">
           <h3 className="text-lg font-medium text-gray-700">Historija servisa</h3>
-          <div className="flex border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setActiveTab('service')}
-              className={`px-4 py-2 text-sm font-medium ${activeTab === 'service' 
-                ? 'bg-indigo-500 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-            >
-              Servisi
-            </button>
-            <button
-              onClick={() => setActiveTab('workorder')}
-              className={`px-4 py-2 text-sm font-medium ${activeTab === 'workorder' 
-                ? 'bg-indigo-500 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-            >
-              Radni nalozi
-            </button>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setActiveTab('service')}
+                className={`px-3 py-2 text-sm font-medium rounded-xl backdrop-blur-md ${activeTab === 'service' 
+                  ? 'bg-gradient-to-r from-[#4FC3C7]/20 to-[#4FC3C7]/5 text-[#4FC3C7] border-b-2 border-[#4FC3C7]' 
+                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'}`}
+              >
+                <div className="flex items-center">
+                  <FaFileAlt className={`mr-2 ${activeTab === 'service' ? 'text-[#4FC3C7]' : ''}`} />
+                  Servisni zapisi
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('workorder')}
+                className={`px-3 py-2 text-sm font-medium rounded-xl backdrop-blur-md ${activeTab === 'workorder' 
+                  ? 'bg-gradient-to-r from-[#F08080]/20 to-[#F08080]/5 text-[#F08080] border-b-2 border-[#F08080]' 
+                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'}`}
+              >
+                <div className="flex items-center">
+                  <FileText className={`mr-2 ${activeTab === 'workorder' ? 'text-[#F08080]' : ''}`} size={16} />
+                  Radni nalozi
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('valvetest')}
+                className={`px-3 py-2 text-sm font-medium rounded-xl backdrop-blur-md ${activeTab === 'valvetest' 
+                  ? 'bg-gradient-to-r from-[#8B5CF6]/20 to-[#8B5CF6]/5 text-[#8B5CF6] border-b-2 border-[#8B5CF6]' 
+                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'}`}
+              >
+                <div className="flex items-center">
+                  <FaVial className={`mr-2 ${activeTab === 'valvetest' ? 'text-[#8B5CF6]' : ''}`} />
+                  TEST ILPCV HEPC
+                </div>
+              </button>
+            </div>
+            <div className="flex space-x-2">
+              <div className="flex space-x-2 mr-2">
+                <button
+                  onClick={() => generatePdfReport('bs')}
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 border border-red-700 rounded-xl hover:bg-red-700 transition-colors shadow-lg"
+                  title="Preuzmi PDF na bosanskom"
+                >
+                  <FileText size={16} className="mr-1.5" /> PDF (BS)
+                </button>
+                <button
+                  onClick={() => generatePdfReport('en')}
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
+                  title="Preuzmi PDF na engleskom"
+                >
+                  <FileText size={16} className="mr-1.5" /> PDF (EN)
+                </button>
+              </div>
+              {onAddWorkOrder && (
+                <button
+                  onClick={onAddWorkOrder}
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 border border-green-700 rounded-xl hover:bg-green-700 transition-colors shadow-lg"
+                >
+                  <FaFileAlt className="mr-1.5" /> Radni nalog
+                </button>
+              )}
+              <button
+                onClick={onAddRecord}
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 border border-indigo-700 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg"
+              >
+                <FaPlus className="mr-1.5" /> Servisni zapis
+              </button>
+              {activeTab === 'valvetest' && (
+                <button
+                  onClick={() => {
+                    setSelectedValveTest(null);
+                    setIsEditingValveTest(false);
+                    setIsValveTestModalOpen(true);
+                  }}
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-purple-600 border border-purple-700 rounded-xl hover:bg-purple-700 transition-colors shadow-lg ml-2"
+                >
+                  <FaPlus className="mr-1.5" /> Test ventila
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex space-x-2">
-          <div className="flex space-x-2 mr-2">
-            <button
-              onClick={() => generatePdfReport('bs')}
-              className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 border border-red-700 rounded-xl hover:bg-red-700 transition-colors shadow-lg"
-              title="Preuzmi PDF na bosanskom"
-            >
-              <FileText size={16} className="mr-1.5" /> PDF (BS)
-            </button>
-            <button
-              onClick={() => generatePdfReport('en')}
-              className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
-              title="Preuzmi PDF na engleskom"
-            >
-              <FileText size={16} className="mr-1.5" /> PDF (EN)
-            </button>
-          </div>
-          {onAddWorkOrder && (
-            <button
-              onClick={onAddWorkOrder}
-              className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 border border-green-700 rounded-xl hover:bg-green-700 transition-colors shadow-lg"
-            >
-              <FaFileAlt className="mr-1.5" /> Radni nalog
-            </button>
-          )}
-          <button
-            onClick={onAddRecord}
-            className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-orange-500 border border-orange-600 rounded-xl hover:bg-orange-600 transition-colors shadow-lg"
-          >
-            <FaPlus className="mr-1.5" /> Dodaj servis
-          </button>
         </div>
       </div>
 
@@ -348,7 +385,7 @@ const ServiceRecordsSection: React.FC<ServiceRecordsSectionProps> = ({
             </table>
           )}
         </div>
-      ) : (
+      ) : activeTab === 'workorder' ? (
         <div className="overflow-x-auto">
           {workOrders.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -420,6 +457,45 @@ const ServiceRecordsSection: React.FC<ServiceRecordsSectionProps> = ({
             </table>
           )}
         </div>
+      ) : (
+        <ValveTestSection
+          vehicleId={vehicleId}
+          onViewTest={(test) => {
+            setSelectedValveTest(test);
+            setIsEditingValveTest(true);
+            setIsValveTestModalOpen(true);
+          }}
+          onAddTest={() => {
+            setSelectedValveTest(null);
+            setIsEditingValveTest(false);
+            setIsValveTestModalOpen(true);
+          }}
+          onTestDeleted={() => {
+            // This will be called when a test is deleted
+            // No specific action needed as ValveTestSection handles its own refresh
+          }}
+        />
+      )}
+
+      {/* Valve Test Details Modal */}
+      {isValveTestModalOpen && (
+        <ValveTestDetailsModal
+          isOpen={isValveTestModalOpen}
+          onClose={() => setIsValveTestModalOpen(false)}
+          test={selectedValveTest || undefined}
+          vehicleId={vehicleId}
+          onSave={() => {
+            setIsValveTestModalOpen(false);
+            // Force the ValveTestSection to refresh by toggling the activeTab
+            // This is a workaround to trigger a re-render
+            if (activeTab === 'valvetest') {
+              const currentTab = activeTab;
+              setActiveTab('service');
+              setTimeout(() => setActiveTab(currentTab), 10);
+            }
+          }}
+          isEdit={isEditingValveTest}
+        />
       )}
     </Card>
   );

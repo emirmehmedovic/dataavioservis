@@ -111,7 +111,7 @@ export const generateConsolidatedXMLInvoice = (operations: FuelingOperation[], f
   
   // Generate a unique invoice transmission ID
   const locationCode = firstOperation.destination?.substring(0, 3).toUpperCase() || 'TZL';
-  const invoiceTransmissionId = `${locationCode}-CONS-${dayjs().format('YYYYMMDD')}-${firstOperation.airlineId}`;
+  const invoiceTransmissionId = `${locationCode}-CONS-${dayjs().format('YYYYMMDD')}-${firstOperation.airline?.id || 'UNKNOWN'}`;
   
   // Calculate totals
   const totalAmount = operations.reduce((sum, op) => sum + (op.total_amount || 0), 0);

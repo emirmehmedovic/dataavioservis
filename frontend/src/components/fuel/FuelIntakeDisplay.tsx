@@ -484,39 +484,34 @@ export default function FuelIntakeDisplay() {
                       <div className="flex justify-center space-x-2">
                         <Button 
                           variant="outline" 
-                          size="sm" 
+                          size="icon" 
                           onClick={() => handleOpenDetailsModal(record.id)} 
-                          className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors"
+                          className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors w-8 h-8 p-0"
                           disabled={loadingDetails}
+                          title="Detalji"
                         >
                           {loadingDetails && selectedRecordForDetails?.id === record.id ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin mr-2"></div>
-                              Učitavam...
-                            </>
+                            <div className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
                           ) : (
-                            <>
-                              <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Detalji
-                            </>
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
                           )}
                         </Button>
                         {(authUser?.role === 'ADMIN' || authUser?.role === 'KONTROLA') && (
                           <Button 
                             variant="outline" 
-                            size="sm" 
+                            size="icon" 
                             onClick={() => handleDeleteClick(record.id)} 
                             disabled={loadingDetails || isDeleting}
-                            className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors"
+                            className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors w-8 h-8 p-0"
+                            title="Obriši"
                           >
-                            <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                            Obriši
                           </Button>
                         )}
                       </div>

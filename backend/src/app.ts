@@ -25,6 +25,7 @@ import documentRoutes from './routes/document.routes'; // Import document routes
 import activityRoutes from './routes/activity.routes';
 import fuelPriceRuleRoutes from './routes/fuelPriceRule.routes'; // Dodane rute za pravila o cijenama goriva
 import fuelProjectionPresetRoutes from './routes/fuelProjectionPreset.routes'; // Rute za spremanje projekcija goriva
+import valveTestRoutes from './routes/valveTest.routes'; // Rute za ILPCV i HECPV testove ventila
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -75,6 +76,7 @@ app.use('/api/documents', documentRoutes); // Mount document routes for authenti
 app.use('/api/activities', activityRoutes);
 app.use('/api/fuel-price-rules', fuelPriceRuleRoutes); // Registracija ruta za pravila o cijenama goriva
 app.use('/api/fuel-projection-presets', fuelProjectionPresetRoutes);
+app.use('/api/valve-tests', valveTestRoutes); // Registracija ruta za ILPCV i HECPV testove ventila
 
 app.get('/', (req, res) => {
   res.send('Backend radi!');
