@@ -26,6 +26,10 @@ interface OperationData extends FuelingOperation {
   tip_saobracaja: string | null;
   airline: Airline & { isForeign: boolean | null };
   tank: FuelTank;
+  dateTime: Date;
+  destination: string;
+  quantity_liters: number;
+  tankId: number;
 }
 
 // New interface for our comprehensive statistics
