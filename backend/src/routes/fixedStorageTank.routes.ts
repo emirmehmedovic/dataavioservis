@@ -11,7 +11,9 @@ import {
   getFixedTankHistory,
   getTotalFixedTankIntake,
   getCombinedIntakeHistoryList,
-  transferFuelBetweenFixedTanks
+  transferFuelBetweenFixedTanks,
+  getTankFuelByCustoms,
+  getMrnTransactionHistory
 } from '../controllers/fixedStorageTank.controller';
 import { 
   createFixedStorageTankRules, 
@@ -93,6 +95,14 @@ router.delete('/:id', deleteFixedStorageTank);
 // Get transaction history for a specific fixed storage tank
 // GET /api/fuel/fixed-tanks/:tankId/history
 router.get('/:tankId/history', getFixedTankHistory);
+
+// Get fuel breakdown by customs declarations (MRN) for a specific tank
+// GET /api/fuel/fixed-tanks/:id/customs-breakdown
+router.get('/:id/customs-breakdown', getTankFuelByCustoms);
+
+// Get transaction history for a specific MRN number
+// GET /api/fuel/fixed-tanks/mrn-history/:mrnNumber
+router.get('/mrn-history/:mrnNumber', getMrnTransactionHistory);
 
 // GET /api/fuel/fixed-tanks/summary/total-intake - New route for total intake summary
 router.get('/summary/total-intake', getTotalFixedTankIntake);

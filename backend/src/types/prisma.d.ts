@@ -16,5 +16,18 @@ declare global {
   }
 }
 
+// Extend the FuelTransferToTanker model to include mrnBreakdown field
+declare module '@prisma/client' {
+  interface FuelTransferToTanker {
+    mrnBreakdown?: string | null; // JSON string sa MRN podacima
+  }
+  
+  // Extend the FuelingOperation model to include mrnBreakdown field
+  interface FuelingOperation {
+    mrnBreakdown?: string | null; // JSON string sa MRN podacima
+    parsedMrnBreakdown?: { mrn: string, quantity: number }[]; // Parsirani MRN podaci za frontend
+  }
+}
+
 // Export ValveTestType enum for use in the controller
 export { ValveTestType };

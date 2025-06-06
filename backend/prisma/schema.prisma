@@ -266,6 +266,7 @@ model FixedStorageTanks {
   fuelReceipts              FuelReceipt[]
   fuelTransfersFromTank     FuelTransferToTanker[]
   mobileTankRefills         MobileTankRefills[]    @relation("SourceFixedTankForMobileRefill")
+  tankFuelByCustoms         TankFuelByCustoms[]
 
   @@index([fuel_type])
   @@index([status])
@@ -293,9 +294,11 @@ model FuelIntakeRecords {
   fuel_category                String?               @default("Domaće tržište")
   fixedTankTransfers           FixedTankTransfers[]
   documents                    FuelIntakeDocuments[]
+  tankFuelByCustoms            TankFuelByCustoms[]
 
   @@index([intake_datetime])
   @@index([fuel_type])
+  @@index([customs_declaration_number])
 }
 
 model FuelIntakeDocuments {
@@ -416,6 +419,7 @@ model FuelTank {
   refills               FuelTankRefill[]
   fuelTransfersAsTarget FuelTransferToTanker[] @relation("TransferToFuelTank")
   fuelingOperations     FuelingOperation[]
+  mobileTankCustoms     MobileTankCustoms[]
 }
 
 model FuelTankRefill {
@@ -472,6 +476,7 @@ model FuelTransferToTanker {
   notes                    String?
   userId                   Int
   targetFuelTankId         Int
+  mrnBreakdown             String?           // JSON string sa MRN podacima
   sourceFixedStorageTank   FixedStorageTanks @relation(fields: [sourceFixedStorageTankId], references: [id])
   targetFuelTank           FuelTank          @relation("TransferToFuelTank", fields: [targetFuelTankId], references: [id])
   user                     User              @relation(fields: [userId], references: [id])
@@ -492,6 +497,7 @@ model FuelDrainRecord {
   userId             Int
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+  mrnBreakdown       String?            // JSON string za praćenje MRN podataka u operacijama istakanja
   sourceFixedTank    FixedStorageTanks? @relation(fields: [sourceFixedTankId], references: [id])
   sourceMobileTank   FuelTank?          @relation(fields: [sourceMobileTankId], references: [id])
   user               User               @relation(fields: [userId], references: [id])
@@ -539,6 +545,7 @@ model FuelingOperation {
   total_amount          Decimal            @db.Decimal(15, 5)
   discount_percentage   Float?
   delivery_note_number  String?
+  mrnBreakdown          String?            // JSON string sa MRN podacima
   documents             AttachedDocument[]
   aircraft              Vehicle?           @relation(fields: [aircraftId], references: [id])
   airline               Airline            @relation(fields: [airlineId], references: [id])
@@ -626,6 +633,8 @@ enum FixedTankActivityType {
   INTERNAL_TRANSFER_OUT
   INTERNAL_TRANSFER_IN
   FUEL_DRAIN
+  FUEL_RETURN
+  TANKER_TRANSFER_OUT
 }
 
 enum ServiceRecordCategory {
@@ -699,4 +708,45 @@ enum ServiceItemType {
   
   // Other
   OTHER
+}
+
+// Nova tabela za praćenje goriva po carinskim prijavama (MRN)
+model TankFuelByCustoms {
+  id                         Int               @id @default(autoincrement())
+  fixed_tank_id              Int
+  fuel_intake_record_id      Int
+  customs_declaration_number String
+  quantity_liters            Float
+  date_added                 DateTime          @default(now())
+  remaining_quantity_liters  Float
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+  
+  // Relacije
+  fixedTank                  FixedStorageTanks @relation(fields: [fixed_tank_id], references: [id])
+  fuelIntakeRecord           FuelIntakeRecords @relation(fields: [fuel_intake_record_id], references: [id], onDelete: Cascade)
+
+  @@index([fixed_tank_id])
+  @@index([fuel_intake_record_id])
+  @@index([customs_declaration_number])
+  @@index([date_added])
+}
+
+model MobileTankCustoms {
+  id                         Int               @id @default(autoincrement())
+  mobile_tank_id            Int
+  customs_declaration_number String
+  quantity_liters            Float
+  date_added                 DateTime          @default(now())
+  remaining_quantity_liters  Float
+  supplier_name              String?
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+  
+  // Relacije
+  mobileTank                 FuelTank          @relation(fields: [mobile_tank_id], references: [id])
+
+  @@index([mobile_tank_id])
+  @@index([customs_declaration_number])
+  @@index([date_added])
 }

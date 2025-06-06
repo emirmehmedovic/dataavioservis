@@ -134,6 +134,8 @@ export default function FuelOperationsReport() {
       ...operation,
       aircraft_registration: operation.aircraft_registration || null,
       airlineId: operation.airlineId || 0,
+      mrnBreakdown: operation.mrnBreakdown || null,
+      parsedMrnBreakdown: operation.parsedMrnBreakdown || null,
       airline: operation.airline ? {
         id: operation.airline.id,
         name: operation.airline.name,
@@ -266,7 +268,25 @@ export default function FuelOperationsReport() {
         // Handle both array response and object response with operations property
         if (Array.isArray(responseData)) {
           console.log('Response is an array with', responseData.length, 'operations');
-          setOperations(responseData);
+          
+          // Parse MRN breakdown data from JSON string
+          const operationsWithParsedMrn = responseData.map((op: FuelOperation) => {
+            if (op.mrnBreakdown) {
+              try {
+                const parsedMrn = JSON.parse(op.mrnBreakdown);
+                return {
+                  ...op,
+                  parsedMrnBreakdown: parsedMrn
+                };
+              } catch (e) {
+                console.error(`Greška pri parsiranju MRN podataka za operaciju ID ${op.id}:`, e);
+                return op;
+              }
+            }
+            return op;
+          });
+          
+          setOperations(operationsWithParsedMrn);
           // Calculate total liters from operations
           const totalLitersValue = responseData.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
           // Calculate total kg from operations
@@ -289,23 +309,40 @@ export default function FuelOperationsReport() {
           setTotalKg(totalKgValue);
           setAverageDensity(avgDensity);
           setRevenueByCurrency(currencyTotals);
-        } else if (responseData && typeof responseData === 'object' && 'operations' in responseData) {
-          console.log('Response has operations property');
-          const operations = responseData.operations as FuelOperation[];
-          setOperations(operations);
+        } else if (responseData.operations && Array.isArray(responseData.operations)) {
+          console.log('Response is an object with operations array containing', responseData.operations.length, 'operations');
+          
+          // Parse MRN breakdown data from JSON string
+          const operationsWithParsedMrn = responseData.operations.map((op: FuelOperation) => {
+            if (op.mrnBreakdown) {
+              try {
+                const parsedMrn = JSON.parse(op.mrnBreakdown);
+                return {
+                  ...op,
+                  parsedMrnBreakdown: parsedMrn
+                };
+              } catch (e) {
+                console.error(`Greška pri parsiranju MRN podataka za operaciju ID ${op.id}:`, e);
+                return op;
+              }
+            }
+            return op;
+          });
+          
+          setOperations(operationsWithParsedMrn);
           
           // If totalLiters is provided in the response, use it; otherwise calculate
           const totalLitersValue = responseData.totalLiters as number || 
-            operations.reduce((sum, op) => sum + (op.quantity_liters || 0), 0);
+            responseData.operations.reduce((sum: number, op: FuelOperation) => sum + (op.quantity_liters || 0), 0);
           
           // Calculate total kg from operations
-          const totalKgValue = operations.reduce((sum, op) => sum + (op.quantity_kg || 0), 0);
+          const totalKgValue = operationsWithParsedMrn.reduce((sum: number, op: FuelOperation) => sum + (op.quantity_kg || 0), 0);
           // Calculate average density (kg/L)
           const avgDensity = totalLitersValue > 0 ? totalKgValue / totalLitersValue : 0;
           
           // Calculate revenue by currency
           const currencyTotals: {[key: string]: number} = {};
-          operations.forEach(op => {
+          operationsWithParsedMrn.forEach((op: FuelOperation) => {
             const currency = op.currency || 'BAM';
             const revenue = (op.quantity_kg || 0) * (op.price_per_kg || 0);
             if (!currencyTotals[currency]) {
@@ -439,11 +476,20 @@ export default function FuelOperationsReport() {
       "Tank", 
       "Let", 
       "Broj dostavnice", 
+      "MRN podaci",
       "Tip Saobraćaja"
     ];
     const tableRows: any[][] = [];
 
     operations.forEach(op => {
+      // Formatiraj MRN podatke za prikaz
+      let mrnDisplay = 'N/A';
+      if (op.parsedMrnBreakdown && op.parsedMrnBreakdown.length > 0) {
+        mrnDisplay = op.parsedMrnBreakdown
+          .map(item => `${item.mrn}: ${item.quantity.toLocaleString('bs-BA')} L`)
+          .join('\n');
+      }
+      
       const operationData = [
         formatDate(op.dateTime),
         op.aircraft_registration || 'N/A',
@@ -458,6 +504,7 @@ export default function FuelOperationsReport() {
         `${op.tank?.identifier || 'N/A'} ${op.tank?.name ? `(${op.tank.name})` : ''}`.trim(),
         op.flight_number || 'N/A',
         op.delivery_note_number || 'N/A',
+        mrnDisplay,
         op.tip_saobracaja || 'N/A'
       ];
       tableRows.push(operationData);
@@ -879,6 +926,7 @@ export default function FuelOperationsReport() {
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Cisterna</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '6%' }}>Br. Leta</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Broj dostavnice</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>MRN podaci</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '7%' }}>Tip Saob.</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ wordWrap: 'break-word', width: '9%' }}>Dokumenti</th>
                       </tr>
@@ -923,6 +971,23 @@ export default function FuelOperationsReport() {
                           ) : <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
                           <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.flight_number || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
                           <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">{op.delivery_note_number || <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>}</td>
+                          <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">
+                            {op.parsedMrnBreakdown && op.parsedMrnBreakdown.length > 0 ? (
+                              <div className="flex flex-col space-y-1">
+                                {op.parsedMrnBreakdown.map((mrnItem, index) => (
+                                  <span 
+                                    key={`${mrnItem.mrn}-${index}`}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium text-[0.65rem] bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100"
+                                    title={`${mrnItem.quantity.toLocaleString('bs-BA')} L`}
+                                  >
+                                    {mrnItem.mrn.length > 10 ? `${mrnItem.mrn.substring(0, 10)}...` : mrnItem.mrn}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-[0.65rem] py-0 h-4">N/A</Badge>
+                            )}
+                          </td>
                           <td className="px-3 py-2 text-[0.68rem] text-gray-700 dark:text-gray-300 table-cell-wrap">
                             {op.tip_saobracaja ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium text-[0.65rem] bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">

@@ -32,6 +32,9 @@ router.post('/tanks/:id/refills', authenticateToken, checkRole(['ADMIN', 'FUEL_O
 // Fuel Tank Transactions route
 router.get('/tanks/:id/transactions', authenticateToken, fuelTankController.getTankTransactions);
 
+// Fuel Tank Customs Breakdown (MRN) route
+router.get('/tanks/:id/customs-breakdown', authenticateToken, fuelTankController.getMobileTankCustomsBreakdown);
+
 // Mount Fueling Operation routes
 router.use('/operations', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), fuelingOperationRoutes);
 

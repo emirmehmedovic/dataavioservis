@@ -303,7 +303,27 @@ export default function NewFuelIntakeFormWizard() {
     if (!formData.fuel_category) {
       errors.fuel_category = "Kategorija je obavezna.";
     }
-
+    // Validacija MRN broja - obavezan i mora biti u ispravnom formatu
+    if (!formData.customs_declaration_number?.trim()) {
+      errors.customs_declaration_number = "MRN broj je obavezan.";
+    } else {
+      // Podržani formati MRN broja:
+      // 1. Standardni format: 2 slova koda zemlje + 6 cifara godine i dana + 8 alfanumeričkih znakova + 1 kontrolna cifra
+      // 2. Alternativni format 1: 2 slova koda zemlje + 16 cifara
+      // 3. Alternativni format 2: 2 broja + 2 slova + 12 brojeva + 1 slovo + 1 broj
+      // 4. Testni formati: počinju s 'TEST' ili 'UNTRACKED'
+      const standardMrnRegex = /^[A-Z]{2}\d{6}[A-Z0-9]{8}\d{1}$/;
+      const alternativeMrnRegex1 = /^[A-Z]{2}\d{16}$/;
+      const alternativeMrnRegex2 = /^\d{2}[A-Z]{2}\d{12}[A-Z]{1}\d{1}$/;
+      const testMrnRegex = /^(TEST|UNTRACKED)/;
+      
+      if (!standardMrnRegex.test(formData.customs_declaration_number) && 
+          !alternativeMrnRegex1.test(formData.customs_declaration_number) && 
+          !alternativeMrnRegex2.test(formData.customs_declaration_number) && 
+          !testMrnRegex.test(formData.customs_declaration_number)) {
+        errors.customs_declaration_number = "MRN mora biti u jednom od podržanih formata: 2 slova države + 16 brojeva (npr. BA1234567890123456), 2 broja + 2 slova + 12 brojeva + 1 slovo + 1 broj (npr. 24BA010304000120J6), ili standardni EU format.";
+      }
+    }
     const qL = formData.quantity_liters_received;
     const qKg = formData.quantity_kg_received;
     
@@ -1070,15 +1090,19 @@ export default function NewFuelIntakeFormWizard() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="customs_declaration_number" className="text-gray-700">Broj carinske prijave/MRN (opciono)</Label>
+                    <Label htmlFor="customs_declaration_number" className="text-gray-700">Broj carinske prijave/MRN *</Label>
                     <div className="relative">
                       <Input 
                         id="customs_declaration_number" 
                         name="customs_declaration_number" 
                         value={formData.customs_declaration_number || ''} 
-                        onChange={handleInputChange} 
-                        className="mt-1 pl-9 focus:ring-blue-500"
+                        onChange={(e) => handleInputChange(e)}
+                        className={`mt-1 block w-full rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${formErrors.customs_declaration_number ? 'border-red-500' : 'border-gray-300'}`}
+                        placeholder="Unesite broj carinske prijave/MRN"
                       />
+                      {formErrors.customs_declaration_number && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.customs_declaration_number}</p>
+                      )}
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>

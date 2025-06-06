@@ -78,6 +78,10 @@ interface FuelOperation {
   destinationMobileTank?: MobileTank | null;
   aircraft?: Aircraft | null;
   
+  // MRN tracking fields
+  mrnBreakdown?: string;
+  parsedMrnBreakdown?: Array<{mrn: string; quantity: number}>;
+  
   // Additional properties from individual FuelOperationsReport
   aircraft_registration?: string;
   airline?: { name: string };
@@ -115,6 +119,7 @@ interface FuelIntakeRecord {
   userId: number;
   createdAt: string;
   updatedAt: string;
+  customs_declaration_number?: string; // MRN broj carinske prijave
   tank?: FixedTank;
   supplier?: Supplier;
   user?: User;
@@ -296,7 +301,7 @@ const ConsolidatedReportExport: React.FC = () => {
             console.error('Error fetching tanker vehicles data:', err);
             return [];
           }),
-
+          
         // 4. Fuel Drain Records
         fetchWithAuth(`/api/fuel/drains/records?startDate=${formattedStartDate}&endDate=${formattedEndDate}`)
           .catch(err => {
@@ -304,7 +309,7 @@ const ConsolidatedReportExport: React.FC = () => {
             return [];
           })
       ]);
-      
+
       // Extract data from results, using empty arrays for failed requests
       const fuelOperationsData = fuelOperationsResult.status === 'fulfilled' ? 
         (fuelOperationsResult.value as FuelOperation[]) : [];
@@ -318,25 +323,42 @@ const ConsolidatedReportExport: React.FC = () => {
       const fuelDrainData = fuelDrainResult.status === 'fulfilled' ? 
         (fuelDrainResult.value as FuelDrainData[]) : [];
 
+      // Parse MRN breakdown data for fuel operations
+      const operationsWithParsedMrn = fuelOperationsData.map((operation: FuelOperation) => {
+        if (operation.mrnBreakdown) {
+          try {
+            const parsedMrnBreakdown = JSON.parse(operation.mrnBreakdown);
+            return {
+              ...operation,
+              parsedMrnBreakdown
+            };
+          } catch (e) {
+            console.error(`Error parsing MRN breakdown for operation ${operation.id}:`, e);
+            return operation;
+          }
+        }
+        return operation;
+      });
+
       // Check if we have at least some data to generate a report
       if (
-        fuelOperationsData.length === 0 && 
+        operationsWithParsedMrn.length === 0 && 
         fuelIntakeData.length === 0 && 
         tankerVehiclesData.length === 0 && 
         fuelDrainData.length === 0
       ) {
-        toast.error('Nema podataka za odabrani period ili su svi API pozivi neuspješni.');
+        toast.error('Nema podataka za odabrani period.');
         return;
       }
 
       // Generate the consolidated PDF with available data
       generateConsolidatedPdf(
-        fuelOperationsData, 
+        operationsWithParsedMrn, 
         fuelIntakeData, 
         tankerVehiclesData, 
         fuelDrainData
       );
-
+      
       // Show notification if some data couldn't be fetched
       if (
         fuelOperationsResult.status === 'rejected' || 
@@ -425,6 +447,39 @@ const ConsolidatedReportExport: React.FC = () => {
       doc.text('Nema podataka o operacijama goriva za odabrani period.', 14, currentY);
       currentY += 10;
     } else {
+      // Pomoćna funkcija za formatiranje MRN podataka
+      const formatMrnData = (operation: FuelOperation) => {
+        let mrnDataToDisplay: Array<{mrn: string; quantity: number}> = [];
+        
+        try {
+          // Prvo provjeri parsedMrnBreakdown koji dolazi direktno s backenda
+          if (operation.parsedMrnBreakdown && Array.isArray(operation.parsedMrnBreakdown)) {
+            mrnDataToDisplay = operation.parsedMrnBreakdown;
+          }
+          // Ako nema parsedMrnBreakdown, pokušaj parsirati mrnBreakdown string
+          else if (typeof operation.mrnBreakdown === 'string') {
+            const parsedData = JSON.parse(operation.mrnBreakdown);
+            if (Array.isArray(parsedData)) {
+              mrnDataToDisplay = parsedData;
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing MRN data:', e);
+          // Nastavi s praznim nizom ako je došlo do greške
+        }
+        
+        // Formatiraj MRN podatke za prikaz
+        if (mrnDataToDisplay.length === 0) {
+          return 'N/A';
+        }
+        
+        return mrnDataToDisplay.map(item => 
+          `${item.mrn}: ${typeof item.quantity === 'number' ? 
+            item.quantity.toLocaleString('bs-BA', { minimumFractionDigits: 2 }) : 
+            item.quantity} L`
+        ).join('\n');
+      };
+      
       // Prepare table data for fuel operations - match format from FuelOperationsReport.tsx
       const fuelOperationsTableData = fuelOperations.map(operation => [
         formatDateTimeForReport(operation.dateTime || new Date()),
@@ -448,7 +503,8 @@ const ConsolidatedReportExport: React.FC = () => {
         operation.tank ? `${operation.tank.identifier || 'N/A'} ${operation.tank.name ? `(${operation.tank.name})` : ''}`.trim() : 'N/A',
         operation.flight_number || 'N/A',
         operation.operator_name || 'N/A',
-        operation.tip_saobracaja || 'N/A'
+        operation.tip_saobracaja || 'N/A',
+        formatMrnData(operation)
       ]);
       
       // Generate table for fuel operations - match headers from FuelOperationsReport.tsx
@@ -467,7 +523,8 @@ const ConsolidatedReportExport: React.FC = () => {
           'Tank', 
           'Let', 
           'Operator', 
-          'Tip Saobraćaja'
+          'Tip Saobraćaja',
+          'MRN podaci'
         ]],
         body: fuelOperationsTableData,
         startY: currentY,
@@ -620,19 +677,20 @@ const ConsolidatedReportExport: React.FC = () => {
         intake.fuel_type || intake.tank?.fuel_type || 'N/A',
         intake.fuel_category || 'Domaće tržište',
         (intake.quantity_liters_received !== undefined && intake.quantity_liters_received !== null) 
-          ? intake.quantity_liters_received.toLocaleString() + ' L' 
+          ? intake.quantity_liters_received.toLocaleString('bs-BA', { minimumFractionDigits: 2 }) + ' L' 
           : (intake.quantityLiters !== undefined && intake.quantityLiters !== null)
-            ? intake.quantityLiters.toLocaleString() + ' L'
-            : '0 L',
+            ? intake.quantityLiters.toLocaleString('bs-BA', { minimumFractionDigits: 2 }) + ' L'
+            : '0.00 L',
         intake.refinery_name || 'N/A',
         intake.supplier_name || intake.supplier?.name || 'N/A',
-        intake.delivery_note_number || intake.invoiceNumber || 'N/A'
+        intake.delivery_note_number || intake.invoiceNumber || 'N/A',
+        intake.customs_declaration_number || 'N/A' // Dodajemo MRN polje
       ]);
 
       // Generate table for fuel intake - match headers from FuelIntakeReport.tsx
       autoTable(doc, {
         startY: currentY,
-        head: [['Datum/Vrijeme', 'Tip Goriva', 'Kategorija', 'Količina', 'Rafinerija', 'Dobavljač', 'Broj Otpremnice']],
+        head: [['Datum/Vrijeme', 'Tip Goriva', 'Kategorija', 'Količina', 'Rafinerija', 'Dobavljač', 'Broj Otpremnice', 'MRN']],
         body: fuelIntakeTableData,
         theme: 'grid',
         headStyles: { fillColor: [79, 70, 229], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },

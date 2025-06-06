@@ -13,6 +13,178 @@ interface OperationDetailsModalProps {
 }
 
 const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation, onClose }) => {
+  // Pomoćna funkcija za renderiranje MRN tablice
+  const renderMrnTable = (mrnData: any[]) => {
+    if (!mrnData || !Array.isArray(mrnData) || mrnData.length === 0) {
+      return null;
+    }
+    
+    // Provjeri strukturu svakog elementa i format podataka
+    let formattedData: Array<{mrnNumber: string, quantity: number}> = [];
+    
+    mrnData.forEach((item) => {
+      // Format 1: { mrn: '24BA010304000120D6', quantity: 6648.00 }
+      if (item && typeof item === 'object' && 'quantity' in item) {
+        // Standardni format s mrn i quantity poljima
+        if ('mrn' in item && item.mrn) {
+          formattedData.push({
+            mrnNumber: item.mrn,
+            quantity: typeof item.quantity === 'number' ? item.quantity : parseFloat(item.quantity) || 0
+          });
+        } else {
+          // Ako nema mrn polja ili je prazno, prikaži N/A
+          formattedData.push({
+            mrnNumber: 'N/A',
+            quantity: typeof item.quantity === 'number' ? item.quantity : parseFloat(item.quantity) || 0
+          });
+        }
+      }
+      // Format 2: { '24BA010304000120D6': 6648.00 } - ključ je MRN, vrijednost je količina
+      else if (item && typeof item === 'object') {
+        const keys = Object.keys(item);
+        if (keys.length === 1) {
+          const key = keys[0];
+          const value = item[key];
+          
+          // Ako ključ nije 'quantity', to je MRN broj
+          if (key.toLowerCase() !== 'quantity') {
+            formattedData.push({
+              mrnNumber: key,
+              quantity: typeof value === 'number' ? value : parseFloat(value) || 0
+            });
+          }
+          // Ako je ključ 'quantity', dodaj s oznakom 'N/A' za MRN
+          else {
+            formattedData.push({
+              mrnNumber: 'N/A',
+              quantity: typeof value === 'number' ? value : parseFloat(value) || 0
+            });
+          }
+        }
+      }
+    });
+    
+    // Ako nema formatiranih podataka, ne prikazuj tablicu
+    if (formattedData.length === 0) {
+      return null;
+    }
+
+    return (
+      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-6">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold flex items-center text-gray-800 dark:text-gray-200">
+            <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            MRN Podaci
+          </h3>
+        </div>
+        <div className="p-4">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">MRN Broj</th>
+                  <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Količina (L)</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                {formattedData.map((item, index) => (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{item.mrnNumber}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                      {typeof item.quantity === 'number' ? item.quantity.toFixed(2) : item.quantity}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    );
+  };
+  
+  // Pomoćna funkcija za renderiranje MRN sekcije
+  const renderMrnSection = () => {
+    // Debug: ispiši sve podatke o operaciji
+    console.log('Operation data:', operation);
+    console.log('MRN Breakdown:', operation.mrnBreakdown);
+    console.log('Parsed MRN Breakdown:', operation.parsedMrnBreakdown);
+    
+    // Pripremi podatke za prikaz
+    let mrnDataToDisplay: any[] = [];
+    
+    try {
+      // Prvo provjeri parsedMrnBreakdown koji dolazi direktno s backenda
+      if (operation.parsedMrnBreakdown && Array.isArray(operation.parsedMrnBreakdown)) {
+        console.log('Using parsedMrnBreakdown:', operation.parsedMrnBreakdown);
+        mrnDataToDisplay = operation.parsedMrnBreakdown;
+      }
+      // Ako nema parsedMrnBreakdown, pokušaj parsirati mrnBreakdown string
+      else if (typeof operation.mrnBreakdown === 'string') {
+        console.log('Parsing mrnBreakdown string:', operation.mrnBreakdown);
+        const parsedData = JSON.parse(operation.mrnBreakdown);
+        if (Array.isArray(parsedData)) {
+          mrnDataToDisplay = parsedData;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing MRN data:', e);
+      // Nastavi s praznim nizom ako je došlo do greške
+    }
+    
+    // Uvijek prikaži MRN sekciju, čak i ako nema podataka
+    return (
+      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-6">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold flex items-center text-gray-800 dark:text-gray-200">
+            <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            MRN Podaci
+          </h3>
+        </div>
+        <div className="p-4">
+          {mrnDataToDisplay.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">MRN Broj</th>
+                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Količina (L)</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                  {mrnDataToDisplay.map((item, index) => {
+                    const mrnNumber = item.mrn || (Object.keys(item).length === 1 ? Object.keys(item)[0] : 'N/A');
+                    const quantity = item.quantity || (Object.keys(item).length === 1 ? item[Object.keys(item)[0]] : 0);
+                    
+                    return (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{mrnNumber}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                          {typeof quantity === 'number' ? quantity.toFixed(2) : quantity}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <p className="mt-2">Nema dostupnih MRN podataka za ovu operaciju</p>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  };
+  
   // Create a portal to render the modal outside of the current component hierarchy
   // This ensures the modal is displayed over the entire viewport regardless of parent containers
   
@@ -69,6 +241,9 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
         </div>
         
         <div className="p-6 space-y-6">
+          {/* MRN Podaci - Prikazuje se samo ako postoje MRN podaci */}
+          {renderMrnSection()}
+          
           {/* Osnovni Podaci */}
           <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-750 px-4 py-3 border-b border-gray-200 dark:border-gray-700">

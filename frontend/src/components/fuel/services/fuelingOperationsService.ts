@@ -2,6 +2,19 @@ import { fetchWithAuth } from '@/lib/apiService';
 import dayjs from 'dayjs';
 import { FuelingOperation, FuelingOperationsApiResponse, FuelTankFE, AirlineFE, ProjectionResult, TotalProjection, FuelProjectionPresetData, CalculatedResultsData, FullFuelProjectionPreset } from '../types';
 
+/**
+ * Fetch a single fueling operation by ID
+ */
+export const fetchFuelingOperation = async (id: number): Promise<FuelingOperation> => {
+  try {
+    const response = await fetchWithAuth(`/api/fuel/operations/${id}`);
+    return response as FuelingOperation;
+  } catch (error) {
+    console.error('Error fetching fueling operation:', error);
+    throw error;
+  }
+};
+
 
 
 /**

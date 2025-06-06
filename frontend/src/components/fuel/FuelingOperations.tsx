@@ -24,10 +24,11 @@ import {
   fetchTanks, 
   fetchAirlines, 
   addFuelingOperation,
-  deleteFuelingOperation
+  deleteFuelingOperation,
+  fetchFuelingOperation
 } from './services/fuelingOperationsService';
 import { getFuelPriceRules } from '@/lib/apiService'; // Added import for fetching rules
-import { formatDate, generatePDFInvoice } from './utils/helpers';
+import { formatDate, generatePDFInvoice, API_BASE_URL } from './utils/helpers';
 import { generateConsolidatedPDFInvoice } from './utils/consolidatedInvoice';
 import { generateConsolidatedXMLInvoice, downloadXML } from './utils/xmlInvoice';
 import { generateConsolidatedDomesticPDFInvoice } from './utils/domesticInvoice';
@@ -442,9 +443,23 @@ export default function FuelingOperations() {
   };
 
   // Handle row click to show details
-  const handleRowClick = (operation: FuelingOperation) => {
+  const handleRowClick = async (operation: FuelingOperation) => {
+    // Prvo postavimo trenutnu operaciju da se prikaže modalni prozor odmah
     setSelectedOperationForDetails(operation);
     setShowDetailsModal(true);
+    
+    // Zatim dohvatimo svježe podatke s backenda koristeći autenticirani API poziv
+    try {
+      const freshData = await fetchFuelingOperation(operation.id);
+      console.log('Fetched operation details:', freshData);
+      if (freshData) {
+        // Ažuriramo operaciju s novim podacima
+        setSelectedOperationForDetails(freshData);
+      }
+    } catch (error) {
+      console.error('Error in handleRowClick:', error);
+      toast.error('Greška pri dohvaćanju detalja operacije');
+    }
   };
   
   // Handle delete operation

@@ -469,6 +469,49 @@ export const deleteFixedTank = async (tankId: number): Promise<{ message: string
   });
 };
 
+// Definicija tipova za MRN podatke
+export interface CustomsBreakdownItem {
+  mrn: string;
+  quantity: number;
+  date_received: string;
+}
+
+export interface CustomsBreakdownResponse {
+  tank?: any;
+  customs_breakdown?: Array<{
+    id: number;
+    customs_declaration_number: string;
+    quantity_liters: number;
+    remaining_quantity_liters: number;
+    date_added: string;
+  }>;
+  total_customs_tracked_liters?: number;
+}
+
+// Function for fetching tank customs breakdown (MRN stanje) for fixed tanks
+export const getFixedTankCustomsBreakdown = async (tankId: number): Promise<CustomsBreakdownResponse | CustomsBreakdownItem[]> => {
+  try {
+    const url = `${API_BASE_URL}/api/fuel/fixed-tanks/${tankId}/customs-breakdown`;
+    const data = await fetchWithAuth<CustomsBreakdownResponse | CustomsBreakdownItem[]>(url);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching customs breakdown for tank ID ${tankId}:`, error);
+    throw error; // Rethrow to be handled by the calling component
+  }
+};
+
+// Function for fetching tank customs breakdown (MRN stanje) for mobile tanks
+export const getMobileTankCustomsBreakdown = async (tankId: number): Promise<CustomsBreakdownResponse | CustomsBreakdownItem[]> => {
+  try {
+    const url = `${API_BASE_URL}/api/fuel/tanks/${tankId}/customs-breakdown`;
+    const data = await fetchWithAuth<CustomsBreakdownResponse | CustomsBreakdownItem[]>(url);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching customs breakdown for mobile tank ID ${tankId}:`, error);
+    throw error; // Rethrow to be handled by the calling component
+  }
+};
+
 // Function for fetching tank history
 export const getFixedTankHistory = async (
   tankId: number,

@@ -66,7 +66,56 @@ export const getAllFuelingOperations = async (req: Request, res: Response): Prom
       },
     });
     
-    res.status(200).json(fuelingOperations);
+    // Parsiranje MRN breakdown podataka za sve operacije točenja
+    const operationsWithParsedMrn = fuelingOperations.map((operation: any) => {
+      if (operation.mrnBreakdown) {
+        try {
+          // Parsiraj MRN podatke
+          let parsedMrnData = JSON.parse(operation.mrnBreakdown);
+          
+          // Provjeri da li su MRN podaci u ispravnom formatu (array)
+          if (!Array.isArray(parsedMrnData)) {
+            console.error(`Operation ${operation.id} - MRN data is not an array:`, parsedMrnData);
+            parsedMrnData = [];
+          }
+          
+          // Osiguraj da svaki MRN zapis ima i mrn i quantity polja
+          const validMrnData = parsedMrnData.map((item: any) => {
+            // Ako je objekt i ima quantity, ali nema mrn, dodaj placeholder
+            if (item && typeof item === 'object' && 'quantity' in item) {
+              return {
+                mrn: item.mrn || 'MRN-PLACEHOLDER',
+                quantity: item.quantity
+              };
+            }
+            // Ako je key-value par gdje je key MRN a value količina
+            else if (item && typeof item === 'object' && Object.keys(item).length === 1) {
+              const key = Object.keys(item)[0];
+              return {
+                mrn: key,
+                quantity: item[key]
+              };
+            }
+            // Ako je neispravan format, vrati null da ga možemo filtrirati
+            return null;
+          }).filter(Boolean); // Ukloni null vrijednosti
+          
+          console.log(`Operation ${operation.id} - Processed MRN data:`, validMrnData);
+          
+          // Postavi parsirane MRN podatke u response
+          return {
+            ...operation,
+            parsedMrnBreakdown: validMrnData
+          };
+        } catch (e) {
+          console.error(`Error parsing MRN breakdown for fueling operation ${operation.id}:`, e);
+          return operation;
+        }
+      }
+      return operation;
+    });
+    
+    res.status(200).json(operationsWithParsedMrn);
   } catch (error) {
     console.error('Error fetching fueling operations:', error);
     res.status(500).json({ message: 'Greška pri dohvaćanju operacija točenja' });
@@ -89,6 +138,48 @@ export const getFuelingOperationById = async (req: Request, res: Response): Prom
     if (!fuelingOperation) {
       res.status(404).json({ message: 'Operacija točenja nije pronađena' });
       return;
+    }
+    
+    // Parsiranje MRN breakdown podataka ako postoje
+    if (fuelingOperation.mrnBreakdown) {
+      try {
+        // Parsiraj MRN podatke
+        let parsedMrnData = JSON.parse(fuelingOperation.mrnBreakdown);
+        
+        // Provjeri da li su MRN podaci u ispravnom formatu (array)
+        if (!Array.isArray(parsedMrnData)) {
+          console.error(`Operation ${id} - MRN data is not an array:`, parsedMrnData);
+          parsedMrnData = [];
+        }
+        
+        // Osiguraj da svaki MRN zapis ima i mrn i quantity polja
+        const validMrnData = parsedMrnData.map((item: any) => {
+          // Ako je objekt i ima quantity, ali nema mrn, dodaj placeholder
+          if (item && typeof item === 'object' && 'quantity' in item) {
+            return {
+              mrn: item.mrn || 'MRN-PLACEHOLDER',
+              quantity: item.quantity
+            };
+          }
+          // Ako je key-value par gdje je key MRN a value količina
+          else if (item && typeof item === 'object' && Object.keys(item).length === 1) {
+            const key = Object.keys(item)[0];
+            return {
+              mrn: key,
+              quantity: item[key]
+            };
+          }
+          // Ako je neispravan format, vrati null da ga možemo filtrirati
+          return null;
+        }).filter(Boolean); // Ukloni null vrijednosti
+        
+        console.log(`Operation ${id} - Processed MRN data:`, validMrnData);
+        
+        // Postavi parsirane MRN podatke u response
+        fuelingOperation.parsedMrnBreakdown = validMrnData;
+      } catch (e) {
+        console.error(`Error parsing MRN breakdown for fueling operation ${id}:`, e);
+      }
     }
     
     res.status(200).json(fuelingOperation);
@@ -198,6 +289,104 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
       return;
     }
     
+    // Dohvati MRN podatke za mobilni tanker iz MobileTankCustoms tabele
+    const mobileTankCustoms = await (prisma as any).mobileTankCustoms.findMany({
+      where: { 
+        mobile_tank_id: tankId,
+        remaining_quantity_liters: { gt: 0 } // Samo zapisi s preostalom količinom većom od 0
+      },
+      orderBy: { date_added: 'asc' }, // Najstariji zapisi prvi (FIFO princip)
+    });
+    
+    console.log(`Dohvaćeno ${mobileTankCustoms.length} MRN zapisa za mobilni tank ID ${tankId} s preostalom količinom > 0`);
+    if (mobileTankCustoms.length > 0) {
+      console.log('Prvi MRN zapis:', JSON.stringify(mobileTankCustoms[0]));
+    }
+    
+    // Pripremi varijablu za MRN breakdown podatke
+    let mrnBreakdown: { mrn: string, quantity: number }[] = [];
+    let remainingQuantity = quantity_liters;
+    
+    // Implementacija FIFO principa za oduzimanje goriva po MRN brojevima
+    if (mobileTankCustoms && mobileTankCustoms.length > 0) {
+      console.log(`Pronađeno ${mobileTankCustoms.length} MRN zapisa za mobilni tank ID ${tankId}`);
+      
+      // Ispiši MRN zapise za debugging
+      console.log('MRN zapisi:', JSON.stringify(mobileTankCustoms));
+      
+      // Kreiraj kopiju MRN zapisa za ažuriranje
+      const updatedMobileTankCustoms = [...mobileTankCustoms];
+      
+      // Prolazimo kroz MRN zapise od najstarijeg prema najnovijem (FIFO)
+      for (let i = 0; i < updatedMobileTankCustoms.length && remainingQuantity > 0; i++) {
+        const mrnRecord = updatedMobileTankCustoms[i];
+        const currentMrnQuantity = mrnRecord.remaining_quantity_liters || mrnRecord.quantity_liters;
+        
+        console.log(`Obrađujem MRN zapis:`, JSON.stringify(mrnRecord));
+        
+        // Provjeri da li MRN zapis ima validan MRN broj
+        if (mrnRecord.customs_declaration_number) {
+          // Ako je količina u trenutnom MRN zapisu dovoljna za preostalu količinu
+          if (currentMrnQuantity >= remainingQuantity) {
+            // Dodaj MRN u breakdown za operaciju točenja
+            mrnBreakdown.push({
+              mrn: mrnRecord.customs_declaration_number,
+              quantity: remainingQuantity
+            });
+            
+            console.log(`Dodajem MRN ${mrnRecord.customs_declaration_number} s količinom ${remainingQuantity}`);
+            
+            // Ažuriraj količinu u MRN zapisu
+            await (prisma as any).mobileTankCustoms.update({
+              where: { id: mrnRecord.id },
+              data: { remaining_quantity_liters: currentMrnQuantity - remainingQuantity }
+            });
+            
+            // Sva potrebna količina je oduzeta
+            remainingQuantity = 0;
+          } else {
+            // Dodaj cijelu količinu iz trenutnog MRN zapisa
+            mrnBreakdown.push({
+              mrn: mrnRecord.customs_declaration_number,
+              quantity: currentMrnQuantity
+            });
+            
+            console.log(`Dodajem MRN ${mrnRecord.customs_declaration_number} s količinom ${currentMrnQuantity}`);
+            
+            // Ažuriraj količinu u MRN zapisu (postavimo na 0)
+            await (prisma as any).mobileTankCustoms.update({
+              where: { id: mrnRecord.id },
+              data: { remaining_quantity_liters: 0 }
+            });
+            
+            // Smanjimo preostalu količinu
+            remainingQuantity -= currentMrnQuantity;
+          }
+        } else {
+          console.log(`MRN zapis nema validan customs_declaration_number:`, JSON.stringify(mrnRecord));
+          
+          // Ako MRN zapis nema validan MRN broj, samo ažuriraj količinu
+          await (prisma as any).mobileTankCustoms.update({
+            where: { id: mrnRecord.id },
+            data: { remaining_quantity_liters: Math.max(0, currentMrnQuantity - remainingQuantity) }
+          });
+          
+          // Smanjimo preostalu količinu
+          remainingQuantity = Math.max(0, remainingQuantity - currentMrnQuantity);
+        }
+      }
+      
+      console.log(`Izračunati MRN breakdown za točenje po FIFO principu: ${JSON.stringify(mrnBreakdown)}`);
+      
+      // Ako nakon prolaska kroz sve MRN zapise još uvijek ima preostale količine,
+      // to znači da nemamo dovoljno MRN podataka za cijelu količinu
+      if (remainingQuantity > 0) {
+        console.warn(`Nedovoljno MRN podataka za cijelu količinu. Preostalo: ${remainingQuantity} litara`);
+      }
+    } else {
+      console.log('Nema MRN podataka za ovaj mobilni tank');
+    }
+    
     // Check if the airline exists
     const airline = await (prisma as any).airline.findUnique({
       where: { id: airlineId },
@@ -233,6 +422,8 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
           notes,
           tip_saobracaja,
           delivery_note_number,
+          // Dodaj MRN breakdown podatke samo ako postoje validni MRN zapisi
+          mrnBreakdown: mrnBreakdown.length > 0 ? JSON.stringify(mrnBreakdown) : null,
         },
         include: {
           airline: true,

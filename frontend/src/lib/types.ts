@@ -57,6 +57,8 @@ export interface FuelOperation {
   createdAt?: string;
   updatedAt?: string;
   delivery_note_number?: string | null; // Broj dostavnice
+  mrnBreakdown?: string | null; // JSON string s MRN podacima
+  parsedMrnBreakdown?: { mrn: string, quantity: number }[] | null; // Parsirani MRN podaci
 
   // Polja koja trenutno nedostaju u API odgovoru, ali mogu biti korisna
   fuel_type?: string | null; 

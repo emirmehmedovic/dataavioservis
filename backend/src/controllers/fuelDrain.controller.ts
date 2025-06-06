@@ -4,6 +4,11 @@ import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Definirajmo prošireni tip za FuelDrainRecord koji uključuje mrnBreakdown polje
+type ExtendedFuelDrainRecordInput = Prisma.FuelDrainRecordUncheckedCreateInput & {
+  mrnBreakdown?: string | null;
+};
+
 // Define a type for the record structure when relations are included
 type FuelDrainRecordWithRelations = Prisma.FuelDrainRecordGetPayload<{
   include: {
@@ -13,7 +18,9 @@ type FuelDrainRecordWithRelations = Prisma.FuelDrainRecordGetPayload<{
     };
     sourceMobileTank: { select: { id: true; name: true; identifier: true; fuel_type: true; location: true } }; 
   };
-}>;
+}> & {
+  mrnBreakdown?: string | null;
+};
 
 type TransformedFuelDrainRecord = FuelDrainRecordWithRelations & { sourceName: string; userName: string };
 
@@ -54,6 +61,10 @@ export const createFuelDrainRecord = async (req: AuthRequest, res: Response, nex
   const userIdAuth = req.user!.id;
 
   try {
+    // Definirajmo varijable za MRN praćenje
+    let fixedTankMrnBreakdown: { mrn: string, quantity: number }[] = [];
+    let mobileTankMrnBreakdown: { mrn: string, quantity: number }[] = [];
+    
     // Pre-transaction checks
     if (sourceType === 'fixed') {
       const tank = await prisma.fixedStorageTanks.findUnique({
@@ -68,26 +79,253 @@ export const createFuelDrainRecord = async (req: AuthRequest, res: Response, nex
         res.status(400).json({ message: `Nedovoljno goriva u fiksnom tanku ${tank.location_description || tank.tank_identifier}. Trenutno stanje: ${tank.current_quantity_liters} L.` });
         return;
       }
+      
+      // Provjeri da li postoji dovoljno goriva po carinskim prijavama (MRN)
+      const customsFuelBreakdown = await prisma.$queryRaw<{id: number, customs_declaration_number: string, remaining_quantity_liters: number}[]>`
+        SELECT id, customs_declaration_number, remaining_quantity_liters 
+        FROM "TankFuelByCustoms" 
+        WHERE fixed_tank_id = ${parsedSourceId} 
+          AND remaining_quantity_liters > 0 
+        ORDER BY date_added ASC
+      `;
+      
+      const totalAvailableByCustoms = customsFuelBreakdown.reduce(
+        (sum, item) => sum + parseFloat(item.remaining_quantity_liters.toString()), 0
+      );
+      
+      console.log('[createFuelDrainRecord] Available fuel by customs declarations:', totalAvailableByCustoms, 'L');
+      console.log('[createFuelDrainRecord] MRN records:', JSON.stringify(customsFuelBreakdown));
+      
+      // Pripremi varijablu za MRN breakdown podatke
+      let mrnBreakdown: { mrn: string, quantity: number }[] = [];
+      let remainingQuantity = numericQuantity;
+      
+      // Implementacija FIFO principa za oduzimanje goriva po MRN brojevima
+      if (customsFuelBreakdown && customsFuelBreakdown.length > 0) {
+        console.log(`[createFuelDrainRecord] Pronađeno ${customsFuelBreakdown.length} MRN zapisa za fiksni tank ID ${parsedSourceId}`);
+        
+        // Kreiraj kopiju MRN zapisa za ažuriranje
+        const updatedCustomsFuelBreakdown = [...customsFuelBreakdown];
+        
+        // Prolazimo kroz MRN zapise od najstarijeg prema najnovijem (FIFO)
+        for (let i = 0; i < updatedCustomsFuelBreakdown.length && remainingQuantity > 0; i++) {
+          const mrnRecord = updatedCustomsFuelBreakdown[i];
+          const currentMrnQuantity = parseFloat(mrnRecord.remaining_quantity_liters.toString());
+          
+          console.log(`[createFuelDrainRecord] Obrađujem MRN zapis:`, JSON.stringify(mrnRecord));
+          
+          // Provjeri da li MRN zapis ima validan MRN broj
+          if (mrnRecord.customs_declaration_number) {
+            // Ako je količina u trenutnom MRN zapisu dovoljna za preostalu količinu
+            if (currentMrnQuantity >= remainingQuantity) {
+              // Dodaj MRN u breakdown za operaciju istakanja
+              mrnBreakdown.push({
+                mrn: mrnRecord.customs_declaration_number,
+                quantity: remainingQuantity
+              });
+              
+              console.log(`[createFuelDrainRecord] Dodajem MRN ${mrnRecord.customs_declaration_number} s količinom ${remainingQuantity}`);
+              
+              // Ažuriraj količinu u MRN zapisu
+              await prisma.$executeRaw`
+                UPDATE "TankFuelByCustoms" 
+                SET remaining_quantity_liters = remaining_quantity_liters - ${remainingQuantity} 
+                WHERE id = ${mrnRecord.id}
+              `;
+              
+              // Sva potrebna količina je oduzeta
+              remainingQuantity = 0;
+            } else {
+              // Dodaj cijelu količinu iz trenutnog MRN zapisa
+              mrnBreakdown.push({
+                mrn: mrnRecord.customs_declaration_number,
+                quantity: currentMrnQuantity
+              });
+              
+              console.log(`[createFuelDrainRecord] Dodajem MRN ${mrnRecord.customs_declaration_number} s količinom ${currentMrnQuantity}`);
+              
+              // Ažuriraj količinu u MRN zapisu (postavimo na 0)
+              await prisma.$executeRaw`
+                UPDATE "TankFuelByCustoms" 
+                SET remaining_quantity_liters = 0 
+                WHERE id = ${mrnRecord.id}
+              `;
+              
+              // Smanjimo preostalu količinu
+              remainingQuantity -= currentMrnQuantity;
+            }
+          }
+        }
+        
+        console.log(`[createFuelDrainRecord] Izračunati MRN breakdown za istakanje po FIFO principu: ${JSON.stringify(mrnBreakdown)}`);
+        
+        // Spremamo lokalne MRN podatke u globalnu varijablu za kasnije korištenje
+        fixedTankMrnBreakdown = [...mrnBreakdown];
+      }
+      
+      // Ako je ostalo još količine koja nije pokrivena MRN zapisima, logiramo upozorenje
+      if (remainingQuantity > 0) {
+        console.log(`[createFuelDrainRecord] Upozorenje: ${remainingQuantity} litara nije pokriveno MRN zapisima`);
+      }
     } else if (sourceType === 'mobile') {
       const mobileTank = await prisma.fuelTank.findUnique({
         where: { id: parsedSourceId },
       });
       console.log('[createFuelDrainRecord] Mobile tank lookup result:', mobileTank);
       if (!mobileTank) {
-        res.status(404).json({ message: 'Mobilni tank (iz FuelTank modela) iz kojeg se ističe nije pronađen.' });
+        res.status(404).json({ message: 'Tank (mobilni) iz kojeg se ističe nije pronađen.' });
         return;
       }
       if (mobileTank.current_liters < numericQuantity) {
-        res.status(400).json({ message: `Nedovoljno goriva u mobilnom tanku ${mobileTank.name}. Trenutno stanje: ${mobileTank.current_liters} L.` });
+        res.status(400).json({ message: `Nedovoljno goriva u mobilnom tanku ${mobileTank.name} (${mobileTank.identifier}). Trenutno stanje: ${mobileTank.current_liters} L.` });
         return;
+      }
+      
+      // Provjeri da li postoji dovoljno goriva po carinskim prijavama (MRN) za mobilni tank
+      const mobileTankCustoms = await prisma.mobileTankCustoms.findMany({
+        where: { 
+          mobile_tank_id: parsedSourceId,
+          remaining_quantity_liters: { gt: 0 } // Samo zapisi s preostalom količinom većom od 0
+        },
+        orderBy: { date_added: 'asc' }, // Najstariji zapisi prvi (FIFO princip)
+      });
+      
+      console.log(`[createFuelDrainRecord] Dohvaćeno ${mobileTankCustoms.length} MRN zapisa za mobilni tank ID ${parsedSourceId} s preostalom količinom > 0`);
+      if (mobileTankCustoms.length > 0) {
+        console.log('[createFuelDrainRecord] Prvi MRN zapis za mobilni tank:', JSON.stringify(mobileTankCustoms[0]));
+      }
+      
+      // Pripremi varijablu za MRN breakdown podatke
+      let mrnBreakdown: { mrn: string, quantity: number }[] = [];
+      let remainingQuantity = numericQuantity;
+      
+      // Implementacija FIFO principa za oduzimanje goriva po MRN brojevima
+      if (mobileTankCustoms && mobileTankCustoms.length > 0) {
+        console.log(`[createFuelDrainRecord] Pronađeno ${mobileTankCustoms.length} MRN zapisa za mobilni tank ID ${parsedSourceId}`);
+        
+        // Kreiraj kopiju MRN zapisa za ažuriranje
+        const updatedMobileTankCustoms = [...mobileTankCustoms];
+        
+        // Prolazimo kroz MRN zapise od najstarijeg prema najnovijem (FIFO)
+        for (let i = 0; i < updatedMobileTankCustoms.length && remainingQuantity > 0; i++) {
+          const mrnRecord = updatedMobileTankCustoms[i];
+          const currentMrnQuantity = mrnRecord.remaining_quantity_liters;
+          
+          console.log(`[createFuelDrainRecord] Obrađujem MRN zapis za mobilni tank:`, JSON.stringify(mrnRecord));
+          
+          // Provjeri da li MRN zapis ima validan MRN broj
+          if (mrnRecord.customs_declaration_number) {
+            // Ako je količina u trenutnom MRN zapisu dovoljna za preostalu količinu
+            if (currentMrnQuantity >= remainingQuantity) {
+              // Dodaj MRN u breakdown za operaciju istakanja
+              mrnBreakdown.push({
+                mrn: mrnRecord.customs_declaration_number,
+                quantity: remainingQuantity
+              });
+              
+              console.log(`[createFuelDrainRecord] Dodajem MRN ${mrnRecord.customs_declaration_number} s količinom ${remainingQuantity}`);
+              
+              // Ažuriraj količinu u MRN zapisu
+              await prisma.mobileTankCustoms.update({
+                where: { id: mrnRecord.id },
+                data: { remaining_quantity_liters: currentMrnQuantity - remainingQuantity }
+              });
+              
+              // Sva potrebna količina je oduzeta
+              remainingQuantity = 0;
+            } else {
+              // Dodaj cijelu količinu iz trenutnog MRN zapisa
+              mrnBreakdown.push({
+                mrn: mrnRecord.customs_declaration_number,
+                quantity: currentMrnQuantity
+              });
+              
+              console.log(`[createFuelDrainRecord] Dodajem MRN ${mrnRecord.customs_declaration_number} s količinom ${currentMrnQuantity}`);
+              
+              // Ažuriraj količinu u MRN zapisu (postavimo na 0)
+              await prisma.mobileTankCustoms.update({
+                where: { id: mrnRecord.id },
+                data: { remaining_quantity_liters: 0 }
+              });
+              
+              // Smanjimo preostalu količinu
+              remainingQuantity -= currentMrnQuantity;
+            }
+          }
+        }
+        
+        console.log(`[createFuelDrainRecord] Izračunati MRN breakdown za istakanje iz mobilnog tanka po FIFO principu: ${JSON.stringify(mrnBreakdown)}`);
+        
+        // Spremamo lokalne MRN podatke u globalnu varijablu za kasnije korištenje
+        mobileTankMrnBreakdown = [...mrnBreakdown];
+      }
+      
+      // Ako je ostalo još količine koja nije pokrivena MRN zapisima, logiramo upozorenje
+      if (remainingQuantity > 0) {
+        console.log(`[createFuelDrainRecord] Upozorenje: ${remainingQuantity} litara iz mobilnog tanka nije pokriveno MRN zapisima`);
       }
     }
 
     const newDrainRecord = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (sourceType === 'fixed') {
+        // Ažuriraj trenutnu količinu goriva u tanku
         await tx.fixedStorageTanks.update({
           where: { id: parsedSourceId },
           data: { current_quantity_liters: { decrement: numericQuantity } },
+        });
+        
+        // Implementacija FIFO logike za izdavanje goriva po carinskim prijavama (MRN)
+        let remainingQuantityToDeduct = numericQuantity;
+        
+        // Dohvati sve zapise o gorivu po carinskim prijavama za ovaj tank, sortirano po datumu (FIFO)
+        const customsFuelRecords = await tx.$queryRaw<{
+          id: number, 
+          customs_declaration_number: string, 
+          remaining_quantity_liters: number
+        }[]>`
+          SELECT id, customs_declaration_number, remaining_quantity_liters 
+          FROM "TankFuelByCustoms" 
+          WHERE fixed_tank_id = ${parsedSourceId} 
+            AND remaining_quantity_liters > 0 
+          ORDER BY date_added ASC
+        `;
+        
+        console.log('[createFuelDrainRecord] Processing FIFO deduction from customs declarations');
+        
+        // Prolazi kroz zapise po FIFO principu i oduzimaj količinu
+        for (const record of customsFuelRecords) {
+          if (remainingQuantityToDeduct <= 0) break;
+          
+          const recordId = record.id;
+          const availableQuantity = parseFloat(record.remaining_quantity_liters.toString());
+          const quantityToDeduct = Math.min(availableQuantity, remainingQuantityToDeduct);
+          
+          console.log(`[createFuelDrainRecord] Deducting ${quantityToDeduct} L from customs record ID ${recordId} (MRN: ${record.customs_declaration_number})`);
+          
+          // Ažuriraj preostalu količinu u zapisu
+          await tx.$executeRaw`
+            UPDATE "TankFuelByCustoms" 
+            SET remaining_quantity_liters = remaining_quantity_liters - ${quantityToDeduct} 
+            WHERE id = ${recordId}
+          `;
+          
+          remainingQuantityToDeduct -= quantityToDeduct;
+        }
+        
+        // Ako je ostalo još goriva za oduzeti, znači da nemamo dovoljno praćenog po MRN
+        if (remainingQuantityToDeduct > 0) {
+          console.log(`[createFuelDrainRecord] Warning: ${remainingQuantityToDeduct} L not tracked by customs declarations`);
+        }
+        
+        // Kreiraj zapis o aktivnosti u fiksnom tanku za izdavanje goriva
+        await tx.fixedTankTransfers.create({
+          data: {
+            activity_type: 'FUEL_DRAIN',
+            affected_fixed_tank_id: parsedSourceId,
+            quantity_liters_transferred: numericQuantity,
+            transfer_datetime: parsedDrainDatetime,
+            notes: notes || 'Istakanje goriva'
+          }
         });
       } else if (sourceType === 'mobile') {
         await tx.fuelTank.update({
@@ -96,12 +334,32 @@ export const createFuelDrainRecord = async (req: AuthRequest, res: Response, nex
         });
       }
 
-      const dataForCreate: Prisma.FuelDrainRecordUncheckedCreateInput = {
+      // Pripremi MRN breakdown podatke za spremanje u bazu ako postoje
+      let mrnBreakdownJson = null;
+      
+      // Ako smo u fixed tank dijelu, već imamo mrnBreakdown varijablu
+      // Ako smo u mobile tank dijelu, moramo koristiti mrnBreakdown varijablu iz tog dijela
+      // Definirajmo varijablu koja će sadržavati konačne MRN podatke
+      let finalMrnBreakdown: { mrn: string, quantity: number }[] = [];
+      
+      if (sourceType === 'fixed' && fixedTankMrnBreakdown.length > 0) {
+        finalMrnBreakdown = fixedTankMrnBreakdown;
+        mrnBreakdownJson = JSON.stringify(finalMrnBreakdown);
+        console.log(`[createFuelDrainRecord] Spremam MRN breakdown podatke za fiksni tank u bazu: ${mrnBreakdownJson}`);
+      } else if (sourceType === 'mobile' && mobileTankMrnBreakdown.length > 0) {
+        finalMrnBreakdown = mobileTankMrnBreakdown;
+        mrnBreakdownJson = JSON.stringify(finalMrnBreakdown);
+        console.log(`[createFuelDrainRecord] Spremam MRN breakdown podatke za mobilni tank u bazu: ${mrnBreakdownJson}`);
+      }
+
+      // Kreiramo objekt za kreiranje zapisa s proširenim tipom koji uključuje mrnBreakdown polje
+      const dataForCreate: ExtendedFuelDrainRecordInput = {
         dateTime: parsedDrainDatetime,
         sourceType: sourceType as string,
         quantityLiters: numericQuantity,
         notes: notes || null,
         userId: userIdAuth,
+        mrnBreakdown: mrnBreakdownJson, // Dodajemo MRN breakdown podatke
       };
 
       if (sourceType === 'fixed') {
@@ -204,20 +462,19 @@ export const getAllFuelDrainRecords = async (req: AuthRequest, res: Response, ne
     }) as FuelDrainRecordWithRelations[]; // Explicit cast here
 
     const transformedRecords: TransformedFuelDrainRecord[] = records.map((record: FuelDrainRecordWithRelations) => {
-      let sourceName = 'Nepoznato';
-      if (record.sourceType === 'fixed' && record.sourceFixedTank) {
-        sourceName = record.sourceFixedTank.location_description 
-          ? `${record.sourceFixedTank.location_description} (${record.sourceFixedTank.tank_identifier})` 
-          : record.sourceFixedTank.tank_identifier || 'N/A';
-      } else if (record.sourceType === 'mobile' && record.sourceMobileTank) {
-        sourceName = `${record.sourceMobileTank.name} (${record.sourceMobileTank.identifier})`;
-        if (record.sourceMobileTank.location) {
-          sourceName += ` - ${record.sourceMobileTank.location}`;
-        }
+      // Spread the record to avoid modifying the original
+      const recordForSpread = { ...record };
+      
+      // Determine source name based on source type
+      let sourceName = 'Nepoznat izvor';
+      if (recordForSpread.sourceType === 'fixed' && recordForSpread.sourceFixedTank) {
+        sourceName = `${recordForSpread.sourceFixedTank.location_description || ''} (${recordForSpread.sourceFixedTank.tank_identifier || ''})`;
+      } else if (recordForSpread.sourceType === 'mobile' && recordForSpread.sourceMobileTank) {
+        sourceName = `${recordForSpread.sourceMobileTank.name || ''} (${recordForSpread.sourceMobileTank.identifier || ''})`;
       }
-      const recordForSpread: FuelDrainRecordWithRelations = record;
-
+      
       return {
+        ...recordForSpread,
         id: recordForSpread.id,
         dateTime: recordForSpread.dateTime,
         sourceType: recordForSpread.sourceType,
@@ -232,7 +489,8 @@ export const getAllFuelDrainRecords = async (req: AuthRequest, res: Response, ne
         sourceMobileTank: recordForSpread.sourceMobileTank,
         user: recordForSpread.user,
         sourceName,
-        userName: recordForSpread.user?.username || 'Sistem'
+        userName: recordForSpread.user?.username || 'Sistem',
+        mrnBreakdown: recordForSpread.mrnBreakdown
       };
     });
 
@@ -297,7 +555,8 @@ export const getFuelDrainRecordById = async (req: AuthRequest, res: Response, ne
       sourceMobileTank: recordForSpread.sourceMobileTank,
       user: recordForSpread.user,
       sourceName,
-      userName: recordForSpread.user?.username || 'Sistem'
+      userName: recordForSpread.user?.username || 'Sistem',
+      mrnBreakdown: recordForSpread.mrnBreakdown
     };
 
     res.status(200).json(responseRecord);
@@ -410,7 +669,8 @@ export const updateFuelDrainRecord = async (req: AuthRequest, res: Response, nex
       sourceMobileTank: recordForSpread.sourceMobileTank,
       user: recordForSpread.user,
       sourceName,
-      userName: recordForSpread.user?.username || 'Sistem'
+      userName: recordForSpread.user?.username || 'Sistem',
+      mrnBreakdown: recordForSpread.mrnBreakdown
     };
 
     res.status(200).json(response);

@@ -3,6 +3,7 @@ import { PrismaClient, FixedTankStatus, Prisma, FixedTankActivityType } from '@p
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path'; // Ensure path is imported
 import fs from 'fs';   // Use standard fs module
+import { AuthRequest } from '../middleware/auth';
 
 const prisma = new PrismaClient();
 
@@ -495,15 +496,31 @@ export const getFixedTankHistory: RequestHandler = async (req, res, next): Promi
       tankName: intake.affectedFixedTank?.tank_name || 'Nepoznat rezervoar',
     }));
 
-    const formattedTransfersToMobile = transfersToMobileTankers.map(transfer => ({
-      id: `transfer-out-${transfer.id}`,
-      type: 'transfer_to_mobile' as const, 
-      transaction_datetime: transfer.dateTime ? transfer.dateTime.toISOString() : null, 
-      quantityLiters: -transfer.quantityLiters, // Ensure negative for outgoing
-      relatedDocument: `Transfer ID: ${transfer.id}`,
-      sourceOrDestination: `Mobilni Tanker: ${transfer.targetFuelTank?.name || 'N/A'} (${transfer.targetFuelTank?.identifier || 'N/A'})`,
-      notes: transfer.notes || undefined,
-    }));
+    const formattedTransfersToMobile = transfersToMobileTankers.map(transfer => {
+      // Parsiranje MRN breakdown podataka ako postoje
+      let mrnInfo = [];
+      if (transfer.mrnBreakdown) {
+        try {
+          const mrnData = JSON.parse(transfer.mrnBreakdown);
+          mrnInfo = mrnData.map((item: { mrn: string, quantity: number }) => 
+            `${item.mrn}: ${item.quantity.toFixed(2)} L`
+          );
+        } catch (e) {
+          console.error(`Error parsing MRN breakdown for transfer ${transfer.id}:`, e);
+        }
+      }
+      
+      return {
+        id: `transfer-out-${transfer.id}`,
+        type: 'transfer_to_mobile' as const, 
+        transaction_datetime: transfer.dateTime ? transfer.dateTime.toISOString() : null, 
+        quantityLiters: -transfer.quantityLiters, // Ensure negative for outgoing
+        relatedDocument: `Transfer ID: ${transfer.id}`,
+        sourceOrDestination: `Mobilni Tanker: ${transfer.targetFuelTank?.name || 'N/A'} (${transfer.targetFuelTank?.identifier || 'N/A'})`,
+        notes: transfer.notes || undefined,
+        mrn_breakdown: mrnInfo.length > 0 ? mrnInfo : undefined,
+      };
+    });
 
     const formattedDrains = drainRecords.map(drain => {
       // Check if this is a reverse transaction (negative quantity in the database indicates a reverse transaction)
@@ -697,8 +714,9 @@ export const getCombinedIntakeHistoryList: RequestHandler = async (req, res, nex
 export const transferFuelBetweenFixedTanks: RequestHandler = async (req, res, next): Promise<void> => {
   const { sourceTankId, destinationTankId, quantityLiters, notes } = req.body;
 
-  if (sourceTankId === destinationTankId) {
-    res.status(400).json({ message: 'Source and destination tanks cannot be the same.' });
+  // Validate input
+  if (!sourceTankId || !destinationTankId || !quantityLiters) {
+    res.status(400).json({ message: 'Source tank ID, destination tank ID, and quantity are required.' });
     return;
   }
   if (quantityLiters <= 0) {
@@ -767,8 +785,115 @@ export const transferFuelBetweenFixedTanks: RequestHandler = async (req, res, ne
         where: { id: destinationTank.id },
         data: { current_quantity_liters: { increment: quantityLiters } },
       });
-
-      // 3. Create TRANSFER_OUT record
+      
+      // 3. Implementacija FIFO logike za prenos goriva po carinskim prijavama (MRN)
+      let remainingQuantityToTransfer = quantityLiters;
+      
+      // Dohvati sve zapise o gorivu po carinskim prijavama za izvorni tank, sortirano po datumu (FIFO)
+      const sourceTankCustomsFuelRecords = await tx.$queryRaw<{
+        id: number, 
+        customs_declaration_number: string, 
+        remaining_quantity_liters: number,
+        fuel_intake_record_id: number | null
+      }[]>`
+        SELECT id, customs_declaration_number, remaining_quantity_liters, fuel_intake_record_id 
+        FROM "TankFuelByCustoms" 
+        WHERE fixed_tank_id = ${sourceTank.id} 
+          AND remaining_quantity_liters > 0 
+        ORDER BY date_added ASC
+      `;
+      
+      console.log('[transferFuelBetweenFixedTanks] Processing FIFO transfer of customs declarations');
+      
+      // Prolazi kroz zapise po FIFO principu i prenosi gorivo
+      for (const record of sourceTankCustomsFuelRecords) {
+        if (remainingQuantityToTransfer <= 0) break;
+        
+        const recordId = record.id;
+        const availableQuantity = parseFloat(record.remaining_quantity_liters.toString());
+        const quantityToTransfer = Math.min(availableQuantity, remainingQuantityToTransfer);
+        
+        console.log(`[transferFuelBetweenFixedTanks] Transferring ${quantityToTransfer} L from customs record ID ${recordId} (MRN: ${record.customs_declaration_number})`);
+        
+        // Smanji količinu u izvornom zapisu
+        await tx.$executeRaw`
+          UPDATE "TankFuelByCustoms" 
+          SET remaining_quantity_liters = remaining_quantity_liters - ${quantityToTransfer} 
+          WHERE id = ${recordId}
+        `;
+        
+        // Provjeri da li već postoji zapis za ovu carinsku prijavu u odredišnom tanku
+        const existingDestinationRecord = await tx.$queryRaw<{ id: number, remaining_quantity_liters: number }[]>`
+          SELECT id, remaining_quantity_liters 
+          FROM "TankFuelByCustoms" 
+          WHERE fixed_tank_id = ${destinationTank.id} 
+            AND customs_declaration_number = ${record.customs_declaration_number}
+        `;
+        
+        if (existingDestinationRecord.length > 0) {
+          // Ako postoji, povećaj količinu
+          await tx.$executeRaw`
+            UPDATE "TankFuelByCustoms" 
+            SET remaining_quantity_liters = remaining_quantity_liters + ${quantityToTransfer} 
+            WHERE id = ${existingDestinationRecord[0].id}
+          `;
+        } else {
+          // Ako ne postoji, kreiraj novi zapis
+          await tx.$executeRaw`
+            INSERT INTO "TankFuelByCustoms" (
+              fixed_tank_id, 
+              fuel_intake_record_id, 
+              customs_declaration_number, 
+              quantity_liters, 
+              remaining_quantity_liters, 
+              date_added,
+              "createdAt",
+              "updatedAt"
+            ) VALUES (
+              ${destinationTank.id}, 
+              ${record.fuel_intake_record_id}, 
+              ${record.customs_declaration_number}, 
+              ${quantityToTransfer}, 
+              ${quantityToTransfer}, 
+              NOW(),
+              NOW(),
+              NOW()
+            )
+          `;
+        }
+        
+        remainingQuantityToTransfer -= quantityToTransfer;
+      }
+      
+      // Ako je ostalo još goriva za prenijeti, znači da nemamo dovoljno praćenog po MRN
+      if (remainingQuantityToTransfer > 0) {
+        console.log(`[transferFuelBetweenFixedTanks] Warning: ${remainingQuantityToTransfer} L not tracked by customs declarations`);
+        
+        // Kreiraj zapis u odredišnom tanku za nepraćeno gorivo
+        await tx.$executeRaw`
+          INSERT INTO "TankFuelByCustoms" (
+            fixed_tank_id, 
+            fuel_intake_record_id, 
+            customs_declaration_number, 
+            quantity_liters, 
+            remaining_quantity_liters, 
+            date_added,
+            "createdAt",
+            "updatedAt"
+          ) VALUES (
+            ${destinationTank.id}, 
+            NULL, 
+            'UNTRACKED-TRANSFER-${transferPairId.substring(0, 8)}', 
+            ${remainingQuantityToTransfer}, 
+            ${remainingQuantityToTransfer}, 
+            NOW(),
+            NOW(),
+            NOW()
+          )
+        `;
+      }
+      
+      // 4. Create TRANSFER_OUT record
       await tx.fixedTankTransfers.create({
         data: {
           activity_type: FixedTankActivityType.INTERNAL_TRANSFER_OUT,
@@ -781,7 +906,7 @@ export const transferFuelBetweenFixedTanks: RequestHandler = async (req, res, ne
         },
       });
 
-      // 4. Create TRANSFER_IN record
+      // 5. Create TRANSFER_IN record
       await tx.fixedTankTransfers.create({
         data: {
           activity_type: FixedTankActivityType.INTERNAL_TRANSFER_IN,
@@ -804,6 +929,268 @@ export const transferFuelBetweenFixedTanks: RequestHandler = async (req, res, ne
         // Handle known Prisma errors, e.g., transaction failure
         res.status(500).json({ message: 'Database transaction failed.', details: error.message });
         return;
+    }
+    next(error);
+  }
+};
+
+// GET /api/fuel/fixed-tanks/mrn-history/:mrnNumber - Dobijanje historije transakcija za određeni MRN broj
+export const getMrnTransactionHistory = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const mrnNumber = req.params.mrnNumber;
+    
+    if (!mrnNumber) {
+      res.status(400).json({ message: 'MRN broj je obavezan.' });
+      return;
+    }
+    
+    // Dohvati originalni unos goriva s ovim MRN brojem
+    const originalIntake = await prisma.fuelIntakeRecords.findFirst({
+      where: { customs_declaration_number: mrnNumber },
+      include: {
+        fixedTankTransfers: {
+          include: {
+            affectedFixedTank: {
+              select: {
+                id: true,
+                tank_name: true,
+                tank_identifier: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    if (!originalIntake) {
+      res.status(404).json({ message: `Nije pronađen unos goriva s MRN brojem: ${mrnNumber}` });
+      return;
+    }
+    
+    // Dohvati sve zapise o gorivu po ovom MRN broju
+    const mrnRecords = await prisma.$queryRaw<any[]>`
+      SELECT 
+        tfc.id, 
+        tfc.fixed_tank_id, 
+        tfc.customs_declaration_number,
+        tfc.quantity_liters,
+        tfc.remaining_quantity_liters,
+        tfc.date_added,
+        fst.tank_name,
+        fst.tank_identifier,
+        fst.fuel_type
+      FROM "TankFuelByCustoms" tfc
+      JOIN "FixedStorageTanks" fst ON tfc.fixed_tank_id = fst.id
+      WHERE tfc.customs_declaration_number = ${mrnNumber}
+      ORDER BY tfc.date_added ASC
+    `;
+    
+    // Dohvati historiju transakcija koje su koristile gorivo s ovim MRN brojem
+    // Ovo uključuje interne transfere, točenja u mobilne tankere i drenaže
+    
+    // 1. Interne transfere
+    const internalTransfers = await prisma.$queryRaw<any[]>`
+      SELECT 
+        'internal_transfer' as transaction_type,
+        ft.transfer_datetime as transaction_datetime,
+        ft.quantity_liters_transferred as quantity_liters,
+        ft.notes,
+        source.id as source_tank_id,
+        source.tank_name as source_tank_name,
+        source.tank_identifier as source_tank_identifier,
+        dest.id as destination_tank_id,
+        dest.tank_name as destination_tank_name,
+        dest.tank_identifier as destination_tank_identifier
+      FROM "FixedTankTransfers" ft
+      JOIN "FixedStorageTanks" source ON ft.affected_fixed_tank_id = source.id
+      JOIN "FixedStorageTanks" dest ON ft.counterparty_fixed_tank_id = dest.id
+      WHERE ft.activity_type = 'INTERNAL_TRANSFER_OUT'
+      AND ft.notes LIKE '%${mrnNumber}%'
+      ORDER BY ft.transfer_datetime DESC
+    `;
+    
+    // 2. Točenja u mobilne tankere
+    const tankerTransfers = await prisma.$queryRaw<any[]>`
+      SELECT 
+        'tanker_transfer' as transaction_type,
+        ftt."dateTime" as transaction_datetime,
+        ftt."quantityLiters" as quantity_liters,
+        ftt.notes,
+        ftt."mrnBreakdown",
+        source.id as source_tank_id,
+        source.tank_name as source_tank_name,
+        source.tank_identifier as source_tank_identifier,
+        ft.id as tanker_id,
+        ft.name as tanker_name,
+        ft.identifier as tanker_identifier
+      FROM "FuelTransferToTanker" ftt
+      JOIN "FixedStorageTanks" source ON ftt."sourceFixedStorageTankId" = source.id
+      JOIN "FuelTank" ft ON ftt."targetFuelTankId" = ft.id
+      WHERE ftt."mrnBreakdown" LIKE '%${mrnNumber}%'
+      ORDER BY ftt."dateTime" DESC
+    `;
+    
+    // 3. Drenaže goriva
+    const drainOperations = await prisma.$queryRaw<any[]>`
+      SELECT 
+        'fuel_drain' as transaction_type,
+        fd."dateTime" as transaction_datetime,
+        fd."quantityLiters" as quantity_liters,
+        fd.notes,
+        fd."mrnBreakdown",
+        source.id as source_tank_id,
+        source.tank_name as source_tank_name,
+        source.tank_identifier as source_tank_identifier
+      FROM "FuelDrainRecord" fd
+      JOIN "FixedStorageTanks" source ON fd."sourceFixedTankId" = source.id
+      WHERE fd."sourceType" = 'fixed_tank'
+      AND fd."mrnBreakdown" LIKE '%${mrnNumber}%'
+      ORDER BY fd."dateTime" DESC
+    `;
+    
+    // Kombinuj sve transakcije i sortiraj po datumu
+    const allTransactions = [
+      ...internalTransfers.map(tx => ({
+        ...tx,
+        transaction_type_display: 'Interni transfer'
+      })),
+      ...tankerTransfers.map(tx => ({
+        ...tx,
+        transaction_type_display: 'Točenje u mobilni tanker'
+      })),
+      ...drainOperations.map(tx => ({
+        ...tx,
+        transaction_type_display: 'Drenaža goriva'
+      }))
+    ].sort((a, b) => new Date(b.transaction_datetime).getTime() - new Date(a.transaction_datetime).getTime());
+    
+    // Pripremi odgovor
+    const response = {
+      mrn_number: mrnNumber,
+      original_intake: {
+        id: originalIntake.id,
+        intake_datetime: originalIntake.intake_datetime,
+        delivery_vehicle_plate: originalIntake.delivery_vehicle_plate,
+        supplier_name: originalIntake.supplier_name,
+        quantity_liters_received: originalIntake.quantity_liters_received,
+        tank_distributions: originalIntake.fixedTankTransfers.map((transfer: any) => ({
+          tank_id: transfer.affected_fixed_tank_id,
+          tank_name: transfer.affectedFixedTank?.tank_name,
+          tank_identifier: transfer.affectedFixedTank?.tank_identifier,
+          quantity_liters: transfer.quantity_liters_transferred
+        }))
+      },
+      current_status: mrnRecords.map((record: any) => ({
+        tank_id: record.fixed_tank_id,
+        tank_name: record.tank_name,
+        tank_identifier: record.tank_identifier,
+        fuel_type: record.fuel_type,
+        original_quantity_liters: parseFloat(record.quantity_liters),
+        remaining_quantity_liters: parseFloat(record.remaining_quantity_liters),
+        date_added: record.date_added
+      })),
+      transaction_history: allTransactions
+    };
+    
+    res.status(200).json(response);
+    return;
+    
+  } catch (error: any) {
+    console.error('[getMrnTransactionHistory] Error:', error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      res.status(500).json({ message: 'Database error.', details: error.message });
+      return;
+    }
+    next(error);
+  }
+};
+
+// GET /api/fuel/fixed-tanks/:id/customs-breakdown - Dobijanje raščlanjenog stanja goriva po carinskim prijavama (MRN)
+export const getTankFuelByCustoms = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const tankId = parseInt(req.params.id);
+    
+    if (isNaN(tankId)) {
+      res.status(400).json({ message: 'Invalid tank ID format.' });
+      return;
+    }
+    
+    // Provjera da li tank postoji
+    const tank = await prisma.fixedStorageTanks.findUnique({
+      where: { id: tankId },
+      select: {
+        id: true,
+        tank_name: true,
+        tank_identifier: true,
+        fuel_type: true,
+        current_quantity_liters: true
+      }
+    });
+    
+    if (!tank) {
+      res.status(404).json({ message: `Tank with ID ${tankId} not found.` });
+      return;
+    }
+    
+    // Definiraj tip za rezultat upita
+    type CustomsFuelRecord = {
+      id: number;
+      fixed_tank_id: number;
+      fuel_intake_record_id: number;
+      customs_declaration_number: string;
+      quantity_liters: string | number;
+      remaining_quantity_liters: string | number;
+      date_added: Date;
+      delivery_vehicle_plate: string | null;
+      supplier_name: string | null;
+      intake_datetime: Date | null;
+    };
+
+    // Dohvati podatke o gorivu po carinskim prijavama za ovaj tank, sortirano po datumu (FIFO)
+    const customsFuelBreakdown = await prisma.$queryRaw<CustomsFuelRecord[]>`
+      SELECT 
+        tfc.id, 
+        tfc.fixed_tank_id, 
+        tfc.fuel_intake_record_id,
+        tfc.customs_declaration_number,
+        tfc.quantity_liters,
+        tfc.remaining_quantity_liters,
+        tfc.date_added,
+        fir.delivery_vehicle_plate,
+        fir.supplier_name,
+        fir.intake_datetime
+      FROM "TankFuelByCustoms" tfc
+      LEFT JOIN "FuelIntakeRecords" fir ON tfc.fuel_intake_record_id = fir.id
+      WHERE tfc.fixed_tank_id = ${tankId}
+        AND tfc.remaining_quantity_liters > 0
+      ORDER BY tfc.date_added ASC
+    `;
+    
+    // Pripremi odgovor
+    const response = {
+      tank: tank,
+      customs_breakdown: customsFuelBreakdown.map((item: any) => ({
+        id: item.id,
+        customs_declaration_number: item.customs_declaration_number,
+        quantity_liters: parseFloat(item.quantity_liters),
+        remaining_quantity_liters: parseFloat(item.remaining_quantity_liters),
+        date_added: item.date_added,
+        supplier_name: item.supplier_name || null,
+        delivery_vehicle_plate: item.delivery_vehicle_plate || null
+      })),
+      total_customs_tracked_liters: customsFuelBreakdown.reduce(
+        (sum: number, item: any) => sum + parseFloat(item.remaining_quantity_liters), 0
+      )
+    };
+    
+    res.status(200).json(response);
+    return;
+    
+  } catch (error: any) {
+    console.error('[getTankFuelByCustoms] Error:', error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      res.status(500).json({ message: 'Database error.', details: error.message });
+      return;
     }
     next(error);
   }

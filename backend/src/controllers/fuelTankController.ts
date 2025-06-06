@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response, NextFunction } from 'express';
+import { PrismaClient, Prisma } from '@prisma/client';
 import * as z from 'zod';
 import multer from 'multer';
 import path from 'path';
@@ -89,7 +89,13 @@ export const getTankTransactions = async (req: Request, res: Response): Promise<
     // 2. Get transfers from fixed tanks
     const fixedTankTransfers = await (prisma as any).fuelTransferToTanker.findMany({
       where: { targetFuelTankId: Number(id) },
-      include: {
+      select: {
+        id: true,
+        dateTime: true,
+        quantityLiters: true,
+        sourceFixedStorageTankId: true,
+        notes: true,
+        mrnBreakdown: true,  // Dodajemo mrnBreakdown polje u select
         sourceFixedStorageTank: {
           select: {
             id: true,
@@ -116,6 +122,7 @@ export const getTankTransactions = async (req: Request, res: Response): Promise<
       source_id: transfer.sourceFixedStorageTankId,
       notes: transfer.notes,
       user: transfer.user?.username,
+      mrnBreakdown: transfer.mrnBreakdown, // Dodajemo mrnBreakdown polje
     }));
     
     // 3. Get fueling operations (where this tank was used to fuel aircraft)
@@ -276,6 +283,11 @@ export const deleteFuelTank = async (req: Request, res: Response): Promise<void>
       return;
     }
     
+    // Delete related MobileTankCustoms records
+    await (prisma as any).mobileTankCustoms.deleteMany({
+      where: { mobile_tank_id: Number(id) },
+    });
+
     // Delete related FuelingOperation records
     await (prisma as any).fuelingOperation.deleteMany({
       where: { tankId: Number(id) },
@@ -394,3 +406,86 @@ export const handleTankImageUpload = async (req: Request, res: Response): Promis
     res.status(500).json({ message: 'Greška pri uploadu slike tankera' });
   }
 }; 
+
+// GET /api/fuel/tanks/:id/customs-breakdown - Dobijanje raščlanjenog stanja goriva po carinskim prijavama (MRN) za mobilne tankove
+export const getMobileTankCustomsBreakdown = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const tankId = parseInt(req.params.id);
+    
+    if (isNaN(tankId)) {
+      res.status(400).json({ message: 'Invalid tank ID format.' });
+      return;
+    }
+    
+    // Provjera da li tank postoji
+    const tank = await (prisma as any).fuelTank.findUnique({
+      where: { id: tankId },
+      select: {
+        id: true,
+        name: true,
+        identifier: true,
+        fuel_type: true,
+        current_liters: true
+      }
+    });
+    
+    if (!tank) {
+      res.status(404).json({ message: `Tank with ID ${tankId} not found.` });
+      return;
+    }
+    
+    // Definiraj tip za rezultat upita
+    type CustomsFuelRecord = {
+      id: number;
+      mobile_tank_id: number;
+      customs_declaration_number: string;
+      quantity_liters: string | number;
+      remaining_quantity_liters: string | number;
+      date_added: Date;
+      supplier_name: string | null;
+    };
+
+    // Dohvati podatke o gorivu po carinskim prijavama za ovaj mobilni tank, sortirano po datumu (FIFO)
+    const customsFuelBreakdown = await prisma.$queryRaw<CustomsFuelRecord[]>`
+      SELECT 
+        mtc.id, 
+        mtc.mobile_tank_id, 
+        mtc.customs_declaration_number,
+        mtc.quantity_liters,
+        mtc.remaining_quantity_liters,
+        mtc.date_added,
+        mtc.supplier_name
+      FROM "MobileTankCustoms" mtc
+      WHERE mtc.mobile_tank_id = ${tankId}
+        AND mtc.remaining_quantity_liters > 0
+      ORDER BY mtc.date_added ASC
+    `;
+    
+    // Pripremi odgovor
+    const response = {
+      tank: tank,
+      customs_breakdown: customsFuelBreakdown.map((item: any) => ({
+        id: item.id,
+        customs_declaration_number: item.customs_declaration_number,
+        quantity_liters: parseFloat(item.quantity_liters.toString()),
+        remaining_quantity_liters: parseFloat(item.remaining_quantity_liters.toString()),
+        date_added: item.date_added,
+        supplier_name: item.supplier_name || null
+      })),
+      total_customs_tracked_liters: customsFuelBreakdown.reduce(
+        (sum: number, item: any) => sum + parseFloat(item.remaining_quantity_liters.toString()), 0
+      )
+    };
+    
+    res.status(200).json(response);
+    return;
+    
+  } catch (error: any) {
+    console.error('[getMobileTankCustomsBreakdown] Error:', error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      res.status(500).json({ message: 'Database error.', details: error.message });
+      return;
+    }
+    next(error);
+  }
+};

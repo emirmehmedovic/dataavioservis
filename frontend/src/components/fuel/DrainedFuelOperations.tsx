@@ -35,6 +35,12 @@ interface MobileTank {
   status: string;
 }
 
+// Sučelje za pojedinačni MRN podatak u breakdown-u
+interface MrnBreakdownItem {
+  mrn: string;
+  quantity: number;
+}
+
 interface DrainRecord {
   id: number;
   dateTime: string;
@@ -48,6 +54,8 @@ interface DrainRecord {
   userId: number;
   userName: string;
   originalDrainId?: number; // Dodano za praćenje povezanih transakcija
+  mrnBreakdown?: string; // JSON string s MRN podacima
+  parsedMrnBreakdown?: MrnBreakdownItem[]; // Parsirani MRN podaci za lakši prikaz
 }
 
 interface DrainFormData {
@@ -143,7 +151,38 @@ const DrainedFuelOperations: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await fetchWithAuth<DrainRecord[]>('/api/fuel/drains/records');
-      setDrainRecords(data);
+      
+      // Parsiranje MRN podataka iz JSON stringa
+      const recordsWithParsedMrn = data.map(record => {
+        if (record.mrnBreakdown) {
+          try {
+            const parsedMrn = JSON.parse(record.mrnBreakdown) as MrnBreakdownItem[];
+            return {
+              ...record,
+              parsedMrnBreakdown: parsedMrn
+            };
+          } catch (e) {
+            console.error(`Greška pri parsiranju MRN podataka za zapis ID ${record.id}:`, e);
+            return record;
+          }
+        }
+        return record;
+      });
+      
+      setDrainRecords(recordsWithParsedMrn);
+      
+      // Izračunaj ukupne količine
+      const drained = recordsWithParsedMrn
+        .filter(r => r.quantityLiters > 0)
+        .reduce((sum, r) => sum + r.quantityLiters, 0);
+      
+      const returned = recordsWithParsedMrn
+        .filter(r => r.quantityLiters < 0)
+        .reduce((sum, r) => sum + Math.abs(r.quantityLiters), 0);
+      
+      setTotalDrained(drained);
+      setTotalReturned(returned);
+      
     } catch (error) {
       console.error('Error fetching drain records:', error);
       toast.error('Greška pri dohvaćanju evidencije istakanja goriva');
@@ -724,6 +763,7 @@ const DrainedFuelOperations: React.FC = () => {
                     <TableHead>Izvor</TableHead>
                     <TableHead>Tip izvora</TableHead>
                     <TableHead className="text-right">Količina (L)</TableHead>
+                    <TableHead>MRN podaci</TableHead>
                     <TableHead>Napomena</TableHead>
                     <TableHead>Korisnik</TableHead>
                     <TableHead>Akcije</TableHead>
@@ -746,6 +786,26 @@ const DrainedFuelOperations: React.FC = () => {
                         <TableCell className="text-right font-medium">
                           {Math.abs(record.quantityLiters).toLocaleString('bs-BA')}
                           {record.quantityLiters < 0 && ' (-)' /* Show negative indicator */}
+                        </TableCell>
+                        <TableCell>
+                          {record.parsedMrnBreakdown && record.parsedMrnBreakdown.length > 0 ? (
+                            <div className="space-y-1">
+                              {record.parsedMrnBreakdown.map((mrnItem, index) => (
+                                <div key={index} className="flex items-center text-xs">
+                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 mr-2">
+                                    MRN
+                                  </Badge>
+                                  <span className="font-mono">{mrnItem.mrn}</span>
+                                  <span className="ml-2 text-gray-500">
+                                    {Math.abs(mrnItem.quantity).toLocaleString('bs-BA')} L
+                                    {mrnItem.quantity < 0 && ' (povrat)'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs">Nema MRN podataka</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {isSaleTransaction ? (
@@ -1091,6 +1151,29 @@ const DrainedFuelOperations: React.FC = () => {
                 <div>
                   <span className="text-amber-700">Datum:</span> {format(new Date(selectedDrainRecord.dateTime), 'dd.MM.yyyy HH:mm')}
                 </div>
+                
+                {/* MRN podaci */}
+                {selectedDrainRecord.parsedMrnBreakdown && selectedDrainRecord.parsedMrnBreakdown.length > 0 && (
+                  <div className="col-span-2 mt-2">
+                    <span className="text-amber-700 block mb-1">MRN podaci:</span>
+                    <div className="space-y-1">
+                      {selectedDrainRecord.parsedMrnBreakdown.map((mrnItem, index) => (
+                        <div key={index} className="flex items-center">
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 mr-2 text-xs">
+                            MRN
+                          </Badge>
+                          <span className="font-mono text-xs">{mrnItem.mrn}</span>
+                          <span className="ml-2 text-gray-500 text-xs">
+                            {Math.abs(mrnItem.quantity).toLocaleString('bs-BA')} L
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-xs mt-1 text-amber-700">
+                      <p>Povrat će biti proporcionalno raspodijeljen po MRN brojevima.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

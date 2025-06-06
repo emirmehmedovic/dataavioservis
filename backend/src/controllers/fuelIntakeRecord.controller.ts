@@ -1,9 +1,49 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { PrismaClient, Prisma, FuelIntakeRecords } from '@prisma/client';
+import { PrismaClient, Prisma, FuelIntakeRecords, FixedTankActivityType } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from './activity.controller';
 
 const prisma = new PrismaClient();
+
+/**
+ * Validira format MRN broja carinske prijave
+ * Standardni MRN format: 2 slova koda zemlje + 6 cifara godine i dana + 8 alfanumeričkih znakova + 1 kontrolna cifra
+ * Npr. HR2305160123456C1
+ * 
+ * Alternativni format 1: 2 slova koda zemlje + 16 cifara (koji se koristi u nekim zemljama)
+ * Npr. HR1234567899876543
+ * 
+ * Alternativni format 2: 2 broja + 2 slova + 12 brojeva + 1 slovo + 1 broj (format sa slike)
+ * Npr. 24BA010304000120J6
+ * 
+ * Dozvoljava i testne/privremene MRN brojeve koji počinju sa 'TEST' ili 'UNTRACKED'
+ */
+function validateMRNNumber(mrn: string): boolean {
+  // Provjera za testne/privremene MRN brojeve
+  if (mrn.startsWith('TEST') || mrn.startsWith('UNTRACKED')) {
+    return true;
+  }
+  
+  // Standardni regex za MRN format (17 znakova)
+  const standardMrnRegex = /^[A-Z]{2}\d{6}[A-Z0-9]{8}\d{1}$/;
+  
+  // Alternativni regex za MRN format (2 slova + 16 cifara = 18 znakova)
+  const alternativeMrnRegex = /^[A-Z]{2}\d{16}$/;
+  
+  // Alternativni regex za MRN format sa slike (2 broja + 2 slova + 12 brojeva + 1 slovo + 1 broj = 18 znakova)
+  const alternativeMrnRegex2 = /^\d{2}[A-Z]{2}\d{12}[A-Z]{1}\d{1}$/;
+  
+  // Provjera svih formata
+  if (!standardMrnRegex.test(mrn) && !alternativeMrnRegex.test(mrn) && !alternativeMrnRegex2.test(mrn)) {
+    console.log(`MRN validacija nije uspjela za: ${mrn}`); // Dodano za debugging
+    return false;
+  }
+  
+  // Dodatne provjere se mogu implementirati po potrebi
+  // npr. validacija kontrolne cifre, provjera koda zemlje, itd.
+  
+  return true;
+}
 
 // POST /api/fuel/intake-records - Kreiranje novog zapisa o prijemu goriva
 export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unknown> = async (req, res, next): Promise<void> => {
@@ -41,6 +81,15 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
         'Missing required fields: delivery_vehicle_plate, intake_datetime, quantity_liters_received, quantity_kg_received, specific_gravity, fuel_type are required.',
     });
     return; 
+  }
+  
+  // Validacija MRN broja (carinske prijave) ako je unesen
+  if (customs_declaration_number && !validateMRNNumber(customs_declaration_number)) {
+    console.log("Validation failed: Invalid customs declaration (MRN) number format.");
+    res.status(400).json({
+      message: 'Neispravan format MRN broja carinske prijave.',
+    });
+    return;
   }
 
   if (!Array.isArray(tank_distributions) || tank_distributions.length === 0) {
@@ -128,19 +177,47 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
             );
           }
           
-          console.log(`Creating FixedTankTransfers entry for tank ID: ${tankId}.`);
-          await tx.fixedTankTransfers.create({
+          console.log(`Creating transfer record for this tank`);
+          const transferRecord = await tx.fixedTankTransfers.create({
             data: {
-              activity_type: 'INTAKE',
-              fuel_intake_record_id: newFuelIntakeRecord.id,
+              activity_type: FixedTankActivityType.INTAKE,
               affected_fixed_tank_id: tankId,
-              quantity_liters_transferred: quantityLitersTransferred,
+              quantity_liters_transferred: parseFloat(dist.quantity_liters),
               transfer_datetime: new Date(intake_datetime),
-              notes: `Automatski unos iz zaprimanja ${newFuelIntakeRecord.id}`
+              fuel_intake_record_id: newFuelIntakeRecord.id,
+              notes: `Prijem goriva: ${delivery_note_number || 'Bez otpremnice'}${customs_declaration_number ? `, MRN: ${customs_declaration_number}` : ''}`,
             },
           });
-          console.log("FixedTankTransfers entry created.");
-
+          console.log(`Created transfer record for tank ID ${tankId}, quantity: ${dist.quantity_liters} L`);
+          
+          // Kreiraj zapis u TankFuelByCustoms tabeli za praćenje goriva po MRN
+          const mrnNumber = customs_declaration_number || `UNTRACKED-INTAKE-${newFuelIntakeRecord.id}`;
+          const quantityLiters = parseFloat(dist.quantity_liters);
+          
+          // Koristi raw SQL upit umjesto Prisma modela koji možda nije prepoznat
+          await tx.$executeRaw`
+            INSERT INTO "TankFuelByCustoms" (
+              fixed_tank_id, 
+              customs_declaration_number, 
+              quantity_liters, 
+              remaining_quantity_liters, 
+              fuel_intake_record_id,
+              date_added,
+              "createdAt",
+              "updatedAt"
+            ) VALUES (
+              ${tankId}, 
+              ${mrnNumber}, 
+              ${quantityLiters}, 
+              ${quantityLiters}, 
+              ${newFuelIntakeRecord.id},
+              ${new Date(intake_datetime)},
+              NOW(),
+              NOW()
+            )
+          `;
+          console.log(`Created customs tracking record for tank ID ${tankId}, MRN: ${mrnNumber}, quantity: ${dist.quantity_liters} L`);
+          
           console.log(`Updating FixedStorageTanks current_quantity_liters for tank ID: ${tankId}.`);
           await tx.fixedStorageTanks.update({
             where: { id: tankId },

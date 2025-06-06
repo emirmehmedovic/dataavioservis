@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, ArrowUpCircleIcon, PencilIcon, TrashIcon, EyeIcon, ExclamationCircleIcon, TruckIcon, BeakerIcon, MapPinIcon, PhotoIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import TankRefillForm from './TankRefillForm';
-import { fetchWithAuth, uploadTankImage, getTotalFuelSummary } from '@/lib/apiService';
+import { fetchWithAuth, uploadTankImage, getTotalFuelSummary, getMobileTankCustomsBreakdown, CustomsBreakdownResponse } from '@/lib/apiService';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PieChart, Pie, Cell, Legend, Tooltip as RechartsTooltip } from 'recharts';
 import TankFormWithImageUpload from './TankFormWithImageUpload';
 import TankImageDisplay from './TankImageDisplay';
 import { format } from 'date-fns';
@@ -40,6 +41,101 @@ interface MobileTankTransaction {
   price_per_liter?: number;  // For supplier_refill: price per liter
   notes?: string;
   user?: string;             // User who performed the transaction
+  mrnBreakdown?: string;     // JSON string containing MRN breakdown data for fixed_tank_transfer
+}
+
+// Definicija tipa za MRN podatke
+interface CustomsBreakdownItem {
+  mrn: string;
+  quantity: number;
+  date_received: string;
+}
+
+// Komponenta za prikaz MRN podataka s pie chartom
+const MRNBreakdownChart: React.FC<{
+  customsData: CustomsBreakdownItem[];
+  isLoading: boolean;
+}> = ({ customsData, isLoading }) => {
+  // Ako nema podataka ili je učitavanje u tijeku, prikaži odgovarajuću poruku
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-4">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#F08080]"></div>
+      </div>
+    );
+  }
+
+  if (!customsData || customsData.length === 0) {
+    return (
+      <div className="text-gray-300 text-center py-2 text-xs">
+        Nema MRN podataka za ovaj tank
+      </div>
+    );
+  }
+
+  // Pripremi podatke za pie chart - skrati MRN brojeve za bolji prikaz
+  const chartData = customsData.map(item => {
+    // Skrati MRN broj za prikaz u grafu
+    const shortMrn = item.mrn.length > 10 
+      ? `${item.mrn.substring(0, 6)}...${item.mrn.substring(item.mrn.length - 4)}` 
+      : item.mrn;
+    
+    return {
+      name: shortMrn,
+      fullMrn: item.mrn, // Čuvamo puni MRN za tooltip
+      value: item.quantity
+    };
+  });
+
+  // Boje za pie chart
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+  // Izračunaj ukupnu količinu
+  const totalQuantity = customsData.reduce((sum, item) => sum + item.quantity, 0);
+
+  return (
+    <div className="mt-2">
+      <div className="text-xs text-gray-300 mb-1">MRN Raspodjela Goriva</div>
+      <div className="flex flex-col items-center">
+        <PieChart width={120} height={100}>
+          <Pie
+            data={chartData}
+            cx={60}
+            cy={50}
+            innerRadius={20}
+            outerRadius={40}
+            paddingAngle={2}
+            dataKey="value"
+            nameKey="name"
+            label={false}
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <RechartsTooltip
+            formatter={(value: number, _name: string, entry: any) => [
+              `${value.toLocaleString()} L`, 
+              `MRN: ${entry.payload.fullMrn || entry.payload.name}`
+            ]}
+          />
+        </PieChart>
+        <div className="text-xs text-gray-300 mt-1">
+          Ukupno: <span className="font-medium text-white">{totalQuantity.toLocaleString()} L</span>
+        </div>
+        {customsData.length > 0 && (
+          <div className="text-xs text-gray-400 mt-1">
+            {customsData.length} MRN {customsData.length === 1 ? 'zapis' : 'zapisa'}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Definicija tipa za mapu MRN podataka po tanku
+interface TankCustomsMap {
+  [tankId: number]: CustomsBreakdownItem[];
 }
 
 export default function TankManagement() {
@@ -56,6 +152,10 @@ export default function TankManagement() {
   const [transactions, setTransactions] = useState<MobileTankTransaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<MobileTankTransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<MobileTankTransaction[]>([]);
+  
+  // State za MRN podatke
+  const [tanksCustomsData, setTanksCustomsData] = useState<TankCustomsMap>({});
+  const [loadingCustoms, setLoadingCustoms] = useState<{[tankId: number]: boolean}>({});
   // Helper function to get first day of current month in YYYY-MM-DD format
   const getFirstDayOfMonth = (): string => {
     const now = new Date();
@@ -121,12 +221,103 @@ export default function TankManagement() {
     try {
       setLoading(true);
       const data = await fetchWithAuth<FuelTank[]>('/api/fuel/tanks');
-      setTanks(data);
+      
+      console.log('Dohvaćeni podaci o cisternama:', data);
+      
+      if (Array.isArray(data)) {
+        setTanks(data);
+        
+        // Dohvati MRN podatke za svaki tank
+        data.forEach(async (tank: FuelTank) => {
+          // Postavi stanje učitavanja za ovaj tank
+          setLoadingCustoms(prev => ({ ...prev, [tank.id]: true }));
+          
+          try {
+            // Dohvati MRN podatke za ovaj tank
+            await fetchTankCustomsData(tank.id);
+          } catch (error) {
+            console.error(`Greška pri dohvaćanju MRN podataka za tank ${tank.id}:`, error);
+            // U slučaju greške, postavi prazni niz za ovaj tank
+            setTanksCustomsData(prev => ({
+              ...prev,
+              [tank.id]: []
+            }));
+            setLoadingCustoms(prev => ({ ...prev, [tank.id]: false }));
+          }
+        });
+      } else {
+        console.error('Neočekivani format odgovora:', data);
+        toast.error('Greška pri dohvaćanju podataka o cisternama');
+      }
     } catch (error) {
       console.error('Error fetching tanks:', error);
-      toast.error('Greška pri učitavanju tankera');
+      toast.error('Greška pri dohvaćanju podataka o cisternama');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Function to fetch customs (MRN) data for a specific tank
+  const fetchTankCustomsData = async (tankId: number) => {
+    // Postavi stanje učitavanja za ovaj tank
+    setLoadingCustoms(prev => ({ ...prev, [tankId]: true }));
+    
+    try {
+      console.log(`Dohvaćanje MRN podataka za tank ID ${tankId}`);
+      const response = await getMobileTankCustomsBreakdown(tankId);
+      console.log(`Odgovor za MRN podatke tanka ${tankId}:`, response);
+      
+      // Provjeri strukturu odgovora
+      if (response && typeof response === 'object' && 'customs_breakdown' in response) {
+        // Koristimo tip iz apiService
+        const typedResponse = response as CustomsBreakdownResponse;
+        
+        if (typedResponse.customs_breakdown && Array.isArray(typedResponse.customs_breakdown) && typedResponse.customs_breakdown.length > 0) {
+          console.log(`Tank ${tankId} ima ${typedResponse.customs_breakdown.length} MRN zapisa`);
+          
+          // Transformiraj podatke u očekivani format
+          const transformedData = typedResponse.customs_breakdown.map((item) => ({
+            mrn: item.customs_declaration_number,
+            quantity: parseFloat(item.remaining_quantity_liters.toString()),
+            date_received: item.date_added
+          }));
+          
+          // Spremi podatke u state
+          setTanksCustomsData(prev => ({
+            ...prev,
+            [tankId]: transformedData
+          }));
+        } else {
+          console.log(`Tank ${tankId} nema MRN zapisa ili su u nevažećem formatu`);
+          setTanksCustomsData(prev => ({
+            ...prev,
+            [tankId]: []
+          }));
+        }
+      } else if (Array.isArray(response)) {
+        console.log(`Tank ${tankId} ima ${response.length} MRN zapisa u formatu niza`);
+        // Ako je response već niz, pretpostavi da je u očekivanom formatu
+        setTanksCustomsData(prev => ({
+          ...prev,
+          [tankId]: response
+        }));
+      } else {
+        console.warn(`Tank ${tankId} ima neočekivani format MRN podataka:`, response);
+        // Postavi prazni niz za ovaj tank ako je format neočekivan
+        setTanksCustomsData(prev => ({
+          ...prev,
+          [tankId]: []
+        }));
+      }
+    } catch (error) {
+      console.error(`Greška pri dohvaćanju MRN podataka za tank ${tankId}:`, error);
+      // U slučaju greške, postavi prazni niz za ovaj tank
+      setTanksCustomsData(prev => ({
+        ...prev,
+        [tankId]: []
+      }));
+    } finally {
+      setLoadingCustoms(prev => ({ ...prev, [tankId]: false }));
     }
   };
   
@@ -611,6 +802,14 @@ export default function TankManagement() {
                           <span className="text-xs text-gray-400 ml-2">od {tank.capacity_liters.toLocaleString()} L</span>
                         </p>
                       </div>
+                      
+                      {/* MRN Breakdown Chart */}
+                      <div className="backdrop-blur-md bg-white/5 border border-white/10 p-3 rounded-xl col-span-2">
+                        <MRNBreakdownChart 
+                          customsData={tanksCustomsData[tank.id] || []} 
+                          isLoading={loadingCustoms[tank.id] || false} 
+                        />
+                      </div>
                     </div>
                     
                     {/* Action buttons */}
@@ -867,7 +1066,7 @@ export default function TankManagement() {
                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Tip transakcije</th>
                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Količina (L)</th>
                         <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Izvor/Destinacija</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Napomena</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">MRN</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
@@ -932,7 +1131,29 @@ export default function TankManagement() {
                               )}
                             </td>
                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {transaction.notes || '-'}
+                              {transaction.type === 'fixed_tank_transfer' && transaction.mrnBreakdown ? 
+                                (() => {
+                                  try {
+                                    const mrnData = JSON.parse(transaction.mrnBreakdown);
+                                    if (mrnData && mrnData.length > 0) {
+                                      return (
+                                        <div className="flex flex-col space-y-1">
+                                          {mrnData.map((item: any, index: number) => (
+                                            <div key={index} className="text-xs">
+                                              {item.mrn}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    } else {
+                                      return '-';
+                                    }
+                                  } catch (e) {
+                                    console.error('Greška pri parsiranju MRN podataka:', e);
+                                    return '-';
+                                  }
+                                })() : 
+                                '-'}
                             </td>
                           </tr>
                         );

@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState, ChangeEvent, FormEvent } from 'react';
 import { FixedStorageTank, TankTransaction, FixedTankStatus, FuelType } from '@/types/fuel';
-import { getFixedTankHistory, updateFixedTank as apiUpdateFixedTank } from '@/lib/apiService';
+import { getFixedTankHistory, getFixedTankCustomsBreakdown, updateFixedTank as apiUpdateFixedTank } from '@/lib/apiService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/badge";
 import { BeakerIcon } from '@heroicons/react/24/outline';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 
 interface FixedTankDetailsModalProps {
   tank: FixedStorageTank | null;
@@ -71,7 +72,12 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
   const [history, setHistory] = useState<TankTransaction[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'history'>('info');
+  
+  // Stanje za MRN podatke
+  const [customsBreakdown, setCustomsBreakdown] = useState<{mrn: string, quantity: number, date_received: string}[]>([]);
+  const [loadingCustoms, setLoadingCustoms] = useState(false);
+  const [customsError, setCustomsError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'info' | 'history' | 'customs'>('info');
   const [isEditing, setIsEditing] = useState(false);
   const [editableTankData, setEditableTankData] = useState<Partial<FixedStorageTank>>({});
   const [updateError, setUpdateError] = useState<string | null>(null);
@@ -110,9 +116,74 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
     }
   };
   
+  // Function to fetch customs breakdown (MRN stanje)
+  const fetchCustomsBreakdown = async () => {
+    if (!tank) return;
+    
+    setLoadingCustoms(true);
+    setCustomsError(null);
+    
+    try {
+      const response = await getFixedTankCustomsBreakdown(tank.id);
+      
+      // Provjeri strukturu odgovora
+      console.log('Customs breakdown response:', response);
+      
+      // Definiraj tip za response
+      interface CustomsBreakdownResponse {
+        tank?: any;
+        customs_breakdown?: Array<{
+          id: number;
+          customs_declaration_number: string;
+          quantity_liters: number;
+          remaining_quantity_liters: number;
+          date_added: string;
+          supplier_name: string | null;
+          delivery_vehicle_plate: string | null;
+        }>;
+        total_customs_tracked_liters?: number;
+      }
+      
+      // Ako je response objekt s customs_breakdown poljem, koristi to
+      if (response && typeof response === 'object' && 'customs_breakdown' in response) {
+        const typedResponse = response as CustomsBreakdownResponse;
+        if (typedResponse.customs_breakdown && Array.isArray(typedResponse.customs_breakdown)) {
+          // Transformiraj podatke u očekivani format
+          const transformedData = typedResponse.customs_breakdown.map((item) => ({
+            mrn: item.customs_declaration_number,
+            quantity: item.remaining_quantity_liters,
+            date_received: item.date_added
+          }));
+          setCustomsBreakdown(transformedData);
+        } else {
+          setCustomsBreakdown([]);
+        }
+      } else if (Array.isArray(response)) {
+        // Ako je response već niz, pretpostavi da je u očekivanom formatu
+        setCustomsBreakdown(response);
+      } else {
+        // Ako je neočekivani format, postavi prazni niz
+        console.error('Unexpected response format:', response);
+        setCustomsBreakdown([]);
+      }
+    } catch (error) {
+      console.error('Error fetching customs breakdown:', error);
+      setCustomsError('Greška pri dohvaćanju stanja goriva po carinskim prijavama.');
+    } finally {
+      setLoadingCustoms(false);
+    }
+  };
+  
   useEffect(() => {
     if (isOpen && tank && activeTab === 'history') {
       fetchHistory();
+    }
+  }, [isOpen, tank, activeTab]);
+  
+  // Dohvati MRN podatke kada je aktivan tab "customs"
+  useEffect(() => {
+    if (isOpen && tank && activeTab === 'customs') {
+      fetchCustomsBreakdown();
     }
   }, [isOpen, tank, activeTab]);
   
@@ -364,14 +435,28 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
                 </span>
               </div>
             </button>
+            <button
+              className={`px-6 py-3 text-sm font-medium ${activeTab === 'customs' ? 'text-indigo-700 border-b-2 border-indigo-700' : 'text-gray-500 hover:text-indigo-700'}`}
+              onClick={() => setActiveTab('customs')}
+            >
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 17H5C3.89543 17 3 16.1046 3 15V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V15C21 16.1046 20.1046 17 19 17H15M9 17L12 21M9 17L12 13M15 17L12 21M15 17L12 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Stanje po MRN
+                <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs">
+                  {customsBreakdown.length}
+                </span>
+              </div>
+            </button>
           </div>
         </div>
 
         <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
-          {/* Fuel Summary Section */}
-
+          {/* Render content based on active tab */}
           {activeTab === 'info' && (
-            <div className="p-6 space-y-6">
+            <div className="space-y-6">
+              {/* Tank Info Section */}
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Osnovne Informacije</h3>
               {updateError && (
                 <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
@@ -531,6 +616,135 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
             </div>
           )}
 
+          {activeTab === 'customs' && (
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Stanje Goriva po Carinskim Prijavama (MRN)</h3>
+              
+              {loadingCustoms && (
+                <div className="flex items-center justify-center py-12">
+                  <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="ml-3 text-gray-600">Učitavanje MRN podataka...</span>
+                </div>
+              )}
+              
+              {customsError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  <div className="flex">
+                    <svg className="w-5 h-5 text-red-500 mr-2" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span>Greška: {customsError}</span>
+                  </div>
+                </div>
+              )}
+              
+              {!loadingCustoms && !customsError && customsBreakdown.length === 0 && (
+                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 17H5C3.89543 17 3 16.1046 3 15V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V15C21 16.1046 20.1046 17 19 17H15M9 17L12 21M9 17L12 13M15 17L12 21M15 17L12 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="text-gray-500 text-lg">Nema podataka o carinskim prijavama za ovaj tank.</p>
+                  <p className="text-gray-400 mt-2">Podaci će se pojaviti kada se izvrši prijem goriva sa MRN brojem.</p>
+                </div>
+              )}
+              
+              {!loadingCustoms && !customsError && customsBreakdown.length > 0 && (
+                <>
+                  {/* Vizualni prikaz MRN količina */}
+                  <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-white">
+                    <h4 className="text-lg font-medium text-gray-700 mb-3">Vizualni prikaz količina po MRN</h4>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={customsBreakdown.map((item, index) => ({
+                              name: item.mrn ? (item.mrn.length > 10 ? item.mrn.substring(0, 10) + '...' : item.mrn) : 'Nepoznat MRN',
+                              fullMrn: item.mrn || 'Nepoznat MRN',
+                              value: typeof item.quantity === 'number' ? item.quantity : parseFloat(item.quantity as string) || 0,
+                              datum: item.date_received ? formatDate(item.date_received) : 'Nepoznat datum',
+                              fill: `hsl(${(index * 30) % 360}, 70%, 50%)`
+                            }))}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={(entry: { name: string; value: number }) => `${entry.name}: ${Number(entry.value).toLocaleString()} L`}
+                            labelLine={false}
+                          >
+                            {customsBreakdown.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={`hsl(${(index * 30) % 360}, 70%, 50%)`} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value) => [`${Number(value).toLocaleString()} L`, 'Količina']}
+                            labelFormatter={(name, entry) => {
+                              // Provjera da li entry postoji i ima elemente
+                              if (!entry || !entry.length || !entry[0] || !entry[0].payload) {
+                                return `MRN: ${name || 'Nepoznat'}`;
+                              }
+                              return `MRN: ${entry[0].payload.fullMrn || 'Nepoznat'}`;
+                            }}
+                          />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  
+                  {/* Tabela MRN podataka */}
+                  <div className="overflow-x-auto">
+                    <div className="inline-block min-w-full align-middle">
+                      <div className="border border-gray-200 rounded-lg">
+                        <Table>
+                          <TableHeader className="bg-gray-50">
+                            <TableRow>
+                              <TableHead className="font-semibold">MRN Broj</TableHead>
+                              <TableHead className="text-right font-semibold">Količina (L)</TableHead>
+                              <TableHead className="font-semibold">Datum Prijema</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {customsBreakdown.map((item, index) => (
+                              <TableRow key={index} className={index % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
+                                <TableCell className="font-medium">{item.mrn || 'Nepoznat MRN'}</TableCell>
+                                <TableCell className="text-right">
+                                  {typeof item.quantity === 'number' 
+                                    ? Number(item.quantity).toLocaleString('bs-BA') 
+                                    : Number(parseFloat(item.quantity as string) || 0).toLocaleString('bs-BA')} L
+                                </TableCell>
+                                <TableCell>
+                                  {item.date_received ? formatDate(item.date_received) : 'Nepoznat datum'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {customsBreakdown.length > 0 && (
+                              <TableRow className="bg-gray-100 font-semibold">
+                                <TableCell>UKUPNO</TableCell>
+                                <TableCell className="text-right">
+                                  {customsBreakdown.reduce((sum, item) => {
+                                    const qty = typeof item.quantity === 'number' 
+                                      ? item.quantity 
+                                      : parseFloat(item.quantity as string) || 0;
+                                    return sum + qty;
+                                  }, 0).toLocaleString('bs-BA')} L
+                                </TableCell>
+                                <TableCell></TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          
           {activeTab === 'history' && (
             <div>
               {loadingHistory && (

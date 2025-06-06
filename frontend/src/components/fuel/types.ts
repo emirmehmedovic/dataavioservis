@@ -65,7 +65,7 @@ export interface FuelTankFE {
   id: number;
   name: string;
   identifier: string;
-  current_quantity_liters?: number;
+  current_liters?: number;
   fuel_type?: string;
   // ... other properties
 }
@@ -93,6 +93,8 @@ export interface FuelingOperation {
   total_amount?: number;
   createdAt?: string;
   updatedAt?: string;
+  mrnBreakdown?: string; // Dodano za praćenje MRN podataka u operacijama točenja
+  parsedMrnBreakdown?: Array<{ mrn: string; quantity: number }>; // Dodano za parsirane MRN podatke s backenda
   aircraft?: { // Added for OperationDetailsModal.tsx
     registration?: string;
     type?: string;
