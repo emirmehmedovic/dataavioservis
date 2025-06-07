@@ -45,6 +45,10 @@ router.post('/airlines', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']
 router.put('/airlines/:id', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), airlineController.updateAirline);
 router.delete('/airlines/:id', authenticateToken, checkRole(['ADMIN']), airlineController.deleteAirline);
 
+// MRN routes
+router.get('/mrn-report/:mrn', authenticateToken, fuelIntakeRecordController.getMrnReport);
+router.get('/mrn-balances', authenticateToken, fuelIntakeRecordController.getMrnBalances);
+
 // Fuel Intake Record routes
 router.post('/intake-records', 
     authenticateToken, 

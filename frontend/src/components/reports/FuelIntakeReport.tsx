@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FuelIntakeRecord, FuelType, FuelIntakeDocument } from '@/types/fuel';
+import { FuelOperation } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { ArrowDownTrayIcon, DocumentTextIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { FileText } from 'lucide-react';
@@ -115,7 +116,43 @@ const FuelIntakeReport: React.FC = () => {
   });
 
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
+  const [selectedMrn, setSelectedMrn] = useState<string | null>(null);
+  const [mrnReportData, setMrnReportData] = useState<{
+    intake: any;
+    fuelingOperations: any[];
+    drainedFuel: any[];
+    balance: {
+      totalIntake: number;
+      totalFuelingOperations: number;
+      totalDrained: number;
+      remainingFuel: number;
+    };
+  } | null>(null);
+  
+  // State za balans MRN-ova
+  const [mrnBalances, setMrnBalances] = useState<Record<string, {
+    totalIntake: number;
+    totalUsed: number;
+    remainingFuel: number;
+  }>>({});
+  const [loadingMrnReport, setLoadingMrnReport] = useState(false);
   const [loadingRecordDetails, setLoadingRecordDetails] = useState(false);
+
+  // Funkcija za dohvat balansa MRN-ova
+  const fetchMrnBalances = async () => {
+    try {
+      const data = await fetchWithAuth<Record<string, {
+        totalIntake: number;
+        totalUsed: number;
+        remainingFuel: number;
+      }>>('/api/fuel/mrn-balances');
+      
+      setMrnBalances(data);
+    } catch (err: any) {
+      console.error('Error fetching MRN balances:', err);
+      // Ne prikazujemo toast za ovu grešku jer nije kritična
+    }
+  };
 
   const fetchIntakeRecords = useCallback(async () => {
     setLoading(true);
@@ -137,65 +174,56 @@ const FuelIntakeReport: React.FC = () => {
         endDateObj.setHours(23, 59, 59, 999);
         activeFilters.endDate = endDateObj.toISOString();
       }
-      if (filters.customs_declaration_number) activeFilters.customs_declaration_number = filters.customs_declaration_number;
-      if (filters.refinery_name) activeFilters.refinery_name = filters.refinery_name;
-      if (filters.currency) activeFilters.currency = filters.currency;
-      if (filters.fuel_category && filters.fuel_category !== 'all') activeFilters.fuel_category = filters.fuel_category;
-      
-      console.log('Active filters:', activeFilters);
-      console.log('Filters object:', filters);
-      
-      // Debug: Test if the customs_declaration_number and currency filters are working
       if (filters.customs_declaration_number) {
-        console.log('MRN filter is set to:', filters.customs_declaration_number);
+        activeFilters.customs_declaration_number = filters.customs_declaration_number;
       }
-      
       if (filters.currency) {
-        console.log('Currency filter is set to:', filters.currency);
+        activeFilters.currency = filters.currency;
+      }
+      if (filters.refinery_name) {
+        activeFilters.refinery_name = filters.refinery_name;
+      }
+      if (filters.fuel_category && filters.fuel_category !== 'all') {
+        activeFilters.fuel_category = filters.fuel_category;
       }
 
       const queryParams = new URLSearchParams(activeFilters).toString();
       const url = `/api/fuel/intake-records${queryParams ? `?${queryParams}` : ''}`;
-      console.log('API URL:', url);
       
       const data = await fetchWithAuth<FuelIntakeRecord[]>(url);
-      console.log('API Response:', data);
-      
       setRecords(data);
       
-      // Calculate totals
-      if (data && data.length > 0) {
-        // Calculate total liters
-        const totalLitersValue = data.reduce((sum, record) => sum + (record.quantity_liters_received || 0), 0);
-        
-        // Calculate total kg
-        const totalKgValue = data.reduce((sum, record) => {
-          // If kg is directly available
+      // Izračunaj ukupne količine
+      if (data.length > 0) {
+        const totalLitersValue = data.reduce((sum: number, record: FuelIntakeRecord) => sum + record.quantity_liters_received, 0);
+        const totalKgValue = data.reduce((sum: number, record: FuelIntakeRecord) => {
           if (record.quantity_kg_received) {
             return sum + record.quantity_kg_received;
           }
           // Otherwise calculate from liters and specific gravity
-          return sum + (record.quantity_liters_received * record.specific_gravity || 0);
+          return sum + (record.quantity_liters_received * (record.specific_gravity || 0));
         }, 0);
         
-        // Calculate average density
-        const avgDensity = data.reduce((sum, record) => sum + (record.specific_gravity || 0), 0) / data.length;
+        // Izračunaj prosječnu gustoću
+        const avgDensity = data.reduce((sum: number, record: FuelIntakeRecord) => sum + (record.specific_gravity || 0), 0) / data.length;
         
         setTotalLiters(totalLitersValue);
         setTotalKg(totalKgValue);
         setAverageDensity(avgDensity);
       } else {
-        // Reset totals if no data
         setTotalLiters(0);
         setTotalKg(0);
         setAverageDensity(0);
       }
-    } catch (error: any) {
-      console.error('Error fetching records:', error);
-      const errorMessage = error.message || 'Greška prilikom dohvatanja zapisa';
-      setError(errorMessage);
-      toast.error(`Greška: ${errorMessage}`);
-    } finally {
+      
+      // Nakon dohvaćanja podataka o unosu goriva, dohvati i balanse MRN-ova
+      await fetchMrnBalances();
+      
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Error fetching fuel intake records:', err);
+      setError(err.message || 'Greška pri dohvaćanju podataka');
+      toast.error('Greška pri dohvaćanju podataka');
       setLoading(false);
     }
   }, [filters]);
@@ -211,39 +239,280 @@ const FuelIntakeReport: React.FC = () => {
     setFilters(prev => ({ ...prev, [filterName]: value }));
   };
 
-  const handleDownloadDocument = async (doc: FuelIntakeDocument) => {
-    if (!doc || !doc.id) {
+  const fetchMrnReportData = async (mrn: string) => {
+    setLoadingMrnReport(true);
+    setError(null);
+    try {
+      const response = await fetchWithAuth<{
+        intake: FuelIntakeRecord;
+        fuelingOperations: FuelOperation[];
+        drainedFuel: any[];
+        balance: {
+          totalIntake: number;
+          totalFuelingOperations: number;
+          totalDrained: number;
+          remainingFuel: number;
+        };
+      }>(`${API_URL}/api/fuel/mrn-report/${mrn}`);
+      
+      if (!response) {
+        throw new Error('Nije pronađen izvještaj za ovaj MRN');
+      }
+      
+      setMrnReportData(response);
+      return response;
+    } catch (error) {
+      console.error('Error fetching MRN report:', error);
+      toast.error(`Greška prilikom dohvaćanja MRN izvještaja: ${error instanceof Error ? error.message : 'Nepoznata greška'}`);
+      return null;
+    } finally {
+      setLoadingMrnReport(false);
+    }
+  };
+
+  // Funkcija za generiranje MRN izvještaja
+
+  const handleGenerateMrnReport = async (mrn: string) => {
+    const data = await fetchMrnReportData(mrn);
+    if (!data) return;
+    
+    generateMrnReportPdf(data);
+  };
+
+  const generateMrnReportPdf = (data: {
+    intake: FuelIntakeRecord;
+    fuelingOperations: FuelOperation[];
+    drainedFuel: any[];
+    balance: {
+      totalIntake: number;
+      totalFuelingOperations: number;
+      totalDrained: number;
+      remainingFuel: number;
+    };
+  }) => {
+    const { intake, fuelingOperations, drainedFuel, balance } = data;
+    
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    registerFont(doc);
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont(FONT_NAME, 'bold');
+    doc.text(`MRN Izvještaj: ${intake.customs_declaration_number}`, 14, 20);
+    
+    // Intake details
+    doc.setFontSize(12);
+    doc.text('Podaci o ulazu goriva:', 14, 30);
+    doc.setFontSize(10);
+    doc.setFont(FONT_NAME, 'normal');
+    
+    const intakeDetails = [
+      ['Datum ulaza', formatDateTimeForReport(intake.intake_datetime)],
+      ['MRN broj', intake.customs_declaration_number || 'N/A'],
+      ['Tip goriva', intake.fuel_type],
+      ['Količina (L)', intake.quantity_liters_received.toLocaleString('bs-BA')],
+      ['Dobavljač', intake.supplier_name || 'N/A'],
+      ['Otpremnica', intake.delivery_note_number || 'N/A']
+    ];
+    
+    let yPos = 35;
+    
+    autoTable(doc, {
+      startY: yPos,
+      head: [],
+      body: intakeDetails,
+      theme: 'plain',
+      styles: { font: FONT_NAME, fontSize: 10 },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 40 },
+        1: { cellWidth: 'auto' }
+      },
+      didDrawPage: (data: any) => {
+        yPos = data.cursor.y + 10; // Dodajemo malo razmaka nakon tablice
+      }
+    });
+    
+    // Fueling operations
+    
+    doc.setFontSize(12);
+    doc.setFont(FONT_NAME, 'bold');
+    doc.text('Operacije točenja goriva:', 14, yPos + 10);
+    
+    if (fuelingOperations.length > 0) {
+      const fuelingOpsData = fuelingOperations.map(op => {
+        // Pokušaj dohvatiti točnu količinu goriva za ovaj MRN iz mrnBreakdown podataka
+        let mrnQuantity = op.quantity_liters;
+        
+        if (op.mrnBreakdown) {
+          try {
+            const mrnData = JSON.parse(op.mrnBreakdown);
+            const mrnEntry = mrnData.find((entry: { mrn: string, quantity: number }) => 
+              entry.mrn === intake.customs_declaration_number
+            );
+            
+            if (mrnEntry) {
+              mrnQuantity = mrnEntry.quantity;
+            }
+          } catch (error) {
+            console.error('Greška pri parsiranju mrnBreakdown podataka:', error);
+          }
+        }
+        
+        return [
+          formatDateTimeForReport(op.dateTime),
+          op.aircraft_registration || 'N/A',
+          op.airline?.name || 'N/A',
+          mrnQuantity.toLocaleString('bs-BA'),
+          op.destination || 'N/A',
+          op.operator_name || 'N/A'
+        ];
+      });
+      
+      autoTable(doc, {
+        startY: yPos + 15,
+        head: [['Datum', 'Registracija', 'Aviokompanija', 'Količina (L)', 'Destinacija', 'Operator']],
+        body: fuelingOpsData,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 },
+        styles: { font: FONT_NAME, fontSize: 9 },
+        didDrawPage: (data: any) => {
+          yPos = data.cursor.y;
+        }
+      });
+      
+      yPos += 10;
+    } else {
+      doc.setFontSize(10);
+      doc.setFont(FONT_NAME, 'normal');
+      doc.text('Nema operacija točenja goriva za ovaj MRN.', 14, yPos + 15);
+      yPos += 20;
+    }
+    
+    // Drained fuel
+    doc.setFontSize(12);
+    doc.setFont(FONT_NAME, 'bold');
+    doc.text('Drenirano gorivo:', 14, yPos + 10);
+    
+    if (drainedFuel.length > 0) {
+      const drainedFuelData = drainedFuel.map(df => {
+        // Pokušaj dohvatiti točnu količinu goriva za ovaj MRN iz mrnBreakdown podataka
+        let mrnQuantity = df.quantityLiters || df.quantity_liters;
+        
+        if (df.mrnBreakdown) {
+          try {
+            const mrnData = JSON.parse(df.mrnBreakdown);
+            const mrnEntry = mrnData.find((entry: { mrn: string, quantity: number }) => 
+              entry.mrn === intake.customs_declaration_number
+            );
+            
+            if (mrnEntry) {
+              mrnQuantity = mrnEntry.quantity;
+            }
+          } catch (error) {
+            console.error('Greška pri parsiranju mrnBreakdown podataka za drenirano gorivo:', error);
+          }
+        }
+        
+        return [
+          formatDateTimeForReport(df.dateTime || df.date_drained),
+          mrnQuantity.toLocaleString('bs-BA'),
+          df.reason || 'N/A',
+          df.operator_name || (df.user ? df.user.username : 'N/A')
+        ];
+      });
+      
+      autoTable(doc, {
+        startY: yPos + 15,
+        head: [['Datum', 'Količina (L)', 'Razlog', 'Operator']],
+        body: drainedFuelData,
+        theme: 'grid',
+        headStyles: { fillColor: [192, 57, 43], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 },
+        styles: { font: FONT_NAME, fontSize: 9 },
+        didDrawPage: (data: any) => {
+          yPos = data.cursor.y;
+        }
+      });
+      
+      yPos += 10;
+    } else {
+      doc.setFontSize(10);
+      doc.setFont(FONT_NAME, 'normal');
+      doc.text('Nema dreniranog goriva za ovaj MRN.', 14, yPos + 15);
+      yPos += 20;
+    }
+    
+    // Balance
+    doc.setFontSize(12);
+    doc.setFont(FONT_NAME, 'bold');
+    doc.text('Balans goriva:', 14, yPos + 10);
+    
+    // Koristimo balance objekt koji dolazi s backenda umjesto ponovnog izračuna
+    // Ovo osigurava konzistentnost s podacima koje backend šalje
+    
+    const balanceData = [
+      ['Ukupno primljeno (L)', balance.totalIntake.toLocaleString('bs-BA')],
+      ['Ukupno isporučeno (L)', balance.totalFuelingOperations.toLocaleString('bs-BA')],
+      ['Ukupno drenirano (L)', balance.totalDrained.toLocaleString('bs-BA')],
+      ['Preostalo (L)', balance.remainingFuel.toLocaleString('bs-BA')]
+    ];
+    
+    autoTable(doc, {
+      startY: yPos + 15,
+      head: [],
+      body: balanceData,
+      theme: 'plain',
+      styles: { font: FONT_NAME, fontSize: 10 },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 40 },
+        1: { cellWidth: 'auto' }
+      }
+    });
+    
+    // Footer
+    const footerY = doc.internal.pageSize.height - 20;
+    doc.setFontSize(8);
+    doc.setFont(FONT_NAME, 'normal');
+    doc.text(`Izvještaj generisan: ${formatDateTimeForReport(new Date())}`, 14, footerY);
+    
+    // Preuzimanje PDF-a
+    const fileName = `MRN_Izvjestaj_${intake.customs_declaration_number}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+    toast.success('MRN izvještaj uspješno generisan.');
+  };
+
+  const handleDownloadDocument = async (document: FuelIntakeDocument) => {
+    if (!document || !document.id) {
       toast.error('ID dokumenta nedostaje.');
       return;
     }
     try {
-      const response: Response = await fetchWithAuth(
-        `${API_URL}/api/fuel/documents/${doc.id}/download`,
-        { method: 'GET', returnRawResponse: true }
-      ) as Response;
+      const response = await fetch(`/api/fuel/intake-documents/${document.id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
       if (!response.ok) {
-        let errorMsg = `Greška (${response.status}) pri preuzimanju dokumenta.`;
-        try {
-            const errorData = await response.json();
-            errorMsg = errorData.message || errorMsg;
-        } catch (e) { /* Zanemari ako odgovor nije JSON */ }
-        throw new Error(errorMsg);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = doc.document_name || `document-${doc.id}`;
-      document.body.appendChild(a);
+      const url = window.URL.createObjectURL(blob);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = document.document_name || `document-${document.id}.pdf`;
+      window.document.body.appendChild(a);
       a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      toast.success(`Dokument '${doc.document_name}' uspješno preuzet.`);
-    } catch (err) {
-      console.error('Error downloading document:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Nepoznata greška prilikom preuzimanja.';
+      window.document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success(`Dokument uspješno preuzet.`);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Nepoznata greška prilikom preuzimanja.';
       toast.error(`Greška: ${errorMessage}`);
     } finally {
     }
@@ -760,6 +1029,7 @@ const FuelIntakeReport: React.FC = () => {
                         <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Tip Goriva</th>
                         <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Kategorija</th>
                         <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Količina (L)</th>
+                        <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Preostalo (L)</th>
                         <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Cijena/KG</th>
                         <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12">Valuta</th>
                         <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Ukupno</th>
@@ -787,6 +1057,14 @@ const FuelIntakeReport: React.FC = () => {
                             </td>
                             <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300 font-medium">
                               {record.quantity_liters_received.toLocaleString('hr-HR')} L
+                            </td>
+                            <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">
+                              {record.customs_declaration_number && mrnBalances[record.customs_declaration_number] ? 
+                                <span className={`font-medium ${mrnBalances[record.customs_declaration_number].remainingFuel > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {mrnBalances[record.customs_declaration_number].remainingFuel.toLocaleString('hr-HR')} L
+                                </span> : 
+                                'N/A'
+                              }
                             </td>
                             <td className="px-2 py-2 break-words text-xs text-gray-700 dark:text-gray-300">
                               {typeof record.price_per_kg === 'number' ? record.price_per_kg.toLocaleString('bs-BA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'}
@@ -821,6 +1099,17 @@ const FuelIntakeReport: React.FC = () => {
                                 <FileText className="h-3 w-3 mr-1" />
                                 PDF
                               </Button>
+                              {record.customs_declaration_number && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleGenerateMrnReport(record.customs_declaration_number!)}
+                                  className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-900/20 px-2 py-1 text-xs"
+                                >
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  MRN Izvještaj
+                                </Button>
+                              )}
                             </td>
                           </tr>
                           {expandedRecordId === record.id && record.documents && record.documents.length > 0 && (

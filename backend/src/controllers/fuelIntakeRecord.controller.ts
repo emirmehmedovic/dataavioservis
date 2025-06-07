@@ -1,9 +1,228 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { PrismaClient, Prisma, FuelIntakeRecords, FixedTankActivityType } from '@prisma/client';
+import { PrismaClient, Prisma, FuelIntakeRecords, FixedTankActivityType, FuelingOperation, FuelDrainRecord } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from './activity.controller';
 
 const prisma = new PrismaClient();
+
+// GET /api/fuel/mrn-balances - Dohvaćanje balansa goriva za sve MRN brojeve
+export const getMrnBalances = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // 1. Dohvati sve zapise o unosu goriva koji imaju MRN broj
+    const intakeRecords = await prisma.fuelIntakeRecords.findMany({
+      where: {
+        customs_declaration_number: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        customs_declaration_number: true,
+        quantity_liters_received: true
+      }
+    });
+    
+    // 2. Za svaki MRN broj, izračunaj balans goriva
+    const mrnBalances: Record<string, { totalIntake: number, totalUsed: number, remainingFuel: number }> = {};
+    
+    // Inicijaliziramo objekt s podacima o unosu goriva
+    for (const record of intakeRecords) {
+      if (record.customs_declaration_number) {
+        mrnBalances[record.customs_declaration_number] = {
+          totalIntake: record.quantity_liters_received || 0,
+          totalUsed: 0,
+          remainingFuel: record.quantity_liters_received || 0
+        };
+      }
+    }
+    
+    // 3. Dohvati sve operacije točenja goriva koje imaju mrnBreakdown podatke
+    const fuelingOperations = await prisma.fuelingOperation.findMany({
+      where: {
+        mrnBreakdown: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        mrnBreakdown: true,
+        quantity_liters: true
+      }
+    });
+    
+    // 4. Dohvati sve zapise o dreniranom gorivu koje imaju mrnBreakdown podatke
+    const drainedFuel = await prisma.fuelDrainRecord.findMany({
+      where: {
+        mrnBreakdown: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        mrnBreakdown: true,
+        quantityLiters: true
+      }
+    });
+    
+    // 5. Izračunaj korišteno gorivo za svaki MRN broj
+    // Operacije točenja
+    for (const op of fuelingOperations) {
+      if (op.mrnBreakdown) {
+        try {
+          const mrnData = JSON.parse(op.mrnBreakdown);
+          for (const entry of mrnData) {
+            if (entry.mrn && mrnBalances[entry.mrn]) {
+              mrnBalances[entry.mrn].totalUsed += entry.quantity || 0;
+              mrnBalances[entry.mrn].remainingFuel -= entry.quantity || 0;
+            }
+          }
+        } catch (error) {
+          console.error(`Greška pri parsiranju mrnBreakdown za operaciju ${op.id}:`, error);
+        }
+      }
+    }
+    
+    // Drenirano gorivo
+    for (const drain of drainedFuel) {
+      if (drain.mrnBreakdown) {
+        try {
+          const mrnData = JSON.parse(drain.mrnBreakdown);
+          for (const entry of mrnData) {
+            if (entry.mrn && mrnBalances[entry.mrn]) {
+              mrnBalances[entry.mrn].totalUsed += entry.quantity || 0;
+              mrnBalances[entry.mrn].remainingFuel -= entry.quantity || 0;
+            }
+          }
+        } catch (error) {
+          console.error(`Greška pri parsiranju mrnBreakdown za drenirano gorivo ${drain.id}:`, error);
+        }
+      }
+    }
+    
+    // 6. Vrati rezultate
+    res.status(200).json(mrnBalances);
+    
+  } catch (error) {
+    console.error('Error fetching MRN balances:', error);
+    res.status(500).json({ message: 'Greška prilikom dohvaćanja balansa MRN brojeva', error: String(error) });
+  }
+};
+
+// GET /api/fuel/mrn-report/:mrn - Dohvaćanje izvještaja za određeni MRN broj
+export const getMrnReport = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { mrn } = req.params;
+    
+    if (!mrn) {
+      res.status(400).json({ message: 'MRN broj je obavezan.' });
+      return;
+    }
+    
+    // 1. Dohvati zapis o unosu goriva za dati MRN
+    const intakeRecord = await prisma.fuelIntakeRecords.findFirst({
+      where: { customs_declaration_number: mrn },
+      include: {
+        fixedTankTransfers: {
+          include: {
+            affectedFixedTank: true
+          }
+        },
+        documents: true
+      }
+    });
+    
+    if (!intakeRecord) {
+      res.status(404).json({ message: `Nije pronađen unos goriva za MRN: ${mrn}` });
+      return;
+    }
+    
+    // 2. Dohvati sve operacije točenja goriva povezane s ovim MRN-om
+    const fuelingOperations = await prisma.fuelingOperation.findMany({
+      where: { mrnBreakdown: { contains: mrn } },
+      include: {
+        airline: true,
+        tank: true,
+        documents: true
+      },
+      orderBy: { dateTime: 'asc' }
+    });
+    
+    // 3. Dohvati sve zapise o dreniranom gorivu povezane s ovim MRN-om
+    const drainedFuel = await prisma.fuelDrainRecord.findMany({
+      where: { mrnBreakdown: { contains: mrn } },
+      include: {
+        user: true
+      },
+      orderBy: { dateTime: 'asc' }
+    });
+    
+    // 4. Izračunaj balans goriva, uzimajući u obzir mrnBreakdown podatke
+    const totalIntake = intakeRecord.quantity_liters_received || 0;
+    
+    // Izračunaj točnu količinu goriva iz ovog MRN-a koja je iskorištena u operacijama točenja
+    let totalFuelingOperations = 0;
+    for (const op of fuelingOperations) {
+      if (op.mrnBreakdown) {
+        try {
+          const mrnData = JSON.parse(op.mrnBreakdown);
+          // Tražimo točno ovaj MRN u breakdown podacima
+          const mrnEntry = mrnData.find((entry: { mrn: string, quantity: number }) => entry.mrn === mrn);
+          if (mrnEntry) {
+            totalFuelingOperations += mrnEntry.quantity;
+          }
+        } catch (error) {
+          console.error(`Greška pri parsiranju mrnBreakdown za operaciju ${op.id}:`, error);
+          // Ako ne možemo parsirati, koristimo cijelu količinu kao fallback
+          totalFuelingOperations += (op.quantity_liters || 0);
+        }
+      } else {
+        // Ako nema mrnBreakdown podataka, koristimo cijelu količinu
+        totalFuelingOperations += (op.quantity_liters || 0);
+      }
+    }
+    
+    // Izračunaj točnu količinu dreniranog goriva iz ovog MRN-a
+    let totalDrained = 0;
+    for (const drain of drainedFuel) {
+      if (drain.mrnBreakdown) {
+        try {
+          const mrnData = JSON.parse(drain.mrnBreakdown);
+          // Tražimo točno ovaj MRN u breakdown podacima
+          const mrnEntry = mrnData.find((entry: { mrn: string, quantity: number }) => entry.mrn === mrn);
+          if (mrnEntry) {
+            totalDrained += mrnEntry.quantity;
+          }
+        } catch (error) {
+          console.error(`Greška pri parsiranju mrnBreakdown za drenirano gorivo ${drain.id}:`, error);
+          // Ako ne možemo parsirati, koristimo cijelu količinu kao fallback
+          totalDrained += (drain.quantityLiters || 0);
+        }
+      } else {
+        // Ako nema mrnBreakdown podataka, koristimo cijelu količinu
+        totalDrained += (drain.quantityLiters || 0);
+      }
+    }
+    
+    const balance = totalIntake - totalFuelingOperations - totalDrained;
+    
+    // 5. Vrati kompletne podatke
+    res.status(200).json({
+      intake: intakeRecord,
+      fuelingOperations,
+      drainedFuel,
+      balance: {
+        totalIntake,
+        totalFuelingOperations,
+        totalDrained,
+        remainingFuel: balance
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching MRN report:', error);
+    res.status(500).json({ message: 'Greška prilikom dohvaćanja MRN izvještaja', error: String(error) });
+  }
+};
 
 /**
  * Validira format MRN broja carinske prijave
