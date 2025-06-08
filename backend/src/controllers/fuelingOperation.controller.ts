@@ -417,12 +417,16 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
     
     // Start a transaction to ensure all operations succeed or fail together
     const result = await (prisma as any).$transaction(async (tx: any) => {
-      // Create the fueling operation
+      // Konvertiraj mrnBreakdown u JSON string za spremanje
+      const mrnBreakdownJson = mrnBreakdown.length > 0 ? JSON.stringify(mrnBreakdown) : null;
+      console.log(`MRN breakdown JSON za spremanje u bazu: ${mrnBreakdownJson}`);
+      
+      // Create the fueling operation with mrnBreakdown data
       const newFuelingOperation = await tx.fuelingOperation.create({
         data: {
           dateTime: new Date(dateTime),
           aircraft_registration,
-          airline: { connect: { id: airlineId } },
+          airlineId,
           destination,
           quantity_liters,
           specific_density,
@@ -431,16 +435,15 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
           discount_percentage,
           currency,
           total_amount,
-          tank: { connect: { id: tankId } },
+          tankId,
           flight_number,
           operator_name,
           notes,
-          tip_saobracaja,
-          delivery_note_number,
-          // Dodaj usd_exchange_rate polje ako je poslano
+          tip_saobracaja: tip_saobracaja || null,
+          delivery_note_number: delivery_note_number || null,
           usd_exchange_rate: validationResult.data.usd_exchange_rate,
-          // Dodaj MRN breakdown podatke samo ako postoje validni MRN zapisi
-          mrnBreakdown: mrnBreakdown.length > 0 ? JSON.stringify(mrnBreakdown) : null,
+          // Dodaj MRN breakdown podatke
+          mrnBreakdown: mrnBreakdownJson
         },
         include: {
           airline: true,
@@ -600,6 +603,51 @@ export const deleteFuelingOperation = async (req: AuthRequest, res: Response): P
             current_liters: sourceTank.current_liters + operationToDelete.quantity_liters 
           },
         });
+        
+        // Vrati gorivo u originalne MRN zapise
+        if (operationToDelete.mrnBreakdown) {
+          try {
+            const mrnDetails = JSON.parse(operationToDelete.mrnBreakdown);
+            console.log('Vraćanje goriva u MRN zapise:', mrnDetails);
+            
+            if (Array.isArray(mrnDetails)) {
+              for (const detail of mrnDetails) {
+                if (!detail.mrn || !detail.quantity) {
+                  console.warn('Nepotpuni MRN podaci u zapisu:', detail);
+                  continue;
+                }
+                
+                // Pronađi originalni MRN zapis u mobileTankCustoms (za mobilne tankove)
+                const mrnRecord = await tx.mobileTankCustoms.findFirst({
+                  where: { 
+                    customs_declaration_number: detail.mrn,
+                    mobile_tank_id: operationToDelete.tankId
+                  }
+                });
+                
+                if (mrnRecord) {
+                  // Vrati gorivo u MRN zapis
+                  const updatedRecord = await tx.mobileTankCustoms.update({
+                    where: { id: mrnRecord.id },
+                    data: { 
+                      remaining_quantity_liters: mrnRecord.remaining_quantity_liters + detail.quantity,
+                      updatedAt: new Date()
+                    }
+                  });
+                  console.log(`Vraćeno ${detail.quantity} litara u MRN zapis ${detail.mrn}, novo stanje: ${updatedRecord.remaining_quantity_liters}`);
+                } else {
+                  console.warn(`MRN zapis ${detail.mrn} nije pronađen za tank ${operationToDelete.tankId}`);
+                }
+              }
+            } else {
+              console.warn('MRN breakdown nije u ispravnom formatu (nije array):', mrnDetails);
+            }
+          } catch (err) {
+            console.error('Greška pri vraćanju goriva u MRN zapise:', err);
+          }
+        } else {
+          console.log('Nema MRN breakdown podataka za vraćanje goriva u MRN zapise');
+        }
       } else {
         console.warn(`Source FuelTank with ID ${operationToDelete.tankId} not found when trying to revert quantity for deleted FuelingOperation ID ${id}.`);
       }
