@@ -19,7 +19,9 @@ model User {
   activities            Activity[]
   fuelDrainRecords      FuelDrainRecord[]
   fuelReceipts          FuelReceipt[]
+  systemLogs            SystemLog[]
   fuelTransfersToTanker FuelTransferToTanker[]
+  fuelOperationLogs     FuelOperationLog[]
 }
 
 model Company {
@@ -544,6 +546,7 @@ model FuelingOperation {
   specific_density      Float              @default(0.8)
   total_amount          Decimal            @db.Decimal(15, 5)
   discount_percentage   Float?
+  usd_exchange_rate     Decimal?           @db.Decimal(15, 6)
   delivery_note_number  String?
   mrnBreakdown          String?            // JSON string sa MRN podacima
   documents             AttachedDocument[]
@@ -749,4 +752,71 @@ model MobileTankCustoms {
   @@index([mobile_tank_id])
   @@index([customs_declaration_number])
   @@index([date_added])
+}
+
+enum LogSeverity {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+model SystemLog {
+  id          Int         @id @default(autoincrement())
+  timestamp   DateTime    @default(now())
+  action      String
+  details     String      @db.Text
+  severity    LogSeverity @default(INFO)
+  userId      Int?
+  
+  // Relacije
+  user        User?       @relation(fields: [userId], references: [id])
+  
+  @@index([timestamp])
+  @@index([action])
+  @@index([severity])
+  @@index([userId])
+}
+
+enum FuelOperationType {
+  INTAKE
+  TRANSFER_BETWEEN_TANKS
+  TRANSFER_TO_TANKER
+  FUELING_OPERATION
+  DRAIN
+  DRAIN_REVERSE
+  ADJUSTMENT
+  SYNC
+}
+
+model FuelOperationLog {
+  id                 Int               @id @default(autoincrement())
+  timestamp          DateTime          @default(now())
+  operationType      FuelOperationType
+  description        String
+  details            String            @db.Text // JSON string sa detaljima operacije
+  stateBefore        String            @db.Text // JSON string stanja prije operacije
+  stateAfter         String            @db.Text // JSON string stanja nakon operacije
+  sourceEntityType   String            // Tip entiteta na kojem se vrši operacija (npr. "FixedStorageTank")
+  sourceEntityId     Int               // ID entiteta na kojem se vrši operacija
+  targetEntityType   String?           // Opcioni tip entiteta destinacije (npr. kod transfera)
+  targetEntityId     Int?              // Opcioni ID entiteta destinacije
+  quantityLiters     Float             // Količina goriva na kojoj se vrši operacija
+  fuelType           String            // Tip goriva (JET-A1, itd.)
+  success            Boolean           @default(true) // Da li je operacija uspješno izvršena
+  errorMessage       String?           @db.Text // Poruka greške ako operacija nije uspješna
+  userId             Int?              // Korisnik koji je izvršio operaciju
+  transactionId      String?           // Identifikator transakcije (ako postoji)
+
+  // Relacije
+  user               User?             @relation(fields: [userId], references: [id])
+
+  // Indeksi za brže pretraživanje
+  @@index([timestamp])
+  @@index([operationType])
+  @@index([sourceEntityType, sourceEntityId])
+  @@index([targetEntityType, targetEntityId])
+  @@index([userId])
+  @@index([success])
 }

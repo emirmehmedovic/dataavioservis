@@ -82,3 +82,21 @@ export function getInitials(name?: string | null): string {
   
   return `${firstInitial}${secondInitial}`.toUpperCase();
 }
+
+/**
+ * Formatira broj s dvije decimale i dodaje tisuću separator (točku)
+ * Koristi se za prikaz količina goriva u litrama
+ * 
+ * @param value Broj koji treba formatirati
+ * @returns Formatirani broj s dvije decimalne znamenke i tisućama odvojenima s točkom
+ */
+export function formatNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '0,00';
+  }
+  
+  return new Intl.NumberFormat('hr-HR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}

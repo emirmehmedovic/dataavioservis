@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { fetchWithAuth } from '@/lib/apiService';
-import { ArrowUpCircleIcon, TruckIcon, BuildingStorefrontIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { fetchWithAuth, getFixedTankCustomsBreakdown, CustomsBreakdownItem } from '@/lib/apiService';
+import { ArrowUpCircleIcon, TruckIcon, BuildingStorefrontIcon, DocumentTextIcon, ExclamationTriangleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
 
 interface TankRefillFormProps {
   tankId: number;
@@ -28,13 +29,18 @@ interface FixedStorageTank {
   capacity_liters: number;
   current_quantity_liters: number;
   fuel_type: string;
+  // Custom fields for MRN data
+  oldestMrnDate?: string;
+  oldestMrn?: string;
+  customsData?: CustomsBreakdownItem[];
 }
 
 export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefillFormProps) {
   const [tank, setTank] = useState<FuelTank | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [refillSourceType, setRefillSourceType] = useState<'supplier' | 'fixedTank'>('supplier');
+  // Currently only using fixedTank option
+  const [refillSourceType, setRefillSourceType] = useState<'supplier' | 'fixedTank'>('fixedTank');
   const [fixedTanks, setFixedTanks] = useState<FixedStorageTank[]>([]);
   const [loadingFixedTanks, setLoadingFixedTanks] = useState(false);
   const [selectedFixedTankId, setSelectedFixedTankId] = useState<number | null>(null);
@@ -72,9 +78,66 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
       if (refillSourceType === 'fixedTank') {
         setLoadingFixedTanks(true);
         try {
+          // Fetch basic tank data
           const data = await fetchWithAuth<FixedStorageTank[]>('/api/fuel/fixed-tanks');
           console.log('Fetched fixed tanks raw data FROM API:', JSON.stringify(data, null, 2));
-          setFixedTanks(data);
+          
+          // Fetch MRN data for each tank and enhance the tank objects
+          const tanksWithMrnData = await Promise.all(data.map(async (tank) => {
+            try {
+              const customsData = await getFixedTankCustomsBreakdown(tank.id);
+              let oldestMrnDate = null;
+              let oldestMrn = null;
+              
+              // Process customs data to find the oldest MRN
+              if (Array.isArray(customsData)) {
+                // Direct array format
+                if (customsData.length > 0) {
+                  // Sort by date to find oldest
+                  const sorted = [...customsData].sort((a, b) => 
+                    new Date(a.date_received).getTime() - new Date(b.date_received).getTime()
+                  );
+                  oldestMrnDate = sorted[0].date_received;
+                  oldestMrn = sorted[0].mrn;
+                  return { ...tank, oldestMrnDate, oldestMrn, customsData };
+                }
+              } else if (customsData.customs_breakdown && customsData.customs_breakdown.length > 0) {
+                // Response object format
+                const sorted = [...customsData.customs_breakdown].sort((a, b) => 
+                  new Date(a.date_added).getTime() - new Date(b.date_added).getTime()
+                );
+                oldestMrnDate = sorted[0].date_added;
+                oldestMrn = sorted[0].customs_declaration_number;
+                
+                // Convert to consistent format for component use
+                const formattedCustomsData = customsData.customs_breakdown.map(item => ({
+                  mrn: item.customs_declaration_number,
+                  quantity: item.remaining_quantity_liters,
+                  date_received: item.date_added
+                }));
+                
+                return { ...tank, oldestMrnDate, oldestMrn, customsData: formattedCustomsData };
+              }
+              
+              return { ...tank }; // No MRN data
+            } catch (error) {
+              console.error(`Error fetching customs data for tank ${tank.id}:`, error);
+              return { ...tank }; // Return tank without MRN data on error
+            }
+          }));
+          
+          // Sort tanks by oldest MRN date first
+          const sortedTanks = tanksWithMrnData.sort((a, b) => {
+            // Tanks with MRN data come first
+            if (a.oldestMrnDate && !b.oldestMrnDate) return -1;
+            if (!a.oldestMrnDate && b.oldestMrnDate) return 1;
+            if (!a.oldestMrnDate && !b.oldestMrnDate) return 0;
+            
+            // Sort by oldest MRN date
+            return new Date(a.oldestMrnDate!).getTime() - new Date(b.oldestMrnDate!).getTime();
+          });
+          
+          setFixedTanks(sortedTanks);
         } catch (error) {
           console.error('Error fetching fixed tanks (inside catch block):', error);
           toast.error('Greška pri učitavanju fiksnih tankova');
@@ -124,16 +187,46 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
           setSubmitting(false);
           return;
         }
+        
+        // Find the selected fixed tank
         const sourceFixedTank = fixedTanks.find(ft => ft.id === selectedFixedTankId);
         if (!sourceFixedTank) {
           toast.error('Odabrani fiksni tank nije pronađen. Molimo osvježite listu.');
           setSubmitting(false);
           return;
         }
+        
         if (formData.quantity_liters > sourceFixedTank.current_quantity_liters) {
           toast.error(`Količina za transfer (${formData.quantity_liters} L) prekoračuje dostupnu količinu u fiksnom tanku (${sourceFixedTank.current_quantity_liters} L).`);
           setSubmitting(false);
           return;
+        }
+        
+        // Check if there's a tank with an older MRN that should be used first
+        const oldestTank = fixedTanks.find(ft => 
+          ft.oldestMrnDate && 
+          ft.current_quantity_liters > 0 && 
+          ft.fuel_type === sourceFixedTank.fuel_type
+        );
+        
+        // If the selected tank is not the one with the oldest MRN, warn the user
+        if (oldestTank && 
+            oldestTank.id !== sourceFixedTank.id && 
+            oldestTank.oldestMrnDate && 
+            sourceFixedTank.oldestMrnDate && 
+            new Date(oldestTank.oldestMrnDate).getTime() < new Date(sourceFixedTank.oldestMrnDate).getTime()) {
+          
+          const confirmUse = window.confirm(
+            `UPOZORENJE: Postoji fiksni tank (${oldestTank.tank_name || oldestTank.name}) sa starijim MRN brojem ` +
+            `(${oldestTank.oldestMrn} od ${oldestTank.oldestMrnDate ? format(new Date(oldestTank.oldestMrnDate), 'dd.MM.yyyy') : 'n/a'}). ` +
+            `Prema pravilima, trebali biste prvo koristiti gorivo iz tanka sa najstarijim MRN brojem. ` +
+            `\n\nŽelite li nastaviti sa odabranim tankom?`
+          );
+          
+          if (!confirmUse) {
+            setSubmitting(false);
+            return;
+          }
         }
 
         const transferPayload = {
@@ -150,7 +243,7 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
         });
         toast.success('Transfer iz fiksnog tanka uspješno evidentiran');
 
-      } else { // refillSourceType === 'supplier'
+      } /* else { // refillSourceType === 'supplier'
         if (!formData.supplier.trim()) {
           toast.error('Dobavljač je obavezan');
           setSubmitting(false);
@@ -170,7 +263,7 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
           body: JSON.stringify(supplierRefillPayload),
         });
         toast.success('Dopuna od dobavljača uspješno evidentirana');
-      }
+      } */
       
       onSuccess();
     } catch (error) {
@@ -258,7 +351,8 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
       </motion.div>
       
       <form onSubmit={handleSubmit}>
-        <div className="mb-5">
+        {/* Commented out source selection as we're only using fixed tank option */}
+        {/* <div className="mb-5">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Izvor dopune
           </label>
@@ -305,6 +399,21 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
               </div>
             </div>
           </div>
+        </div> */}
+        
+        <div className="mb-5">
+          <div className="flex items-center">
+            <div className="p-2 rounded-full mr-3 bg-indigo-100 text-indigo-600">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 10V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V10M20 10V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10M20 10H4M8 14H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M12 10V18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div className="font-medium text-gray-900">Transfer iz fiksnog tanka</div>
+              <div className="text-xs text-gray-500">Odaberite izvorni fiksni tank ispod</div>
+            </div>
+          </div>
         </div>
 
         <motion.div 
@@ -312,9 +421,56 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
           className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label htmlFor="fixedTankId" className="block text-sm font-medium text-gray-700 mb-1">
+              Izvorni fiksni tank
+            </label>
+            <div className="relative">
+              <select
+                name="fixedTankId"
+                id="fixedTankId"
+                value={selectedFixedTankId || ''}
+                onChange={(e) => setSelectedFixedTankId(parseInt(e.target.value, 10) || null)}
+                required
+                disabled={loadingFixedTanks}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pr-10 appearance-none"
+              >
+                <option value="" disabled>
+                  {loadingFixedTanks ? 'Učitavanje fiksnih tankova...' : 'Odaberite fiksni tank (sortirano po najstarijem MRN)'}
+                </option>
+                {fixedTanks.map((ft, index) => (
+                  <option 
+                    key={ft.id} 
+                    value={ft.id}
+                    className={index === 0 ? 'font-bold bg-green-50' : ''}
+                  >
+                    {index === 0 && ft.oldestMrn && '⭐ '}
+                    {ft.tank_name || ft.name} ({ft.tank_identifier || ft.identifier}) - 
+                    {ft.oldestMrn ? 
+                      `MRN: ${ft.oldestMrn} (${ft.oldestMrnDate ? format(new Date(ft.oldestMrnDate), 'dd.MM.yyyy') : 'n/a'})` : 
+                      'Nema MRN podataka'} - 
+                    Dostupno: {(ft.current_quantity_liters ?? 0).toLocaleString()} L
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            
+            {fixedTanks.length > 0 && (
+              <div className="mt-2 text-sm text-amber-600 flex items-center">
+                <ClockIcon className="h-4 w-4 mr-1" />
+                <span>Tankovi su sortirani po najstarijem MRN broju - prvo koristite najstarije zalihe.</span>
+              </div>
+            )}
+          </div>
+          
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-              {refillSourceType === 'supplier' ? 'Datum' : 'Datum Transfera'}
+              Datum Transfera
             </label>
             <input
               type="date"
@@ -344,109 +500,58 @@ export default function TankRefillForm({ tankId, onSuccess, onCancel }: TankRefi
             />
           </div>
           
-          {refillSourceType === 'supplier' && (
-            <>
-              <div className="sm:col-span-2">
-                <label htmlFor="supplier" className="block text-sm font-medium text-gray-700">
-                  Dobavljač
-                </label>
-                <input
-                  type="text"
-                  name="supplier"
-                  id="supplier"
-                  value={formData.supplier}
-                  onChange={handleInputChange}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
+          {selectedFixedTank && (
+            <div className="sm:col-span-2 mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+              <div className="flex items-center mb-1">
+                <svg className="w-4 h-4 text-indigo-600 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 10V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V10M20 10V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10M20 10H4M8 14H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <span className="font-medium text-indigo-800 text-sm">{selectedFixedTank.tank_name || selectedFixedTank.name} ({selectedFixedTank.tank_identifier || selectedFixedTank.identifier})</span>
               </div>
-            </>
-          )}
-          
-          {refillSourceType === 'fixedTank' && (
-            <>
-              <div className="sm:col-span-2">
-                <label htmlFor="fixedTankId" className="block text-sm font-medium text-gray-700 mb-1">
-                  Izvorni fiksni tank
-                </label>
-                <div className="relative">
-                  <select
-                    name="fixedTankId"
-                    id="fixedTankId"
-                    value={selectedFixedTankId || ''}
-                    onChange={(e) => setSelectedFixedTankId(parseInt(e.target.value, 10) || null)}
-                    required
-                    disabled={loadingFixedTanks}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pr-10 appearance-none"
-                  >
-                    <option value="" disabled>
-                      {loadingFixedTanks ? 'Učitavanje fiksnih tankova...' : 'Odaberite fiksni tank'}
-                    </option>
-                    {fixedTanks.map((ft) => (
-                      <option key={ft.id} value={ft.id}>
-                        {ft.tank_name || ft.name} ({ft.tank_identifier || ft.identifier}) - Dostupno: {(ft.current_quantity_liters ?? 0).toLocaleString()} L / Kapacitet: {(ft.capacity_liters ?? 0).toLocaleString()} L
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-gray-500">Tip goriva:</span>
+                  <span className="ml-1 text-gray-900 font-medium">{selectedFixedTank.fuel_type}</span>
                 </div>
-                {selectedFixedTank && (
-                  <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                    <div className="flex items-center mb-1">
-                      <svg className="w-4 h-4 text-indigo-600 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 10V7C20 5.34315 18.6569 4 17 4H7C5.34315 4 4 5.34315 4 7V10M20 10V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10M20 10H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      </svg>
-                      <span className="font-medium text-indigo-800 text-sm">{selectedFixedTank.tank_name || selectedFixedTank.name} ({selectedFixedTank.tank_identifier || selectedFixedTank.identifier})</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-gray-500">Tip goriva:</span>
-                        <span className="ml-1 text-gray-900 font-medium">{selectedFixedTank.fuel_type}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Trenutno stanje:</span>
-                        <span className="ml-1 text-gray-900 font-medium">{(selectedFixedTank.current_quantity_liters ?? 0).toLocaleString()} L</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <span className="text-gray-500">Trenutno stanje:</span>
+                  <span className="ml-1 text-gray-900 font-medium">{(selectedFixedTank.current_quantity_liters ?? 0).toLocaleString()} L</span>
+                </div>
               </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                  Napomene (opciono)
-                </label>
-                <textarea
-                  name="notes"
-                  id="notes"
-                  rows={3}
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-            </>
-          )}
-          
-          {refillSourceType === 'supplier' && (
-            <div className="sm:col-span-2">
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                Napomene
-              </label>
-              <textarea
-                name="notes"
-                id="notes"
-                rows={3}
-                value={formData.notes}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              />
             </div>
           )}
+          
+          <div className="sm:col-span-2">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+              Napomene (opciono)
+            </label>
+            <textarea
+              name="notes"
+              id="notes"
+              rows={3}
+              value={formData.notes}
+              onChange={handleInputChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
         </motion.div>
+        
+        {/* Commented out supplier notes section */}
+        {/* {refillSourceType === 'supplier' && (
+          <div className="sm:col-span-2">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+              Napomene
+            </label>
+            <textarea
+              name="notes"
+              id="notes"
+              rows={3}
+              value={formData.notes}
+              onChange={handleInputChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+        )} */}
         
         <div className="mt-6 sm:mt-8 sm:grid sm:grid-cols-2 sm:gap-3 border-t pt-5">
           <button

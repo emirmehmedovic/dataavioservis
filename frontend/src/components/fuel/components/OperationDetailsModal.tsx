@@ -1,6 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { FuelingOperation } from '../types';
+
+// Prošireni tip za FuelingOperation koji uključuje usd_exchange_rate
+interface ExtendedFuelingOperation extends FuelingOperation {
+  usd_exchange_rate?: string;
+}
+
 import { formatDate, API_BASE_URL, generatePDFInvoice } from '../utils/helpers';
 import { generateXMLInvoice, downloadXML } from '../utils/xmlInvoice';
 import { generateDomesticPDFInvoice } from '../utils/domesticInvoice';
@@ -8,11 +14,65 @@ import { downloadDocument } from '@/lib/apiService';
 import { toast } from 'react-hot-toast';
 
 interface OperationDetailsModalProps {
-  operation: FuelingOperation;
+  isOpen?: boolean;
   onClose: () => void;
+  operation: ExtendedFuelingOperation;
 }
 
 const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation, onClose }) => {
+  // Helper function to get the exchange rate
+  const getExchangeRate = useMemo(() => {
+    console.log('DEBUG - Currency:', operation.currency);
+    console.log('DEBUG - USD Exchange Rate raw value:', operation.usd_exchange_rate);
+    console.log('DEBUG - USD Exchange Rate type:', typeof operation.usd_exchange_rate);
+    
+    // Check if the exchange rate is a valid number
+    const hasValidExchangeRate = operation.usd_exchange_rate && 
+      !isNaN(parseFloat(operation.usd_exchange_rate)) && 
+      parseFloat(operation.usd_exchange_rate) > 0;
+    
+    console.log('DEBUG - Has valid exchange rate:', hasValidExchangeRate);
+    
+    if (operation.currency === 'EUR') {
+      // For EUR, use fixed exchange rate if not provided
+      if (hasValidExchangeRate) {
+        const rate = parseFloat(operation.usd_exchange_rate!);
+        console.log('DEBUG - EUR using backend rate:', rate);
+        return rate;
+      } else {
+        console.log('DEBUG - EUR using fixed rate: 1.95583');
+        return 1.95583;
+      }
+    } else if (operation.currency === 'USD') {
+      // For USD, use provided exchange rate or default to 1.8 if not available
+      if (hasValidExchangeRate) {
+        const rate = parseFloat(operation.usd_exchange_rate!);
+        console.log('DEBUG - USD using backend rate:', rate);
+        return rate;
+      } else {
+        console.log('DEBUG - USD using default rate: 1.8');
+        return 1.8;
+      }
+    }
+    return 1; // Default for BAM
+  }, [operation.currency, operation.usd_exchange_rate]);
+  
+  // Debugging podataka
+  useEffect(() => {
+    console.log('OperationDetailsModal received operation:', operation);
+    console.log('Currency:', operation.currency);
+    console.log('USD Exchange Rate:', operation.usd_exchange_rate);
+    console.log('Calculated Exchange Rate:', getExchangeRate);
+    
+    // Dodatni debugging za izračun BAM ekvivalenta
+    if (operation.currency === 'USD' || operation.currency === 'EUR') {
+      console.log('Exchange rate used:', getExchangeRate);
+      console.log('Price per kg in original currency:', operation.price_per_kg || 0);
+      console.log('Price per kg in BAM:', (operation.price_per_kg || 0) * getExchangeRate);
+      console.log('Total amount in original currency:', operation.total_amount || 0);
+      console.log('Total amount in BAM:', (operation.total_amount || 0) * getExchangeRate);
+    }
+  }, [operation, getExchangeRate]);
   // Pomoćna funkcija za renderiranje MRN tablice
   const renderMrnTable = (mrnData: any[]) => {
     if (!mrnData || !Array.isArray(mrnData) || mrnData.length === 0) {
@@ -352,64 +412,26 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                     </div>
                   </div>
                   <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Cijena po kg</div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">
-                      {(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}
-                    </div>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avio Cisterna</div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">
-                      {operation.tank?.identifier || 'N/A'} {operation.tank?.name ? `(${operation.tank.name})` : ''}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Additional Information Card */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                  <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11 7H13V9H11V7ZM12 17C12.55 17 13 16.55 13 16V12C13 11.45 12.55 11 12 11C11.45 11 11 11.45 11 12V16C11 16.55 11.45 17 12 17ZM12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="currentColor"/>
-                  </svg>
-                  Dodatne informacije
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tip Saobraćaja</div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">
-                      {operation.tip_saobracaja ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          {operation.tip_saobracaja === 'domestic' ? 'DOMAĆI' : 'MEĐUNARODNI'}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 italic">N/A</span>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Cijena po kg</span>
+                      <span className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        {(operation.price_per_kg || 0).toLocaleString('hr-HR', { minimumFractionDigits: 5 })} {operation.currency || 'BAM'}
+                      </span>
+                      {(operation.currency === 'USD' || operation.currency === 'EUR') && (
+                        <div className="mt-2 flex items-center bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">BAM:</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {((operation.price_per_kg || 0) * getExchangeRate).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      )}
+                      {(operation.discount_percentage && operation.discount_percentage > 0) && (
+                        <div className="mt-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">× (1 - {operation.discount_percentage}%)</span>
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Broj dostavnice</div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.delivery_note_number || 'N/A'}</div>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Operater</div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">{operation.operator_name}</div>
-                  </div>
-                  {operation.discount_percentage !== undefined && operation.discount_percentage > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rabat</div>
-                      <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{operation.discount_percentage}%</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <ul className="space-y-1">
-                          <li>Cijena prije rabata: <span className="font-medium">{((operation.total_amount || 0) / (1 - operation.discount_percentage / 100)).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span></li>
-                          <li>Iznos rabata: <span className="font-medium">{(((operation.total_amount || 0) / (1 - operation.discount_percentage / 100)) * (operation.discount_percentage / 100)).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span></li>
-                          <li>Konačna cijena: <span className="font-medium">{(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}</span></li>
-                        </ul>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -446,8 +468,18 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                     <div className="bg-gray-700 dark:bg-gray-800 rounded-lg p-4 border border-gray-600 dark:border-gray-700 shadow-sm text-white">
                       <h4 className="text-sm font-medium text-gray-200 mb-2">Ukupna cijena</h4>
                       <div className="flex items-center justify-between">
-                        <div className="text-2xl font-bold">
-                          {(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}
+                        <div className="flex flex-col">
+                          <div className="text-2xl font-bold">
+                            {(operation.total_amount || 0).toLocaleString('hr-HR', { minimumFractionDigits: 2 })} {operation.currency || 'BAM'}
+                          </div>
+                          {(operation.currency === 'USD' || operation.currency === 'EUR') && (
+                            <div className="flex items-center mt-2 bg-gray-600 px-3 py-1.5 rounded-md">
+                              <span className="text-sm text-gray-200 mr-2">BAM:</span>
+                              <span className="text-lg font-bold text-white">
+                                {((operation.total_amount || 0) * getExchangeRate).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-xs bg-gray-600 dark:bg-gray-700 px-2 py-1 rounded-full">
                           {operation.tip_saobracaja || 'Standardni saobraćaj'}
@@ -466,6 +498,21 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                     Cijena je obračunata na osnovu količine u kilogramima i cijene po kilogramu{operation.discount_percentage && operation.discount_percentage > 0 ? ', uz primijenjeni rabat' : ''}.
                   </p>
                   
+                  {(operation.currency === 'USD' || operation.currency === 'EUR') && (
+                    <p className="flex items-center mt-2">
+                      <svg className="w-4 h-4 mr-1 text-gray-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      BAM ekvivalent je izračunat po kursu {getExchangeRate.toLocaleString('hr-HR', { minimumFractionDigits: 5 })} za 1 {operation.currency}.
+                      {operation.usd_exchange_rate && !isNaN(parseFloat(operation.usd_exchange_rate)) && parseFloat(operation.usd_exchange_rate) > 0 ? (
+                        <span className="ml-1 text-green-600">(Kurs iz sistema)</span>
+                      ) : operation.currency === 'EUR' ? (
+                        <span className="ml-1 text-amber-600">(Korišten fiksni kurs za EUR)</span>
+                      ) : (
+                        <span className="ml-1 text-amber-600">(Korišten procijenjeni kurs za USD)</span>
+                      )}
+                    </p>
+                  )}
 
                 </div>
               </div>

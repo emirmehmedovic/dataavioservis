@@ -6,10 +6,21 @@ import dayjs from 'dayjs';
 // Import types
 import { 
   FuelingOperation, 
+  FuelingOperationFormData, 
+  FuelingOperationsApiResponse, 
   FuelTankFE, 
-  AirlineFE, 
-  FuelingOperationFormData 
+  AirlineFE 
 } from './types';
+
+// Prošireni tipovi koji uključuju usd_exchange_rate polje
+interface ExtendedFuelingOperationFormData extends FuelingOperationFormData {
+  usd_exchange_rate?: string;
+}
+
+interface ExtendedFuelingOperation extends FuelingOperation {
+  usd_exchange_rate?: string;
+}
+
 import { FuelPriceRule } from '@/types/fuel'; // Corrected import path for FuelPriceRule
 
 // Import components
@@ -35,7 +46,7 @@ import { generateConsolidatedDomesticPDFInvoice } from './utils/domesticInvoice'
 
 export default function FuelingOperations() {
   // State for operations data
-  const [operations, setOperations] = useState<FuelingOperation[]>([]);
+  const [operations, setOperations] = useState<ExtendedFuelingOperation[]>([]);
   const [tanks, setTanks] = useState<FuelTankFE[]>([]);
   const [airlines, setAirlines] = useState<AirlineFE[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +56,7 @@ export default function FuelingOperations() {
   // State for UI controls
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedOperationForDetails, setSelectedOperationForDetails] = useState<FuelingOperation | null>(null);
+  const [selectedOperationForDetails, setSelectedOperationForDetails] = useState<ExtendedFuelingOperation | null>(null);
   
   // State for filters
   const [startDate, setStartDate] = useState<string | null>(dayjs().startOf('month').format('YYYY-MM-DD'));
@@ -59,7 +70,7 @@ export default function FuelingOperations() {
   // State for form
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [modalAvailableDestinations, setModalAvailableDestinations] = useState<string[]>([]);
-  const [formData, setFormData] = useState<FuelingOperationFormData>({
+  const [formData, setFormData] = useState<ExtendedFuelingOperationFormData>({
     dateTime: dayjs().format('YYYY-MM-DDTHH:mm'),
     aircraft_registration: '',
     airlineId: '',
@@ -70,6 +81,7 @@ export default function FuelingOperations() {
     price_per_kg: 0,
     discount_percentage: 0, // Inicijalno nema rabata
     currency: 'BAM',
+    usd_exchange_rate: '', // Kurs USD u BAM (ako je valuta USD)
     total_amount: 0,
     tankId: '',
     flight_number: '',
@@ -191,6 +203,7 @@ export default function FuelingOperations() {
   // Handle form input changes
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    console.log(`handleInputChange: ${name} = ${value}`); // Dodajemo log za debugging
 
     // Start with current form data
     const newFormData = { ...formData };
@@ -220,6 +233,39 @@ export default function FuelingOperations() {
     // Update the specific field that changed
     const formKey = name as keyof typeof formData;
 
+    // Posebno rukovanje za usd_exchange_rate polje
+    if (formKey === 'usd_exchange_rate') {
+      const extendedFormData = newFormData as ExtendedFuelingOperationFormData;
+      extendedFormData.usd_exchange_rate = value;
+      console.log(`Setting usd_exchange_rate to: ${value}`); // Dodajemo log za debugging
+      setFormData(extendedFormData);
+      return;
+    }
+    
+    // Posebno rukovanje za promjenu valute
+    if (formKey === 'currency') {
+      newFormData.currency = value;
+      console.log(`Currency changed to: ${value}`);
+      
+      // Postavi odgovarajući exchange rate ovisno o valuti
+      if (value === 'EUR') {
+        // Za EUR koristimo fiksni kurs
+        (newFormData as ExtendedFuelingOperationFormData).usd_exchange_rate = '1.955830';
+        console.log('Setting fixed EUR exchange rate in handleInputChange');
+      } else if (value === 'BAM') {
+        // Za BAM postavljamo prazan string koji će backend tretirati kao null
+        (newFormData as ExtendedFuelingOperationFormData).usd_exchange_rate = '';
+        console.log('Setting empty exchange rate for BAM in handleInputChange');
+      } else if (value === 'USD') {
+        // Za USD, resetiraj kurs da korisnik može unijeti vlastiti
+        (newFormData as ExtendedFuelingOperationFormData).usd_exchange_rate = '';
+        console.log('Clearing exchange rate for USD in handleInputChange');
+      }
+      
+      setFormData(newFormData);
+      return;
+    }
+    
     // Handle numeric inputs that are now text inputs
     if (['quantity_liters', 'quantity_kg', 'price_per_kg', 'discount_percentage'].includes(formKey as string)) {
       // Provjera valjanosti unosa za sva tekstualna polja s brojevima
@@ -294,7 +340,7 @@ export default function FuelingOperations() {
       else if (formKey === 'notes') newFormData.notes = value;
       else if (formKey === 'tip_saobracaja') newFormData.tip_saobracaja = value;
       else if (formKey === 'delivery_note_number') newFormData.delivery_note_number = value;
-      else if (formKey === 'currency') newFormData.currency = value;
+      // Rukovanje s currency je premješteno na početak funkcije
     }
 
     // If airlineId changed, update available destinations and reset destination field
@@ -414,6 +460,12 @@ export default function FuelingOperations() {
       submissionFormData.append('price_per_kg', formData.price_per_kg.toString());
       submissionFormData.append('discount_percentage', formData.discount_percentage.toString());
       submissionFormData.append('currency', formData.currency);
+      
+      // Add exchange rate for USD or EUR currencies
+      if (formData.currency === 'USD' || formData.currency === 'EUR') {
+        submissionFormData.append('usd_exchange_rate', formData.usd_exchange_rate || (formData.currency === 'EUR' ? '1.955830' : ''));
+      }
+      
       submissionFormData.append('total_amount', formData.total_amount.toString());
       submissionFormData.append('tankId', tankIdNum.toString());
       submissionFormData.append('flight_number', formData.flight_number || '');

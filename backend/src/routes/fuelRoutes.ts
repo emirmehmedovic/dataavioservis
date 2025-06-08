@@ -4,6 +4,7 @@ import * as fuelTankRefillController from '../controllers/fuelTankRefillControll
 import * as airlineController from '../controllers/airlineController';
 import * as fuelReportController from '../controllers/fuelReportController';
 import * as fuelIntakeRecordController from '../controllers/fuelIntakeRecord.controller';
+import * as fuelConsistencyController from '../controllers/fuelConsistencyController';
 import { authenticateToken, checkRole } from '../middleware/auth';
 import fuelTransferToTankerRoutes from './fuelTransferToTanker.routes';
 import fuelingOperationRoutes from './fuelingOperation.routes';
@@ -77,6 +78,13 @@ router.delete('/intake-records/:id',
 // Fuel Reports routes
 router.get('/reports/statistics', authenticateToken, (req, res) => fuelReportController.getFuelStatistics(req, res));
 router.get('/reports/export', authenticateToken, (req, res) => fuelReportController.exportFuelData(req, res));
+
+// Fuel Consistency Check routes
+router.get('/admin/consistency-check', 
+  authenticateToken, 
+  checkRole(['ADMIN']), 
+  fuelConsistencyController.checkFuelConsistency
+);
 
 // Mount the Fixed-to-Mobile transfer routes
 router.use('/transfers/fixed-to-mobile', authenticateToken, checkRole(['ADMIN', 'FUEL_OPERATOR']), fuelTransferToTankerRoutes);

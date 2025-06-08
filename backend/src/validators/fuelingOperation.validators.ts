@@ -44,6 +44,10 @@ export const createFuelingOperationRules = [
     .optional()
     .isIn(['BAM', 'EUR', 'USD'])
     .withMessage('Currency must be one of: BAM, EUR, USD'),
+  body('usd_exchange_rate')
+    .optional()
+    .isFloat({ gt: 0 })
+    .withMessage('USD exchange rate must be a positive number if provided.'),
   body('total_amount')
     .optional()
     .isFloat({ gt: 0 })
@@ -123,6 +127,18 @@ export const updateFuelingOperationRules = [
     .trim()
     .isString()
     .withMessage('Broj dostavnice must be a string if provided.'),
+  body('currency')
+    .optional()
+    .isIn(['BAM', 'EUR', 'USD'])
+    .withMessage('Currency must be one of: BAM, EUR, USD if provided.'),
+  body('usd_exchange_rate')
+    .optional()
+    .isFloat({ gt: 0 })
+    .withMessage('USD exchange rate must be a positive number if provided.'),
+  body('total_amount')
+    .optional()
+    .isFloat({ gt: 0 })
+    .withMessage('Total amount must be a positive number if provided.'),
   // Ensure that tankId and quantity_liters are not part of the update request
   body('tankId').not().exists().withMessage('tankId cannot be updated.'),
   body('quantity_liters').not().exists().withMessage('quantity_liters cannot be updated.'),

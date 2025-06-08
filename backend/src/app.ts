@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { apiLimiter } from './middleware/rateLimit';
+import { initAllCronJobs } from './cron';
 
 import authRoutes from './routes/auth';
 import companyRoutes from './routes/company';
@@ -26,6 +27,8 @@ import activityRoutes from './routes/activity.routes';
 import fuelPriceRuleRoutes from './routes/fuelPriceRule.routes'; // Dodane rute za pravila o cijenama goriva
 import fuelProjectionPresetRoutes from './routes/fuelProjectionPreset.routes'; // Rute za spremanje projekcija goriva
 import valveTestRoutes from './routes/valveTest.routes'; // Rute za ILPCV i HECPV testove ventila
+import fuelOperationLogRoutes from './routes/fuelOperationLog.routes'; // Rute za praćenje operacija s gorivom
+import fuelConsistencyRoutes from './routes/fuelConsistency.routes'; // Rute za upravljanje nekonzistentnostima goriva
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -71,6 +74,8 @@ app.use('/api/fuel/fueling-operations', fuelingOperationRoutes);
 app.use('/api/fuel-receipts', fuelReceiptRoutes);
 app.use('/api/fuel-transfers-to-tanker', fuelTransferToTankerRoutes); // Registracija novih ruta
 app.use('/api/fuel/drains', fuelDrainRoutes); // Registracija ruta za istakanje goriva
+app.use('/api/fuel-operation-logs', fuelOperationLogRoutes); // Registracija ruta za audit logove operacija s gorivom
+app.use('/api/fuel-consistency', fuelConsistencyRoutes); // Registracija ruta za upravljanje nekonzistentnostima u podacima o gorivu
 app.use('/api/airlines', airlineRoutes); // Mount airline routes
 app.use('/api/documents', documentRoutes); // Mount document routes for authenticated document access
 app.use('/api/activities', activityRoutes);
@@ -100,4 +105,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  
+  // Inicijalizacija cron poslova nakon što se server uspješno pokrene
+  try {
+    initAllCronJobs();
+    console.log('Cron poslovi za periodičnu sinhronizaciju goriva uspješno inicijalzirani.');
+  } catch (error) {
+    console.error('Greška prilikom inicijalizacije cron poslova:', error);
+  }
 });

@@ -61,6 +61,7 @@ export interface FuelingOperation {
   price_per_kg?: number;
   discount_percentage?: number; // Rabat u postotku
   currency?: string;
+  usd_exchange_rate?: string; // Kurs USD u BAM (ako je valuta USD)
   total_amount?: number;
   tankId: number;
   tank: {
@@ -104,6 +105,7 @@ export interface FuelingOperationFormData {
   price_per_kg: number;
   discount_percentage: number; // Rabat u postotku
   currency: string;
+  usd_exchange_rate?: string; // Kurs USD u BAM (ako je valuta USD)
   total_amount: number;
   tankId: string;
   flight_number: string;

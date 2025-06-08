@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FuelType, FuelCategory, FixedStorageTank, FuelIntakeRecord } from '../../types/fuel';
+import dayjs from 'dayjs';
 import {
   getFixedTanks,
   createFuelIntake,
   uploadFuelIntakeDocument,
+  getFixedTankCustomsBreakdown,
   CreateFuelIntakePayload
 } from '../../lib/apiService';
 import { Trash2, UploadCloud, Edit3 } from 'lucide-react';
@@ -35,6 +37,36 @@ interface DocumentUploadData {
   file: File;
   document_type: string;
   // previewUrl?: string; // Optional: for image previews, not implemented yet
+}
+
+// Interface for MRN customs breakdown item
+interface CustomsBreakdownItem {
+  mrn: string;
+  quantity_liters: number;
+  quantity_kg: number;
+  date_added: string | Date;
+  customs_date?: string | Date;
+  customs_declaration_number?: string;
+  remaining_quantity_liters?: number;
+}
+
+// Interface for API response CustomsBreakdownItem
+interface ApiCustomsBreakdownItem {
+  mrn?: string;
+  customs_declaration_number?: string;
+  quantity_liters?: number;
+  remaining_quantity_liters?: number;
+  date_added?: string;
+  customs_date?: string;
+}
+
+// Interface for MRN data per tank
+interface TankMRNData {
+  tankId: string;
+  newestMRNDate: Date | null;
+  newestMRNDateString: string;
+  newestMRN: string;
+  customsItems: CustomsBreakdownItem[];
 }
 
 // Placeholder for form data structure - will be expanded
@@ -98,9 +130,9 @@ export default function NewFuelIntakeFormWizard() {
   const [currentStep, setCurrentStep] = useState(STEPS.DELIVERY_DETAILS);
   const [formData, setFormData] = useState<Partial<IntakeFormData>>({
     tank_distributions: [{}],
-    document_uploads: [], // Initialize document_uploads
-    fuel_category: FuelCategory.DOMESTIC, // Default to Domaće tržište
-    currency: Currency.BAM, // Default currency to BAM
+    document_uploads: [],
+    fuel_category: FuelCategory.DOMESTIC,
+    currency: Currency.BAM,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +142,12 @@ export default function NewFuelIntakeFormWizard() {
   const [availableTanks, setAvailableTanks] = useState<FixedStorageTank[]>([]);
   const [tanksLoading, setTanksLoading] = useState<boolean>(false);
   const [tanksError, setTanksError] = useState<string | null>(null);
+  
+  // MRN data state
+  const [tankMRNDataMap, setTankMRNDataMap] = useState<Map<string, TankMRNData>>(new Map());
+  const [isMRNDataLoading, setIsMRNDataLoading] = useState<boolean>(false);
+  const [mrnDataError, setMRNDataError] = useState<string | null>(null);
+  const [showOptimalDistribution, setShowOptimalDistribution] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,6 +238,168 @@ export default function NewFuelIntakeFormWizard() {
       }
     }
   }, [formData.quantity_liters_received, formData.quantity_kg_received]);  // Only depend on the two input values
+  
+  // --- MRN Data Fetching ---
+  const fetchMRNDataForTanks = async (tanksToFetch: FixedStorageTank[]) => {
+    if (!tanksToFetch || tanksToFetch.length === 0) {
+      setTankMRNDataMap(new Map());
+      return;
+    }
+    setIsMRNDataLoading(true);
+    setMRNDataError(null);
+    const newTankMRNDataMap = new Map<string, TankMRNData>();
+    
+    try {
+      // Process each tank in parallel
+      await Promise.all(tanksToFetch.map(async (tank) => {
+        try {
+          // Fetch customs breakdown data for this tank
+          const mrnItems = await getFixedTankCustomsBreakdown(tank.id);
+          
+          // Convert to a consistent format
+          const customsItems: Array<{
+            mrn: string;
+            quantity_liters: number;
+            date_added: string;
+          }> = Array.isArray(mrnItems) 
+            ? (mrnItems as ApiCustomsBreakdownItem[]).map(item => ({
+                mrn: item.mrn || item.customs_declaration_number || '',
+                quantity_liters: item.quantity_liters || item.remaining_quantity_liters || 0,
+                date_added: item.date_added || item.customs_date || new Date().toISOString()
+              }))
+            : ((mrnItems as any).customs_breakdown?.map((item: ApiCustomsBreakdownItem) => ({
+                mrn: item.customs_declaration_number || '',
+                quantity_liters: item.remaining_quantity_liters || 0,
+                date_added: item.date_added || new Date().toISOString()
+              })) || []);
+          
+          if (customsItems && customsItems.length > 0) {
+            // Process the customs breakdown items to find the newest MRN date for this tank
+            let newestMRNDate: Date | null = null;
+            let newestMRNString = '';
+            
+            for (const item of customsItems) {
+              const itemDate = dayjs(item.date_added).toDate();
+              if (!newestMRNDate || itemDate > newestMRNDate) {
+                newestMRNDate = itemDate;
+                newestMRNString = item.mrn;
+              }
+            }
+            
+            if (newestMRNDate) {
+              // Store the MRN data for this tank
+              newTankMRNDataMap.set(tank.id.toString(), {
+                tankId: tank.id.toString(),
+                newestMRNDate,
+                newestMRNDateString: dayjs(newestMRNDate).format('DD.MM.YYYY'),
+                newestMRN: newestMRNString,
+                customsItems: customsItems as unknown as CustomsBreakdownItem[]
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching MRN data for tank ${tank.id}:`, err);
+        }
+      }));
+      
+      // Update the state with all the MRN data
+      setTankMRNDataMap(newTankMRNDataMap);
+      
+    } catch (err: any) {
+      console.error("Error fetching MRN data for tanks:", err);
+      setMRNDataError(err.message || "Greška pri dohvaćanju MRN podataka.");
+    } finally {
+      setIsMRNDataLoading(false);
+    }
+  };
+
+  // --- MRN-based Distribution ---
+  const distributeOptimallyByMRN = async () => {
+    // Validate that we have a fuel type and quantity to distribute
+    if (!formData.fuel_type || !formData.quantity_liters_received || formData.quantity_liters_received <= 0) {
+      setError("Potrebno je odabrati tip goriva i unijeti količinu za raspodjelu.");
+      return;
+    }
+
+    setIsMRNDataLoading(true);
+    setMRNDataError(null);
+    
+    try {
+      // Get tanks matching the selected fuel type
+      const tanksForSelectedFuelType = filteredAvailableTanks.filter(tank => tank.status === 'ACTIVE');
+      
+      if (tanksForSelectedFuelType.length === 0) {
+        setMRNDataError("Nema dostupnih tankova za odabrani tip goriva.");
+        return;
+      }
+      
+      // Fetch MRN data for all matching tanks
+      await fetchMRNDataForTanks(tanksForSelectedFuelType);
+      
+      // Sort tanks by newest MRN date first (null dates at the end)
+      const sortedTanks = [...tanksForSelectedFuelType].sort((a, b) => {
+        const tankAData = tankMRNDataMap.get(a.id.toString());
+        const tankBData = tankMRNDataMap.get(b.id.toString());
+        
+        // If we don't have MRN data for a tank, put it at the end
+        if (!tankAData?.newestMRNDate) return 1;
+        if (!tankBData?.newestMRNDate) return -1;
+        
+        // Sort by newest MRN date first
+        return tankBData.newestMRNDate.getTime() - tankAData.newestMRNDate.getTime();
+      });
+      
+      // Calculate available capacity for each tank
+      const tankCapacities = sortedTanks.map(tank => ({
+        tankId: tank.id,
+        availableCapacity: tank.capacity_liters - tank.current_quantity_liters,
+        mrnDate: tankMRNDataMap.get(tank.id.toString())?.newestMRNDateString || 'N/A'
+      }));
+      
+      // Total quantity to distribute
+      const totalQuantity = formData.quantity_liters_received;
+      let remainingQuantity = totalQuantity;
+      
+      // Create new tank distributions based on optimal distribution
+      const newDistributions: TankDistributionData[] = [];
+      
+      for (const tank of tankCapacities) {
+        if (remainingQuantity <= 0) break;
+        
+        // Calculate how much we can put in this tank
+        const quantityForThisTank = Math.min(remainingQuantity, tank.availableCapacity);
+        
+        if (quantityForThisTank > 0) {
+          newDistributions.push({
+            tank_id: tank.tankId,
+            quantity_liters: parseFloat(quantityForThisTank.toFixed(2))
+          });
+          
+          remainingQuantity -= quantityForThisTank;
+        }
+      }
+      
+      // Update form data with new distributions
+      setFormData(prev => ({
+        ...prev,
+        tank_distributions: newDistributions
+      }));
+      
+      // Show success message
+      setSuccessMessage("Gorivo je optimalno raspoređeno prema najnovijim MRN datumima.");
+      
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      
+    } catch (err: any) {
+      console.error("Error distributing fuel by MRN:", err);
+      setMRNDataError(err.message || "Greška pri optimalnoj raspodjeli goriva.");
+    } finally {
+      setIsMRNDataLoading(false);
+    }
+  };
 
   // --- Tank Distribution Handlers ---
   const handleAddTankDistribution = () => {
@@ -237,7 +437,14 @@ export default function NewFuelIntakeFormWizard() {
           currentEntry[field] = Math.round(numValue * 100) / 100;
         }
       } else if (field === 'tank_id') {
-        currentEntry[field] = value === '' ? undefined : parseInt(value as string, 10);
+        const tankId = value === '' ? undefined : parseInt(value as string, 10);
+        currentEntry[field] = tankId;
+        
+        // Fetch MRN data for this tank if it's selected and we don't already have its MRN data
+        if (tankId && !tankMRNDataMap.has(tankId.toString())) {
+          // Fetch MRN data for this specific tank
+          fetchMRNDataForSingleTank(tankId);
+        }
       }
       newDistributions[index] = currentEntry;
       return { ...prev, tank_distributions: newDistributions };
@@ -252,17 +459,78 @@ export default function NewFuelIntakeFormWizard() {
         setFormErrors(prev => ({ ...prev, tank_distributions: newTankErrors }));
     }
   };
+  
+  // Function to fetch MRN data for a single tank
+  const fetchMRNDataForSingleTank = async (tankId: number) => {
+    try {
+      // Set loading state for this specific tank
+      setIsMRNDataLoading(true);
+      
+      // Fetch MRN data for the tank
+      const mrnItems = await getFixedTankCustomsBreakdown(tankId);
+      
+      // Convert to a consistent format
+      const customsItems: Array<{
+        mrn: string;
+        quantity_liters: number;
+        date_added: string;
+      }> = Array.isArray(mrnItems) 
+        ? (mrnItems as ApiCustomsBreakdownItem[]).map(item => ({
+            mrn: item.mrn || item.customs_declaration_number || '',
+            quantity_liters: item.quantity_liters || item.remaining_quantity_liters || 0,
+            date_added: item.date_added || item.customs_date || new Date().toISOString()
+          }))
+        : ((mrnItems as any).customs_breakdown?.map((item: ApiCustomsBreakdownItem) => ({
+            mrn: item.customs_declaration_number || '',
+            quantity_liters: item.remaining_quantity_liters || 0,
+            date_added: item.date_added || new Date().toISOString()
+          })) || []);
+      
+      // Find the newest MRN date
+      let newestMRNDate: Date | null = null;
+      let newestMRNString = '';
+      
+      if (customsItems.length > 0) {
+        // Sort by date descending
+        const sortedItems = [...customsItems].sort((a, b) => {
+          return new Date(b.date_added).getTime() - new Date(a.date_added).getTime();
+        });
+        
+        // Get the newest date
+        newestMRNDate = new Date(sortedItems[0].date_added);
+        newestMRNString = sortedItems[0].mrn;
+      }
+      
+      // Update the MRN data map with this tank's data
+      setTankMRNDataMap(prev => {
+        const newMap = new Map(prev);
+        newMap.set(tankId.toString(), {
+          tankId: tankId.toString(),
+          newestMRNDate,
+          newestMRNDateString: newestMRNDate ? dayjs(newestMRNDate).format('DD.MM.YYYY') : 'Nema MRN podataka',
+          newestMRN: newestMRNString,
+          customsItems: customsItems as unknown as CustomsBreakdownItem[]
+        });
+        return newMap;
+      });
+      
+      setIsMRNDataLoading(false);
+    } catch (error) {
+      console.error(`Error fetching MRN data for tank ${tankId}:`, error);
+      setIsMRNDataLoading(false);
+    }
+  };
 
   // Memoized filtered tanks for Step 2 dropdowns
   const filteredAvailableTanks = useMemo(() => {
-    if (!formData.fuel_type) return availableTanks; // Show all if fuel type in step 1 not chosen
-    // Handle both possible structures: tank.fuel_type or tank.fuelType.name
+    if (!availableTanks || !formData.fuel_type) return [];
     return availableTanks.filter(tank => {
-      // Use type assertion to handle potential extended properties
+      // Handle both old and new structures
       const tankAny = tank as any;
-      if (tankAny.fuelType && tankAny.fuelType.name) {
+      if (tankAny.fuelType && typeof tankAny.fuelType === 'object' && 'name' in tankAny.fuelType) {
         return tankAny.fuelType.name === formData.fuel_type;
       }
+      // Fallback to the old structure
       return tank.fuel_type === formData.fuel_type;
     });
   }, [availableTanks, formData.fuel_type]);
@@ -1183,12 +1451,38 @@ export default function NewFuelIntakeFormWizard() {
             </div>
             
             <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-6">
-              <h4 className="text-md font-medium text-gray-700 mb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                </svg>
-                Pregled Količina
-              </h4>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-md font-medium text-gray-700 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-blue-500">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                  </svg>
+                  Pregled Količina
+                </h4>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={distributeOptimallyByMRN}
+                  disabled={isMRNDataLoading}
+                  className="flex items-center gap-2 px-4 py-1 text-sm border-green-300 text-green-600 hover:bg-green-50 transition-colors duration-200"
+                >
+                  {isMRNDataLoading ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full"></div>
+                      Učitavanje...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        <path d="M9 14l2 2 4-4"></path>
+                      </svg>
+                      Optimalna MRN raspodjela
+                    </>
+                  )}
+                </Button>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -1253,6 +1547,28 @@ export default function NewFuelIntakeFormWizard() {
                 </div>
               </div>
             )}
+            
+            {successMessage && (
+              <div className="flex p-4 mb-6 text-green-800 border-l-4 border-green-500 bg-green-50" role="alert">
+                <svg className="flex-shrink-0 w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+                </svg>
+                <div>
+                  <span className="font-medium">Uspješno:</span> {successMessage}
+                </div>
+              </div>
+            )}
+            
+            {mrnDataError && (
+              <div className="flex p-4 mb-6 text-red-800 border-l-4 border-red-500 bg-red-50" role="alert">
+                <svg className="flex-shrink-0 w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+                </svg>
+                <div>
+                  <span className="font-medium">Greška MRN podataka:</span> {mrnDataError}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               {formData.tank_distributions?.map((distribution, index) => {
@@ -1296,6 +1612,17 @@ export default function NewFuelIntakeFormWizard() {
                           </svg>
                           Odaberite Tank (Tip: {selectedFuelType})
                         </Label>
+                        {distribution.tank_id && tankMRNDataMap.get(distribution.tank_id.toString()) && (
+                          <div className="mt-1 text-xs text-gray-600 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                              <line x1="16" y1="2" x2="16" y2="6"/>
+                              <line x1="8" y1="2" x2="8" y2="6"/>
+                              <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            Najnoviji MRN datum: <span className="font-medium ml-1">{tankMRNDataMap.get(distribution.tank_id.toString())?.newestMRNDateString}</span>
+                          </div>
+                        )}
                         <Select
                           name={`tank_id_${index}`}
                           value={distribution.tank_id?.toString() || ''}

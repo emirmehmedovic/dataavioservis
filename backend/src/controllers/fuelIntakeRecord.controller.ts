@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { PrismaClient, Prisma, FuelIntakeRecords, FixedTankActivityType, FuelingOperation, FuelDrainRecord } from '@prisma/client';
+import { PrismaClient, Prisma, FixedTankActivityType } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from './activity.controller';
+import { logger } from '../utils/logger';
+import { executeFuelOperation } from '../utils/transactionUtils';
+import { upsertMrnRecord } from '../utils/mrnUtils';
 
 const prisma = new PrismaClient();
 
@@ -340,9 +343,15 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
   }
 
   try {
-    console.log("Starting Prisma transaction for fuel intake.");
-    const result = await prisma.$transaction(async (tx) => {
-      console.log("Inside transaction: Creating FuelIntakeRecords entry.");
+    logger.info("Starting fuel intake operation with high isolation level transaction.");
+    
+    // Prikupi ID-eve tankova za praćenje stanja prije i poslije operacije
+    const tankIds = Array.isArray(tank_distributions) 
+      ? tank_distributions.map(dist => parseInt(dist.tank_id)) 
+      : [];
+    
+    const result = await executeFuelOperation(async (tx) => {
+      logger.info("Inside transaction: Creating FuelIntakeRecords entry.");
       // Create data object with all fields
       const recordData: any = {
         delivery_vehicle_plate,
@@ -365,7 +374,7 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
       const newFuelIntakeRecord = await tx.fuelIntakeRecords.create({
         data: recordData,
       });
-      console.log("FuelIntakeRecords entry created, ID:", newFuelIntakeRecord.id);
+      logger.info("FuelIntakeRecords entry created, ID: " + newFuelIntakeRecord.id);
 
       if (Array.isArray(tank_distributions) && tank_distributions.length > 0) {
         for (const dist of tank_distributions) {
@@ -409,32 +418,18 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
           });
           console.log(`Created transfer record for tank ID ${tankId}, quantity: ${dist.quantity_liters} L`);
           
-          // Kreiraj zapis u TankFuelByCustoms tabeli za praćenje goriva po MRN
+          // Kreiraj ili ažuriraj zapis u TankFuelByCustoms tabeli za praćenje goriva po MRN
           const mrnNumber = customs_declaration_number || `UNTRACKED-INTAKE-${newFuelIntakeRecord.id}`;
           const quantityLiters = parseFloat(dist.quantity_liters);
           
-          // Koristi raw SQL upit umjesto Prisma modela koji možda nije prepoznat
-          await tx.$executeRaw`
-            INSERT INTO "TankFuelByCustoms" (
-              fixed_tank_id, 
-              customs_declaration_number, 
-              quantity_liters, 
-              remaining_quantity_liters, 
-              fuel_intake_record_id,
-              date_added,
-              "createdAt",
-              "updatedAt"
-            ) VALUES (
-              ${tankId}, 
-              ${mrnNumber}, 
-              ${quantityLiters}, 
-              ${quantityLiters}, 
-              ${newFuelIntakeRecord.id},
-              ${new Date(intake_datetime)},
-              NOW(),
-              NOW()
-            )
-          `;
+          // Koristi upsert funkciju umjesto direktnog SQL upita
+          await upsertMrnRecord(tx, {
+            tankId,
+            mrnNumber,
+            quantityLiters,
+            fuelIntakeRecordId: newFuelIntakeRecord.id,
+            dateAdded: new Date(intake_datetime)
+          });
           console.log(`Created customs tracking record for tank ID ${tankId}, MRN: ${mrnNumber}, quantity: ${dist.quantity_liters} L`);
           
           console.log(`Updating FixedStorageTanks current_quantity_liters for tank ID: ${tankId}.`);
@@ -463,16 +458,21 @@ export const createFuelIntakeRecord: RequestHandler<unknown, unknown, any, unkno
               documents: true 
           }
       });
-      console.log("Transaction completed successfully.");
+      logger.info("Transaction completed successfully.");
       return finalRecord;
+    }, {
+      tankIds,
+      operationType: 'INTAKE',
+      notes: `Prijem goriva: ${delivery_note_number || 'Bez otpremnice'}${customs_declaration_number ? `, MRN: ${customs_declaration_number}` : ''}`,
+      userId: (req as AuthRequest).user?.id
     });
 
-    console.log("Sending 201 response with result:", result);
+    logger.info("Sending 201 response with result.");
     res.status(201).json(result);
     return;
 
   } catch (error: any) {
-    console.error("Error in createFuelIntakeRecord transaction or final response:", error.message, error.stack);
+    logger.error("Error in createFuelIntakeRecord transaction or final response:", error.message, error.stack);
     next(error);
     return;
   }

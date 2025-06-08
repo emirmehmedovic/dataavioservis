@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { FuelPriceRule } from '@/types/fuel'; // Assuming global type
 import { AirlineFE, FuelTankFE, FuelingOperationFormData } from '../types';
 
+// Prošireni tip za FuelingOperationFormData koji uključuje usd_exchange_rate
+interface ExtendedFuelingOperationFormData extends FuelingOperationFormData {
+  usd_exchange_rate?: string;
+}
+
 interface AddOperationFormProps {
   fuelPriceRules: FuelPriceRule[];
-  formData: FuelingOperationFormData;
+  formData: ExtendedFuelingOperationFormData;
   textInputs?: {
     quantity_liters: string;
     quantity_kg: string;
@@ -79,6 +84,9 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
     // When airline/currency changes, if a price was manually set, it might be good to clear the message
     // or re-evaluate. The main useEffect will handle re-evaluation.
   }, [formData.airlineId, formData.currency]);
+
+  // Napomena: Uklonjen je useEffect za postavljanje kursa pri promjeni valute
+  // jer je ta logika sada direktno u onChange handleru dropdown menija za valutu
 
   return (
     <form onSubmit={handleAddOperation} className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -330,10 +338,16 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                 <select
                   id="currency"
                   name="currency"
-                  value={formData.currency} // Assumes formData.currency exists
+                  value={formData.currency || ''} // Handle undefined value
                   onChange={(e) => {
+                    console.log('Currency dropdown changed to:', e.target.value);
+                    
+                    // Samo pozovemo handleInputChange da ažurira formData
+                    // Parent komponenta će se pobrinuti za postavljanje exchange rate
                     handleInputChange(e);
-                    setIsPriceManuallySet(false); // Reset manual flag on currency change
+                    
+                    // Reset manual flag on currency change
+                    setIsPriceManuallySet(false);
                   }}
                   className="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                   required
@@ -345,6 +359,41 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                   {/* Add other currencies as needed */}
                 </select>
               </div>
+              
+              {/* USD Exchange Rate - Only shown when USD is selected */}
+              {formData.currency === 'USD' && (
+                <div>
+                  <label htmlFor="usd_exchange_rate" className="block text-sm font-medium text-gray-700">
+                    Kurs USD u BAM
+                    <span className="ml-1 text-xs text-gray-500">(npr. 1.85)</span>
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <input
+                      type="text"
+                      name="usd_exchange_rate"
+                      id="usd_exchange_rate"
+                      value={(formData as any).usd_exchange_rate || ''}
+                      onChange={handleInputChange}
+                      placeholder="Unesite trenutni kurs"
+                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      required={formData.currency === 'USD'}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Unesite trenutni kurs konverzije USD u BAM</p>
+                </div>
+              )}
+              
+              {/* EUR Exchange Rate - Hidden but automatically set */}
+              {formData.currency === 'EUR' && (
+                <div>
+                  <input
+                    type="hidden"
+                    name="usd_exchange_rate"
+                    id="usd_exchange_rate"
+                    value="1.955830"
+                  />
+                </div>
+              )}
               {/* Price Rule Message Display */}
               {priceRuleMessage && (
                 <div className="mt-3 text-sm col-span-1 md:col-span-2"> 
@@ -445,25 +494,7 @@ const AddOperationForm: React.FC<AddOperationFormProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
-                  Valuta plaćanja
-                </label>
-                <div className="mt-1">
-                  <select
-                    id="currency"
-                    name="currency"
-                    value={formData.currency}
-                    onChange={handleInputChange}
-                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    required
-                  >
-                    <option value="BAM">BAM (Konvertibilna marka)</option>
-                    <option value="EUR">EUR (Euro)</option>
-                    <option value="USD">USD (Američki dolar)</option>
-                  </select>
-                </div>
-              </div>
+              {/* Drugi dropdown za valutu je uklonjen da bi se izbjegao konflikt */}
 
               <div className="sm:col-span-2 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
                 <label className="block text-sm font-medium text-gray-700 mb-2">

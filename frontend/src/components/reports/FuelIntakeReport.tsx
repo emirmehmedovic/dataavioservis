@@ -33,15 +33,86 @@ import { notoSansBoldBase64 } from '@/lib/notoSansBoldBase64';
 const FONT_NAME = 'NotoSans';
 
 // Helper function to format date as dd.mm.yyyy HH:MM
-const formatDateTimeForReport = (dateInput?: string | Date): string => {
+const formatDateTimeForReport = (dateInput?: string | Date | null): string => {
   if (!dateInput) return 'N/A';
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${day}.${month}.${year}. ${hours}:${minutes}`;
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    
+    // Direktno formatiranje datuma za osiguranje formata dd.mm.yyyy HH:MM
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
+  } catch (error) {
+    console.error('Greška pri formatiranju datuma:', error);
+    return 'N/A';
+  }
+};
+
+// Helper function to format date as dd.mm.yyyy (bez vremena)
+const formatDateForReport = (dateInput?: string | Date | null): string => {
+  if (!dateInput) return 'N/A';
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    
+    // Direktno formatiranje datuma za osiguranje formata dd.mm.yyyy
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}.${month}.${year}`;
+  } catch (error) {
+    console.error('Greška pri formatiranju datuma:', error);
+    return 'N/A';
+  }
+};
+
+// Funkcija za pravilno prikazivanje tipa saobraćaja
+const getTrafficTypeDisplay = (operation: any): string => {
+  // Provjera tip_saobracaja polja (ispravno polje prema definiciji FuelOperation)
+  if (operation.tip_saobracaja) {
+    // Mapiranje kodova na pune nazive
+    switch(operation.tip_saobracaja.toLowerCase()) {
+      case 'd': return 'Domaći';
+      case 'm': return 'Međunarodni';
+      case 'domestic': return 'Domaći';
+      case 'international': return 'Međunarodni';
+      case 'izvoz': return 'Izvoz';
+      case 'uvoz': return 'Uvoz';
+      case 'unutarnji': return 'Unutarnji saobraćaj';
+      default: return operation.tip_saobracaja; // Vraćamo originalnu vrijednost ako nije prepoznata
+    }
+  }
+  
+  // Provjera traffic_type polja (alternativno polje koje možda postoji u podacima)
+  if (operation.traffic_type) {
+    // Mapiranje kodova na pune nazive
+    switch(operation.traffic_type.toLowerCase()) {
+      case 'd': return 'Domaći';
+      case 'm': return 'Međunarodni';
+      case 'domestic': return 'Domaći';
+      case 'international': return 'Međunarodni';
+      default: return operation.traffic_type; // Vraćamo originalnu vrijednost ako nije prepoznata
+    }
+  }
+  
+  // Provjera flight_type polja (alternativno polje koje možda postoji u podacima)
+  if (operation.flight_type) {
+    // Mapiranje kodova na pune nazive
+    switch(operation.flight_type.toLowerCase()) {
+      case 'd': return 'Domaći';
+      case 'm': return 'Međunarodni';
+      case 'domestic': return 'Domaći';
+      case 'international': return 'Međunarodni';
+      default: return operation.flight_type; // Vraćamo originalnu vrijednost ako nije prepoznata
+    }
+  }
+  
+  // Ako nema ni jednog od polja
+  return 'Nije definisano';
 };
 
 const registerFont = (doc: jsPDF) => {
@@ -293,7 +364,7 @@ const FuelIntakeReport: React.FC = () => {
     const { intake, fuelingOperations, drainedFuel, balance } = data;
     
     const doc = new jsPDF({
-      orientation: 'portrait',
+      orientation: 'landscape',
       unit: 'mm',
       format: 'a4'
     });
@@ -310,11 +381,21 @@ const FuelIntakeReport: React.FC = () => {
     doc.setFontSize(10);
     doc.setFont(FONT_NAME, 'normal');
     
+    // Izračunavanje količine u kg ako je dostupna specifična gustoća
+    let quantityKg = 'N/A';
+    if (intake.quantity_kg_received) {
+      quantityKg = intake.quantity_kg_received.toLocaleString('bs-BA', { maximumFractionDigits: 2 });
+    } else if (intake.quantity_liters_received && intake.specific_gravity) {
+      const kgValue = intake.quantity_liters_received * intake.specific_gravity;
+      quantityKg = kgValue.toLocaleString('bs-BA', { maximumFractionDigits: 2 });
+    }
+    
     const intakeDetails = [
-      ['Datum ulaza', formatDateTimeForReport(intake.intake_datetime)],
+      ['Datum ulaza', formatDateForReport(intake.intake_datetime)],
       ['MRN broj', intake.customs_declaration_number || 'N/A'],
       ['Tip goriva', intake.fuel_type],
-      ['Količina (L)', intake.quantity_liters_received.toLocaleString('bs-BA')],
+      ['Količina (L)', intake.quantity_liters_received ? intake.quantity_liters_received.toLocaleString('bs-BA') : 'N/A'],
+      ['Količina (kg)', quantityKg],
       ['Dobavljač', intake.supplier_name || 'N/A'],
       ['Otpremnica', intake.delivery_note_number || 'N/A']
     ];
@@ -363,10 +444,16 @@ const FuelIntakeReport: React.FC = () => {
         }
         
         return [
-          formatDateTimeForReport(op.dateTime),
+          formatDateForReport(op.dateTime),
           op.aircraft_registration || 'N/A',
           op.airline?.name || 'N/A',
+          // Prikazujemo točan tip saobraćaja
+          getTrafficTypeDisplay(op), // Dodano tip saobraćaja
+          op.delivery_note_number || 'N/A',
           mrnQuantity.toLocaleString('bs-BA'),
+          op.quantity_kg ? op.quantity_kg.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) : (op.specific_density ? (mrnQuantity * op.specific_density).toLocaleString('bs-BA', { maximumFractionDigits: 2 }) : 'N/A'),
+          op.specific_density ? op.specific_density.toLocaleString('bs-BA', { maximumFractionDigits: 4 }) : 'N/A',
+          op.price_per_kg ? op.price_per_kg.toLocaleString('bs-BA', { maximumFractionDigits: 5 }) : 'N/A',
           op.destination || 'N/A',
           op.operator_name || 'N/A'
         ];
@@ -374,17 +461,267 @@ const FuelIntakeReport: React.FC = () => {
       
       autoTable(doc, {
         startY: yPos + 15,
-        head: [['Datum', 'Registracija', 'Aviokompanija', 'Količina (L)', 'Destinacija', 'Operator']],
+        head: [['Datum', 'Registracija', 'Aviokompanija', 'Tip saobraćaja', 'Dostavnica', 'Količina (L)', 'Količina (kg)', 'Spec. gustoća', 'Cijena po kg', 'Destinacija', 'Operator']],
         body: fuelingOpsData,
         theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185], font: FONT_NAME, fontStyle: 'bold', fontSize: 10 },
-        styles: { font: FONT_NAME, fontSize: 9 },
+        headStyles: { fillColor: [41, 128, 185], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },
+        styles: { font: FONT_NAME, fontSize: 8 },
         didDrawPage: (data: any) => {
           yPos = data.cursor.y;
         }
       });
       
       yPos += 10;
+      
+      // Dodajemo detaljni izvještaj za svaku pojedinačnu transakciju
+      doc.setFontSize(12);
+      doc.setFont(FONT_NAME, 'bold');
+      doc.text('Detalji pojedinačnih transakcija:', 14, yPos + 10);
+      yPos += 15;
+      
+      // Za svaku operaciju točenja goriva dodajemo detaljni izvještaj
+      fuelingOperations.forEach((op, index) => {
+        // Dodajemo novu stranicu ako je potrebno
+        if (yPos > doc.internal.pageSize.height - 100) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        // Vizualno unapređenje - dodavanje pravokutnika za naslov transakcije
+        doc.setFillColor(230, 230, 230); // Svijetlo siva pozadina
+        doc.rect(10, yPos - 5, doc.internal.pageSize.width - 20, 12, 'F');
+        
+        doc.setFontSize(11);
+        doc.setFont(FONT_NAME, 'bold');
+        doc.text(`Transakcija #${index + 1}: ${op.aircraft_registration || 'N/A'} - ${formatDateForReport(op.dateTime)}`, 14, yPos);
+        yPos += 10; // Povećan razmak nakon naslova
+        
+        doc.setFontSize(10);
+        doc.setFont(FONT_NAME, 'normal');
+        
+        // Izračunavanje ukupne cijene
+        let totalPrice = 0;
+        let quantityKg = 0;
+        
+        if (op.quantity_kg && op.price_per_kg) {
+          quantityKg = op.quantity_kg;
+          totalPrice = op.quantity_kg * op.price_per_kg;
+        } else if (op.specific_density && op.quantity_liters && op.price_per_kg) {
+          quantityKg = op.quantity_liters * op.specific_density;
+          totalPrice = quantityKg * op.price_per_kg;
+        }
+        
+        // Ekvivalentne cijene u različitim valutama
+        // Konverzija valuta koristi sljedeće tečajeve:
+        // 1. BAM prema EUR: 1.95583 (fiksni tečaj prema Centralnoj banci BiH)
+        // 2. BAM prema USD: 1.8 (približni tečaj, može se ažurirati prema aktualnom tečaju)
+        // Logika konverzije:
+        // - Ako je originalna valuta EUR: prvo konvertiramo u BAM (EUR * 1.95583), zatim iz BAM u USD (BAM / 1.8)
+        // - Ako je originalna valuta USD: prvo konvertiramo u BAM (USD * 1.8), zatim iz BAM u EUR (BAM / 1.95583)
+        // - Ako je originalna valuta BAM: konvertiramo direktno u EUR (BAM / 1.95583) i USD (BAM / 1.8)
+        const eurRate = 1.95583; // Fiksni tečaj BAM prema EUR
+        const usdRate = 1.8;     // Približni tečaj BAM prema USD (može se ažurirati)
+        
+        let priceInBAM = totalPrice;
+        let priceInEUR = 0;
+        let priceInUSD = 0;
+        
+        // Konverzija cijena ovisno o valuti transakcije
+        if (op.currency === 'EUR') {
+          priceInBAM = totalPrice * eurRate;
+          priceInEUR = totalPrice;
+          priceInUSD = priceInBAM / usdRate;
+        } else if (op.currency === 'USD') {
+          priceInBAM = totalPrice * usdRate;
+          priceInEUR = priceInBAM / eurRate;
+          priceInUSD = totalPrice;
+        } else {
+          // Ako je valuta BAM ili nije definirana
+          priceInEUR = priceInBAM / eurRate;
+          priceInUSD = priceInBAM / usdRate;
+        }
+        
+        // Osnovni podaci o transakciji
+        const transactionDetails = [
+          ['Datum i vrijeme', formatDateTimeForReport(op.dateTime)],
+          ['Registracija zrakoplova', op.aircraft_registration || 'N/A'],
+          ['Aviokompanija', op.airline?.name || 'N/A'],
+          ['Tip saobraćaja', getTrafficTypeDisplay(op)],
+          ['Broj dostavnice', op.delivery_note_number || 'N/A'],
+          ['Količina (L)', op.quantity_liters ? op.quantity_liters.toLocaleString('bs-BA') : 'N/A'],
+          ['Količina (kg)', quantityKg ? quantityKg.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) : 'N/A'],
+          ['Specifična gustoća', op.specific_density ? op.specific_density.toLocaleString('bs-BA', { maximumFractionDigits: 4 }) : 'N/A'],
+          ['Cijena po kg', op.price_per_kg ? op.price_per_kg.toLocaleString('bs-BA', { maximumFractionDigits: 5 }) + ' ' + (op.currency || 'BAM') : 'N/A'],
+          ['Ukupna cijena', totalPrice ? totalPrice.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' ' + (op.currency || 'BAM') : 'N/A'],
+          // Prikazujemo samo relevantne ekvivalente ovisno o originalnoj valuti
+          ...(op.currency === 'BAM' ? [
+            ['Ekvivalent u EUR', priceInEUR ? priceInEUR.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' EUR' : 'N/A'],
+            ['Ekvivalent u USD', priceInUSD ? priceInUSD.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' USD' : 'N/A']
+          ] : op.currency === 'EUR' ? [
+            ['Ekvivalent u BAM', priceInBAM ? priceInBAM.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' BAM' : 'N/A'],
+            ['Ekvivalent u USD', priceInUSD ? priceInUSD.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' USD' : 'N/A']
+          ] : op.currency === 'USD' ? [
+            ['Ekvivalent u BAM', priceInBAM ? priceInBAM.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' BAM' : 'N/A'],
+            ['Ekvivalent u EUR', priceInEUR ? priceInEUR.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' EUR' : 'N/A']
+          ] : [
+            // Ako valuta nije definirana ili je neka druga, prikazujemo sve ekvivalente
+            ['Ekvivalent u BAM', priceInBAM ? priceInBAM.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' BAM' : 'N/A'],
+            ['Ekvivalent u EUR', priceInEUR ? priceInEUR.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' EUR' : 'N/A'],
+            ['Ekvivalent u USD', priceInUSD ? priceInUSD.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' USD' : 'N/A']
+          ]),
+          ['Destinacija', op.destination || 'N/A'],
+          ['Operator', op.operator_name || 'N/A']
+        ];
+        
+        // Dodajemo MRN podatke ako postoje - naglašeno prema zahtjevu
+        if (op.mrnBreakdown) {
+          try {
+            const mrnData = JSON.parse(op.mrnBreakdown);
+            if (mrnData && mrnData.length > 0) {
+              // Dodajemo posebnu sekciju za MRN podatke
+              doc.setFillColor(230, 240, 250); // Svijetlo plava pozadina za isticanje
+              doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
+              doc.setFontSize(10);
+              doc.setFont(FONT_NAME, 'bold');
+              doc.text('Raspodjela goriva prema MRN', 14, yPos + 5);
+              yPos += 10;
+              
+              // Kreiramo posebnu tablicu za MRN podatke
+              const mrnTableData = mrnData.map((entry: { mrn: string, quantity: number }) => [
+                entry.mrn,
+                entry.quantity.toLocaleString('bs-BA') + ' L',
+                entry.quantity && op.quantity_liters ? 
+                  ((entry.quantity / op.quantity_liters) * 100).toFixed(2) + '%' : 'N/A'
+              ]);
+              
+              autoTable(doc, {
+                startY: yPos,
+                head: [['MRN broj', 'Količina (L)', 'Postotak']],
+                body: mrnTableData,
+                theme: 'grid',
+                headStyles: { fillColor: [41, 128, 185], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },
+                styles: { font: FONT_NAME, fontSize: 9, cellPadding: 3 },
+                didDrawPage: (data: any) => {
+                  yPos = data.cursor.y + 5;
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Greška pri parsiranju mrnBreakdown podataka za detalje:', error);
+          }
+        }
+        
+        // Dodajemo dodatne podatke ako postoje
+        if (op.notes) {
+          transactionDetails.push(['Napomene', op.notes]);
+        }
+        
+        // Vizualno unapređenje - grupiranje podataka u sekcije
+        const basicInfoSection = transactionDetails.slice(0, 5); // Osnovni podaci
+        const quantitySection = transactionDetails.slice(5, 8);  // Podaci o količinama
+        const priceSection = transactionDetails.slice(8, 13);    // Podaci o cijenama
+        const otherInfoSection = transactionDetails.slice(13);   // Ostali podaci
+        
+        // Sekcija: Osnovni podaci
+        doc.setFillColor(240, 240, 240);
+        doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
+        doc.setFontSize(10);
+        doc.setFont(FONT_NAME, 'bold');
+        doc.text('Osnovni podaci', 14, yPos + 5);
+        yPos += 10;
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [],
+          body: basicInfoSection,
+          theme: 'plain',
+          styles: { font: FONT_NAME, fontSize: 9 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 'auto' }
+          },
+          didDrawPage: (data: any) => {
+            yPos = data.cursor.y + 5;
+          }
+        });
+        
+        // Sekcija: Podaci o količinama
+        doc.setFillColor(240, 240, 240);
+        doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
+        doc.setFontSize(10);
+        doc.setFont(FONT_NAME, 'bold');
+        doc.text('Podaci o količinama', 14, yPos + 5);
+        yPos += 10;
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [],
+          body: quantitySection,
+          theme: 'plain',
+          styles: { font: FONT_NAME, fontSize: 9 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 'auto' }
+          },
+          didDrawPage: (data: any) => {
+            yPos = data.cursor.y + 5;
+          }
+        });
+        
+        // Sekcija: Podaci o cijenama
+        doc.setFillColor(240, 240, 240);
+        doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
+        doc.setFontSize(10);
+        doc.setFont(FONT_NAME, 'bold');
+        doc.text('Podaci o cijenama', 14, yPos + 5);
+        yPos += 10;
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [],
+          body: priceSection,
+          theme: 'plain',
+          styles: { font: FONT_NAME, fontSize: 9 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 'auto' }
+          },
+          didDrawPage: (data: any) => {
+            yPos = data.cursor.y + 5;
+          }
+        });
+        
+        // Sekcija: Ostali podaci
+        if (otherInfoSection.length > 0) {
+          doc.setFillColor(240, 240, 240);
+          doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
+          doc.setFontSize(10);
+          doc.setFont(FONT_NAME, 'bold');
+          doc.text('Ostali podaci', 14, yPos + 5);
+          yPos += 10;
+          
+          autoTable(doc, {
+            startY: yPos,
+            head: [],
+            body: otherInfoSection,
+            theme: 'plain',
+            styles: { font: FONT_NAME, fontSize: 9 },
+            columnStyles: {
+              0: { fontStyle: 'bold', cellWidth: 40 },
+              1: { cellWidth: 'auto' }
+            },
+            didDrawPage: (data: any) => {
+              yPos = data.cursor.y + 5;
+            }
+          });
+        }
+        
+        // Dodajemo separator između transakcija
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, yPos, doc.internal.pageSize.width - 20, yPos);
+        
+        yPos += 20; // Povećan razmak između transakcija
+      });
     } else {
       doc.setFontSize(10);
       doc.setFont(FONT_NAME, 'normal');
@@ -983,6 +1320,8 @@ const FuelIntakeReport: React.FC = () => {
           </div>
         </div>
 
+
+
         <div className="mb-6">
           <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -1162,6 +1501,73 @@ const FuelIntakeReport: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Statistički prikaz ukupnih količina - premješteno ispod tabele */}
+        {records.length > 0 && (
+          <div className="mt-6 mb-6">
+            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Statistika ulaza goriva
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm p-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                        <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12C5 15.866 8.13401 19 12 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Ukupna količina</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{totalLiters.toLocaleString('bs-BA')} L</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 border border-green-200 dark:border-green-800 rounded-lg shadow-sm p-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                        <svg className="w-6 h-6 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19.7 11H18.3C17.91 11 17.58 11.33 17.5 11.72L17 14H7L6.5 11.72C6.42 11.33 6.09 11 5.7 11H4.3C3.84 11 3.5 11.5 3.66 11.93L4.65 15.59C4.79 16.35 5.47 16.91 6.25 16.91H17.75C18.53 16.91 19.21 16.35 19.35 15.59L20.34 11.93C20.5 11.5 20.16 11 19.7 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M9 6.5V9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M15 6.5V9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 4V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Ukupna težina</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{totalKg.toLocaleString('bs-BA', { maximumFractionDigits: 2 })} kg</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm p-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                        <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Prosječna gustoća</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{averageDensity.toLocaleString('bs-BA', { maximumFractionDigits: 4 })}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/auth';
 const prisma = new PrismaClient();
 
 // Validation schema for creating a fueling operation
+// Kreiramo složeniju validacijsku shemu koja uzima u obzir valutu
 const fuelingOperationSchema = z.object({
   dateTime: z.string().or(z.date()),
   aircraft_registration: z.string().min(1, 'Registracija aviona je obavezna'),
@@ -19,6 +20,12 @@ const fuelingOperationSchema = z.object({
   price_per_kg: z.number().positive('Cijena po kilogramu mora biti pozitivan broj').optional(),
   discount_percentage: z.number().min(0, 'Rabat ne može biti negativan').max(100, 'Rabat ne može biti veći od 100%').optional(),
   currency: z.enum(['BAM', 'EUR', 'USD']).optional(),
+  // Poboljšana validacija za usd_exchange_rate - može biti null, string ili broj
+  usd_exchange_rate: z.union([
+    z.null(),
+    z.string().transform(val => val === '' ? null : parseFloat(val)),
+    z.number().positive('Kurs mora biti pozitivan broj')
+  ]).nullable().optional(),
   total_amount: z.number().positive('Ukupan iznos mora biti pozitivan broj').optional(),
   tankId: z.number().int().positive('ID tankera mora biti pozitivan broj'),
   flight_number: z.string().optional(),
@@ -182,6 +189,9 @@ export const getFuelingOperationById = async (req: Request, res: Response): Prom
       }
     }
     
+    // Debug informacije o usd_exchange_rate polju
+    console.log(`Operation ${id} - usd_exchange_rate:`, fuelingOperation.usd_exchange_rate);
+    
     res.status(200).json(fuelingOperation);
   } catch (error) {
     console.error('Error fetching fueling operation:', error);
@@ -206,6 +216,11 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
       quantity_kg: req.body.quantity_kg ? parseFloat(req.body.quantity_kg) : undefined,
       price_per_kg: req.body.price_per_kg ? parseFloat(req.body.price_per_kg) : undefined,
       discount_percentage: req.body.discount_percentage ? parseFloat(req.body.discount_percentage) : 0,
+      // Properly handle usd_exchange_rate - parse it if it exists, otherwise null
+      // For BAM currency, we always set exchange rate to null since it's the base currency
+      usd_exchange_rate: req.body.currency === 'BAM' ? null : 
+        (req.body.usd_exchange_rate !== undefined && req.body.usd_exchange_rate !== '' ? 
+          parseFloat(req.body.usd_exchange_rate) : null),
       total_amount: req.body.total_amount ? parseFloat(req.body.total_amount) : undefined
     };
     
@@ -422,6 +437,8 @@ export const createFuelingOperation = async (req: Request, res: Response): Promi
           notes,
           tip_saobracaja,
           delivery_note_number,
+          // Dodaj usd_exchange_rate polje ako je poslano
+          usd_exchange_rate: validationResult.data.usd_exchange_rate,
           // Dodaj MRN breakdown podatke samo ako postoje validni MRN zapisi
           mrnBreakdown: mrnBreakdown.length > 0 ? JSON.stringify(mrnBreakdown) : null,
         },
