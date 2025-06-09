@@ -21,7 +21,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FuelIntakeRecord, FuelType, FuelIntakeDocument } from '@/types/fuel';
-import { FuelOperation } from '@/lib/types';
+import { FuelOperation as BaseFuelOperation } from '@/lib/types';
+
+// Extended interface to include EXD and K number fields
+interface FuelOperation extends BaseFuelOperation {
+  exd_number?: string | null;
+  k_number?: string | null;
+}
 import toast from 'react-hot-toast';
 import { ArrowDownTrayIcon, DocumentTextIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { FileText } from 'lucide-react';
@@ -477,24 +483,34 @@ const FuelIntakeReport: React.FC = () => {
       doc.setFontSize(12);
       doc.setFont(FONT_NAME, 'bold');
       doc.text('Detalji pojedinačnih transakcija:', 14, yPos + 10);
-      yPos += 15;
       
-      // Za svaku operaciju točenja goriva dodajemo detaljni izvještaj
+      // Dodajemo novu stranicu za pojedinačne transakcije
+      doc.addPage();
+      
+      // Za svaku operaciju točenja goriva dodajemo detaljni izvještaj na zasebnoj stranici
       fuelingOperations.forEach((op, index) => {
-        // Dodajemo novu stranicu ako je potrebno
-        if (yPos > doc.internal.pageSize.height - 100) {
+        // Svaka transakcija nakon prve dobiva novu stranicu
+        if (index > 0) {
           doc.addPage();
-          yPos = 20;
         }
+        
+        // Početak s vrha stranice
+        yPos = 20;
         
         // Vizualno unapređenje - dodavanje pravokutnika za naslov transakcije
         doc.setFillColor(230, 230, 230); // Svijetlo siva pozadina
         doc.rect(10, yPos - 5, doc.internal.pageSize.width - 20, 12, 'F');
         
-        doc.setFontSize(11);
+        doc.setFontSize(10); // Smanjeno sa 11 na 10
         doc.setFont(FONT_NAME, 'bold');
+        // Dodajemo broj dostavnice u naslov transakcije
+        const deliveryNote = op.delivery_note_number ? `Dostavnica: ${op.delivery_note_number}` : '';
         doc.text(`Transakcija #${index + 1}: ${op.aircraft_registration || 'N/A'} - ${formatDateForReport(op.dateTime)}`, 14, yPos);
-        yPos += 10; // Povećan razmak nakon naslova
+        if (deliveryNote) {
+          doc.setFontSize(9); // Smanjeno sa 10 na 9
+          doc.text(deliveryNote, doc.internal.pageSize.width - 60, yPos);
+        }
+        yPos += 10; // Smanjen razmak nakon naslova
         
         doc.setFontSize(10);
         doc.setFont(FONT_NAME, 'normal');
@@ -541,8 +557,9 @@ const FuelIntakeReport: React.FC = () => {
           priceInUSD = priceInBAM / usdRate;
         }
         
-        // Osnovni podaci o transakciji
-        const transactionDetails = [
+        // Organiziramo podatke o transakciji u dvije kolone za bolju preglednost
+        // Prva kolona: osnovni podaci o letu i gorivu
+        const columnOneData = [
           ['Datum i vrijeme', formatDateTimeForReport(op.dateTime)],
           ['Registracija zrakoplova', op.aircraft_registration || 'N/A'],
           ['Aviokompanija', op.airline?.name || 'N/A'],
@@ -550,7 +567,11 @@ const FuelIntakeReport: React.FC = () => {
           ['Broj dostavnice', op.delivery_note_number || 'N/A'],
           ['Količina (L)', op.quantity_liters ? op.quantity_liters.toLocaleString('bs-BA') : 'N/A'],
           ['Količina (kg)', quantityKg ? quantityKg.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) : 'N/A'],
-          ['Specifična gustoća', op.specific_density ? op.specific_density.toLocaleString('bs-BA', { maximumFractionDigits: 4 }) : 'N/A'],
+          ['Specifična gustoća', op.specific_density ? op.specific_density.toLocaleString('bs-BA', { maximumFractionDigits: 4 }) : 'N/A']
+        ];
+        
+        // Druga kolona: podaci o cijenama i destinaciji
+        const columnTwoData = [
           ['Cijena po kg', op.price_per_kg ? op.price_per_kg.toLocaleString('bs-BA', { maximumFractionDigits: 5 }) + ' ' + (op.currency || 'BAM') : 'N/A'],
           ['Ukupna cijena', totalPrice ? totalPrice.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' ' + (op.currency || 'BAM') : 'N/A'],
           // Prikazujemo samo relevantne ekvivalente ovisno o originalnoj valuti
@@ -563,30 +584,60 @@ const FuelIntakeReport: React.FC = () => {
           ] : op.currency === 'USD' ? [
             ['Ekvivalent u BAM', priceInBAM ? priceInBAM.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' BAM' : 'N/A'],
             ['Ekvivalent u EUR', priceInEUR ? priceInEUR.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' EUR' : 'N/A']
-          ] : [
-            // Ako valuta nije definirana ili je neka druga, prikazujemo sve ekvivalente
-            ['Ekvivalent u BAM', priceInBAM ? priceInBAM.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' BAM' : 'N/A'],
-            ['Ekvivalent u EUR', priceInEUR ? priceInEUR.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' EUR' : 'N/A'],
-            ['Ekvivalent u USD', priceInUSD ? priceInUSD.toLocaleString('bs-BA', { maximumFractionDigits: 2 }) + ' USD' : 'N/A']
-          ]),
+          ] : []),
           ['Destinacija', op.destination || 'N/A'],
           ['Operator', op.operator_name || 'N/A']
         ];
+        
+        // Crtamo dvije kolone s podacima - kompaktniji prikaz
+        const colWidth = (doc.internal.pageSize.width - 30) / 2;
+        
+        // Prva kolona - kompaktnija postavka
+        autoTable(doc, {
+          startY: yPos,
+          head: [],
+          body: columnOneData,
+          theme: 'grid',
+          styles: { font: FONT_NAME, fontSize: 8, cellPadding: 2 }, // Manji font i padding
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 50 }, // Uža labela
+            1: { cellWidth: colWidth - 50 }
+          },
+          margin: { left: 10 }, // Uži rubovi
+          tableWidth: colWidth
+        });
+        
+        // Druga kolona (paralelno s prvom) - kompaktnija postavka
+        autoTable(doc, {
+          startY: yPos,
+          head: [],
+          body: columnTwoData,
+          theme: 'grid',
+          styles: { font: FONT_NAME, fontSize: 8, cellPadding: 2 },  // Manji font i padding
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 50 }, // Uža labela
+            1: { cellWidth: colWidth - 50 }
+          },
+          margin: { left: 15 + colWidth },
+          tableWidth: colWidth
+        });
+        
+        // Pomjeramo poziciju nakon većeg od dvije tabele - smanjen razmak
+        yPos += Math.max(
+          columnOneData.length * 8,  // Približna visina prve tabele - sažeta
+          columnTwoData.length * 8   // Približna visina druge tabele - sažeta
+        ) + 10;  // Manji dodatni razmak
         
         // Dodajemo MRN podatke ako postoje - naglašeno prema zahtjevu
         if (op.mrnBreakdown) {
           try {
             const mrnData = JSON.parse(op.mrnBreakdown);
             if (mrnData && mrnData.length > 0) {
-              // Dodajemo posebnu sekciju za MRN podatke
-              doc.setFillColor(230, 240, 250); // Svijetlo plava pozadina za isticanje
-              doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
-              doc.setFontSize(10);
-              doc.setFont(FONT_NAME, 'bold');
-              doc.text('Raspodjela goriva prema MRN', 14, yPos + 5);
-              yPos += 10;
+              // Kreiramo kompaktniji prikaz za MRN podatke i EXD/K brojeve
+              const hasExdKNumbers = op.exd_number || op.k_number;
+              const pageWidth = doc.internal.pageSize.width - 20;
               
-              // Kreiramo posebnu tablicu za MRN podatke
+              // Kreiramo podatke za MRN tablicu
               const mrnTableData = mrnData.map((entry: { mrn: string, quantity: number }) => [
                 entry.mrn,
                 entry.quantity.toLocaleString('bs-BA') + ' L',
@@ -594,127 +645,75 @@ const FuelIntakeReport: React.FC = () => {
                   ((entry.quantity / op.quantity_liters) * 100).toFixed(2) + '%' : 'N/A'
               ]);
               
+              // Postavimo širinu lijeve kolone (za MRN) ovisno o tome ima li EXD/K brojeva
+              const leftColWidth = hasExdKNumbers ? pageWidth * 0.6 : pageWidth;
+              
+              doc.setFillColor(230, 240, 250); // Svijetlo plava pozadina za isticanje
+              doc.rect(10, yPos, leftColWidth, 7, 'F');
+              doc.setFontSize(9);
+              doc.setFont(FONT_NAME, 'bold');
+              doc.text('MRN brojevi', 14, yPos + 5);
+              
+              // Ako imamo EXD/K brojeve, prikažimo ih u drugoj koloni
+              if (hasExdKNumbers) {
+                const rightColWidth = pageWidth * 0.4;
+                doc.rect(10 + leftColWidth, yPos, rightColWidth, 7, 'F');
+                doc.text('EXD i K brojevi', 14 + leftColWidth, yPos + 5);
+              }
+              
+              yPos += 10;
+              
+              // MRN tablica - lijevo
               autoTable(doc, {
                 startY: yPos,
                 head: [['MRN broj', 'Količina (L)', 'Postotak']],
                 body: mrnTableData,
                 theme: 'grid',
-                headStyles: { fillColor: [41, 128, 185], font: FONT_NAME, fontStyle: 'bold', fontSize: 9 },
-                styles: { font: FONT_NAME, fontSize: 9, cellPadding: 3 },
-                didDrawPage: (data: any) => {
-                  yPos = data.cursor.y + 5;
-                }
+                headStyles: { fillColor: [41, 128, 185], font: FONT_NAME, fontStyle: 'bold', fontSize: 8 },
+                styles: { font: FONT_NAME, fontSize: 8, cellPadding: 2 },
+                margin: { left: 10 },
+                tableWidth: leftColWidth
               });
+              
+              // EXD/K tablica - desno
+              if (hasExdKNumbers) {
+                const rightColWidth = pageWidth * 0.4;
+                const exdKData = [
+                  ['EXD broj', op.exd_number || 'Nije unesen'],
+                  ['K broj', op.k_number || 'Nije unesen']
+                ];
+                
+                autoTable(doc, {
+                  startY: yPos,
+                  head: [],
+                  body: exdKData,
+                  theme: 'plain',
+                  styles: { font: FONT_NAME, fontSize: 8, cellPadding: 2 },
+                  columnStyles: {
+                    0: { fontStyle: 'bold', cellWidth: 40 },
+                    1: { cellWidth: 'auto' }
+                  },
+                  margin: { left: 10 + leftColWidth },
+                  tableWidth: rightColWidth
+                });
+              }
+              
+              // Ažuriramo poziciju za sljedeći sadržaj
+              yPos += (mrnTableData.length + 2) * 8;
             }
           } catch (error) {
             console.error('Greška pri parsiranju mrnBreakdown podataka za detalje:', error);
           }
         }
         
-        // Dodajemo dodatne podatke ako postoje
+        // Dodajemo napomene ako postoje
         if (op.notes) {
-          transactionDetails.push(['Napomene', op.notes]);
+          // Dodajemo napomene u drugu kolonu
+          columnTwoData.push(['Napomene', op.notes]);
         }
         
-        // Vizualno unapređenje - grupiranje podataka u sekcije
-        const basicInfoSection = transactionDetails.slice(0, 5); // Osnovni podaci
-        const quantitySection = transactionDetails.slice(5, 8);  // Podaci o količinama
-        const priceSection = transactionDetails.slice(8, 13);    // Podaci o cijenama
-        const otherInfoSection = transactionDetails.slice(13);   // Ostali podaci
-        
-        // Sekcija: Osnovni podaci
-        doc.setFillColor(240, 240, 240);
-        doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
-        doc.setFontSize(10);
-        doc.setFont(FONT_NAME, 'bold');
-        doc.text('Osnovni podaci', 14, yPos + 5);
-        yPos += 10;
-        
-        autoTable(doc, {
-          startY: yPos,
-          head: [],
-          body: basicInfoSection,
-          theme: 'plain',
-          styles: { font: FONT_NAME, fontSize: 9 },
-          columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 40 },
-            1: { cellWidth: 'auto' }
-          },
-          didDrawPage: (data: any) => {
-            yPos = data.cursor.y + 5;
-          }
-        });
-        
-        // Sekcija: Podaci o količinama
-        doc.setFillColor(240, 240, 240);
-        doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
-        doc.setFontSize(10);
-        doc.setFont(FONT_NAME, 'bold');
-        doc.text('Podaci o količinama', 14, yPos + 5);
-        yPos += 10;
-        
-        autoTable(doc, {
-          startY: yPos,
-          head: [],
-          body: quantitySection,
-          theme: 'plain',
-          styles: { font: FONT_NAME, fontSize: 9 },
-          columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 40 },
-            1: { cellWidth: 'auto' }
-          },
-          didDrawPage: (data: any) => {
-            yPos = data.cursor.y + 5;
-          }
-        });
-        
-        // Sekcija: Podaci o cijenama
-        doc.setFillColor(240, 240, 240);
-        doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
-        doc.setFontSize(10);
-        doc.setFont(FONT_NAME, 'bold');
-        doc.text('Podaci o cijenama', 14, yPos + 5);
-        yPos += 10;
-        
-        autoTable(doc, {
-          startY: yPos,
-          head: [],
-          body: priceSection,
-          theme: 'plain',
-          styles: { font: FONT_NAME, fontSize: 9 },
-          columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 40 },
-            1: { cellWidth: 'auto' }
-          },
-          didDrawPage: (data: any) => {
-            yPos = data.cursor.y + 5;
-          }
-        });
-        
-        // Sekcija: Ostali podaci
-        if (otherInfoSection.length > 0) {
-          doc.setFillColor(240, 240, 240);
-          doc.rect(10, yPos, doc.internal.pageSize.width - 20, 7, 'F');
-          doc.setFontSize(10);
-          doc.setFont(FONT_NAME, 'bold');
-          doc.text('Ostali podaci', 14, yPos + 5);
-          yPos += 10;
-          
-          autoTable(doc, {
-            startY: yPos,
-            head: [],
-            body: otherInfoSection,
-            theme: 'plain',
-            styles: { font: FONT_NAME, fontSize: 9 },
-            columnStyles: {
-              0: { fontStyle: 'bold', cellWidth: 40 },
-              1: { cellWidth: 'auto' }
-            },
-            didDrawPage: (data: any) => {
-              yPos = data.cursor.y + 5;
-            }
-          });
-        }
+        // Dodajemo separator između transakcija - nakon dvostupčanog prikaza
+        // Sve je već prikazano u dvije kolone iznad pomoću columnOneData i columnTwoData
         
         // Dodajemo separator između transakcija
         doc.setDrawColor(200, 200, 200);
@@ -782,31 +781,117 @@ const FuelIntakeReport: React.FC = () => {
       yPos += 20;
     }
     
-    // Balance
-    doc.setFontSize(12);
+    // Dodajemo novu stranicu za summary (balans)
+    doc.addPage();
+    yPos = 20;
+    
+    // Naslov za summary stranicu
+    doc.setFontSize(14);
     doc.setFont(FONT_NAME, 'bold');
-    doc.text('Balans goriva:', 14, yPos + 10);
+    doc.text('Sažetak MRN izvještaja', doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+    yPos += 10;
     
-    // Koristimo balance objekt koji dolazi s backenda umjesto ponovnog izračuna
-    // Ovo osigurava konzistentnost s podacima koje backend šalje
+    // Prikazujemo broj carinske deklaracije
+    doc.setFontSize(12);
+    doc.text(`Carinska deklaracija: ${intake.customs_declaration_number || 'N/A'}`, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+    yPos += 20;
     
-    const balanceData = [
-      ['Ukupno primljeno (L)', balance.totalIntake.toLocaleString('bs-BA')],
-      ['Ukupno isporučeno (L)', balance.totalFuelingOperations.toLocaleString('bs-BA')],
-      ['Ukupno drenirano (L)', balance.totalDrained.toLocaleString('bs-BA')],
-      ['Preostalo (L)', balance.remainingFuel.toLocaleString('bs-BA')]
+    // Izračun količine u kilogramima i prosječne gustoće
+    let totalDeliveredKg = 0;
+    let totalIntakeKg = 0;
+    let totalDensity = 0;
+    let operationsWithDensity = 0;
+    
+    // Računamo ukupnu isporučenu težinu u kg i prosječnu gustoću
+    fuelingOperations.forEach(op => {
+      if (op.quantity_kg) {
+        totalDeliveredKg += op.quantity_kg;
+      } else if (op.specific_density && op.quantity_liters) {
+        totalDeliveredKg += op.quantity_liters * op.specific_density;
+      }
+      
+      if (op.specific_density) {
+        totalDensity += op.specific_density;
+        operationsWithDensity++;
+      }
+    });
+    
+    // Izračunavamo primljeno gorivo u kg (koristeći podatke iz ulaza goriva)
+    if (intake.specific_gravity && intake.quantity_liters_received) {
+      totalIntakeKg = intake.quantity_liters_received * intake.specific_gravity;
+    } else if (intake.quantity_kg_received) {
+      totalIntakeKg = intake.quantity_kg_received;
+    }
+    
+    // Izračun prosječne gustoće
+    const averageDensity = operationsWithDensity > 0 ? totalDensity / operationsWithDensity : 0;
+    
+    // Kreiramo tabelu sa zbirnim podacima - organizirano u kategorije
+    
+    // Header za tabelu
+    doc.setFillColor(41, 128, 185); // Plava boja za header
+    doc.rect(30, yPos, doc.internal.pageSize.width - 60, 10, 'F');
+    doc.setTextColor(255, 255, 255); // Bijeli tekst
+    doc.setFontSize(11);
+    doc.text('Sažetak količina goriva', doc.internal.pageSize.width / 2, yPos + 7, { align: 'center' });
+    doc.setTextColor(0, 0, 0); // Vratimo na crnu boju
+    yPos += 15;
+    
+    // Grupiramo podatke za bolju organizaciju tabele
+    const weightData = [
+      ['Težina - Primljeno (kg)', totalIntakeKg.toLocaleString('bs-BA', { maximumFractionDigits: 2 })],
+      ['Težina - Isporučeno (kg)', totalDeliveredKg.toLocaleString('bs-BA', { maximumFractionDigits: 2 })],
+      ['Prosječna specifična gustoća', averageDensity.toLocaleString('bs-BA', { maximumFractionDigits: 4 })]
     ];
     
+    const volumeData = [
+      ['Volumen - Primljeno (L)', balance.totalIntake.toLocaleString('bs-BA')],
+      ['Volumen - Isporučeno (L)', balance.totalFuelingOperations.toLocaleString('bs-BA')],
+      ['Volumen - Drenirano (L)', balance.totalDrained.toLocaleString('bs-BA')],
+      ['Volumen - Preostalo (L)', balance.remainingFuel.toLocaleString('bs-BA')]
+    ];
+    
+    // Kategorija 1: Podaci o težini (kg)
+    doc.setFillColor(240, 240, 240); // Svijetlo siva pozadina za kategorije
+    doc.rect(30, yPos, doc.internal.pageSize.width - 60, 10, 'F');
+    doc.setFontSize(10);
+    doc.setFont(FONT_NAME, 'bold');
+    doc.text('Podaci o težini', 35, yPos + 7);
+    yPos += 15;
+    
     autoTable(doc, {
-      startY: yPos + 15,
+      startY: yPos,
       head: [],
-      body: balanceData,
-      theme: 'plain',
-      styles: { font: FONT_NAME, fontSize: 10 },
+      body: weightData,
+      theme: 'grid',
+      styles: { font: FONT_NAME, fontSize: 10, cellPadding: 4 },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 40 },
-        1: { cellWidth: 'auto' }
-      }
+        0: { fontStyle: 'bold', cellWidth: 80 },
+        1: { cellWidth: 'auto', halign: 'right' }
+      },
+      margin: { left: 50, right: 50 }
+    });
+    
+    yPos += weightData.length * 12 + 10;
+    
+    // Kategorija 2: Podaci o volumenu (L)
+    doc.setFillColor(240, 240, 240); 
+    doc.rect(30, yPos, doc.internal.pageSize.width - 60, 10, 'F');
+    doc.setFont(FONT_NAME, 'bold');
+    doc.text('Podaci o volumenu', 35, yPos + 7);
+    yPos += 15;
+    
+    autoTable(doc, {
+      startY: yPos,
+      head: [],
+      body: volumeData,
+      theme: 'grid',
+      styles: { font: FONT_NAME, fontSize: 10, cellPadding: 4 },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 80 },
+        1: { cellWidth: 'auto', halign: 'right' }
+      },
+      margin: { left: 50, right: 50 }
     });
     
     // Footer

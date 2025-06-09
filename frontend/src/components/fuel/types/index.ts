@@ -87,6 +87,8 @@ export interface FuelingOperation {
   aircraft?: VehicleFE | null;
   mrnBreakdown?: string | null; // JSON string s MRN podacima
   parsedMrnBreakdown?: { mrn: string, quantity: number }[] | null; // Parsirani MRN podaci
+  exd_number?: string | null; // EXD broj za avio gorivo
+  k_number?: string | null; // K broj za avio gorivo
 }
 
 export interface FuelingOperationsApiResponse {

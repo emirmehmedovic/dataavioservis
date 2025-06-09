@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FuelingOperation } from '../types';
+import ExdKNumberEditModal from './ExdKNumberEditModal';
 
 // Prošireni tip za FuelingOperation koji uključuje usd_exchange_rate
 interface ExtendedFuelingOperation extends FuelingOperation {
   usd_exchange_rate?: string;
+  exd_number?: string | null; // EXD broj za avio gorivo
+  k_number?: string | null; // K broj za avio gorivo
 }
 
 import { formatDate, API_BASE_URL, generatePDFInvoice } from '../utils/helpers';
@@ -20,6 +23,19 @@ interface OperationDetailsModalProps {
 }
 
 const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation, onClose }) => {
+  // State for ExdKNumber edit modal
+  const [isExdKNumberModalOpen, setIsExdKNumberModalOpen] = useState(false);
+  const [updatedOperation, setUpdatedOperation] = useState<ExtendedFuelingOperation>(operation);
+  
+  // Function to handle EXD and K number updates
+  const handleExdKNumberUpdate = (exdNumber: string | null, kNumber: string | null) => {
+    setUpdatedOperation(prev => ({
+      ...prev,
+      exd_number: exdNumber,
+      k_number: kNumber
+    }));
+  };
+  
   // Helper function to get the exchange rate
   const getExchangeRate = useMemo(() => {
     console.log('DEBUG - Currency:', operation.currency);
@@ -433,6 +449,37 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
                     </div>
                   </div>
                 </div>
+                
+                {/* EXD i K brojevi */}
+                <div className="mt-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300">EXD i K brojevi</h4>
+                    <button
+                      onClick={() => setIsExdKNumberModalOpen(true)}
+                      className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Uredi
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">EXD BROJ</div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">
+                        {updatedOperation.exd_number || 'Nije unesen'}
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">K BROJ</div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">
+                        {updatedOperation.k_number || 'Nije unesen'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -718,8 +765,21 @@ const OperationDetailsModal: React.FC<OperationDetailsModalProps> = ({ operation
           </div>
         </div>
       </div>
-    </div>
-  , document.getElementById('modal-root') || document.body);
+      
+      {/* ExdKNumberEditModal Component */}
+      {isExdKNumberModalOpen && (
+        <ExdKNumberEditModal
+          isOpen={isExdKNumberModalOpen}
+          onClose={() => setIsExdKNumberModalOpen(false)}
+          operationId={updatedOperation.id}
+          currentExdNumber={updatedOperation.exd_number || null}
+          currentKNumber={updatedOperation.k_number || null}
+          onUpdate={handleExdKNumberUpdate}
+        />
+      )}
+    </div>,
+    document.body
+  );
 };
 
 export default OperationDetailsModal;

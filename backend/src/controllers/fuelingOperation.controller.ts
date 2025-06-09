@@ -33,6 +33,8 @@ const fuelingOperationSchema = z.object({
   notes: z.string().optional(),
   tip_saobracaja: z.string().optional(),
   delivery_note_number: z.string().optional(),
+  exd_number: z.string().max(50, 'EXD broj ne može biti duži od 50 karaktera').optional(),
+  k_number: z.string().max(50, 'K broj ne može biti duži od 50 karaktera').optional(),
 });
 
 export const getAllFuelingOperations = async (req: Request, res: Response): Promise<void> => {

@@ -27,6 +27,7 @@ import {
   CreateFuelPriceRulePayload, // Added CreateFuelPriceRulePayload type
   UpdateFuelPriceRulePayload // Added UpdateFuelPriceRulePayload type
 } from '@/types/fuel';
+import { FuelingOperation } from '@/components/fuel/types/index'; // Import from correct location
 
 // Re-export the types needed by other components
 export type LoginResponse = ImportedLoginResponse;
@@ -915,6 +916,16 @@ export async function createFuelPriceRule(payload: CreateFuelPriceRulePayload): 
 
 export async function updateFuelPriceRule(id: number, payload: UpdateFuelPriceRulePayload): Promise<FuelPriceRule> {
   return fetchWithAuth<FuelPriceRule>(`${API_BASE_URL}/api/fuel-price-rules/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- Fueling Operations API --- //
+
+// Update a fueling operation
+export async function updateFuelingOperation(id: number, payload: Partial<FuelingOperation>): Promise<FuelingOperation> {
+  return fetchWithAuth<FuelingOperation>(`${API_BASE_URL}/api/fuel/fueling-operations/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });

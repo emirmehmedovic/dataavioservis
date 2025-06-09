@@ -549,6 +549,8 @@ model FuelingOperation {
   usd_exchange_rate     Decimal?           @db.Decimal(15, 6)
   delivery_note_number  String?
   mrnBreakdown          String?            // JSON string sa MRN podacima
+  exd_number            String?            @db.VarChar(50) // EXD broj za avio gorivo
+  k_number              String?            @db.VarChar(50) // K broj za avio gorivo
   documents             AttachedDocument[]
   aircraft              Vehicle?           @relation(fields: [aircraftId], references: [id])
   airline               Airline            @relation(fields: [airlineId], references: [id])
