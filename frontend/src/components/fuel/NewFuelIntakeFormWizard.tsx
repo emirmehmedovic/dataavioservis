@@ -1153,6 +1153,14 @@ export default function NewFuelIntakeFormWizard() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-100">Unesite količinu u litrama i kilogramima, a specifična gustoća će biti automatski izračunata.</p>
+                <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 mt-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  Unesite ukupnu cijenu - druga vrijednost će biti automatski izračunata.
+                </p>
                 
                 {/* Price Information Card */}
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
@@ -1171,19 +1179,28 @@ export default function NewFuelIntakeFormWizard() {
                         <Input 
                           id="price_per_kg" 
                           name="price_per_kg" 
-                          type="number" 
-                          step="0.001"
-                          min="0"
+                          type="text" 
                           value={formData.price_per_kg || ''} 
                           onChange={(e) => {
-                            handleInputChange(e);
-                            // Calculate total price if both price and quantity are available
-                            const pricePerKg = parseFloat(e.target.value);
-                            if (!isNaN(pricePerKg) && formData.quantity_kg_received) {
-                              setFormData(prev => ({
-                                ...prev,
-                                total_price: pricePerKg * formData.quantity_kg_received!
-                              }));
+                            // Validacija unosa (dozvoli samo brojeve i decimale s do 3 decimalna mjesta)
+                            const value = e.target.value;
+                            if (value === '' || /^\d*\.?\d{0,3}$/.test(value)) {
+                              handleInputChange({
+                                target: {
+                                  name: 'price_per_kg',
+                                  value
+                                }
+                              } as React.ChangeEvent<HTMLInputElement>);
+                              
+                              // Izračun ukupne cijene ako imamo količinu
+                              const pricePerKg = parseFloat(value);
+                              if (!isNaN(pricePerKg) && formData.quantity_kg_received) {
+                                const totalPrice = parseFloat((pricePerKg * formData.quantity_kg_received).toFixed(3));
+                                setFormData(prev => ({
+                                  ...prev,
+                                  total_price: totalPrice
+                                }));
+                              }
                             }
                           }}
                           className="mt-1 pl-9 focus:ring-blue-500"
@@ -1225,12 +1242,31 @@ export default function NewFuelIntakeFormWizard() {
                         <Input 
                           id="total_price" 
                           name="total_price" 
-                          type="number" 
-                          step="0.01"
-                          min="0"
+                          type="text"
                           value={formData.total_price || ''} 
-                          readOnly
-                          className="mt-1 pl-9 bg-gray-50 text-gray-700 font-medium"
+                          onChange={(e) => {
+                            // Validacija unosa (dozvoli samo brojeve i decimale s do 3 decimalna mjesta)
+                            const value = e.target.value;
+                            if (value === '' || /^\d*\.?\d{0,3}$/.test(value)) {
+                              handleInputChange({
+                                target: {
+                                  name: 'total_price',
+                                  value
+                                }
+                              } as React.ChangeEvent<HTMLInputElement>);
+                              
+                              // Izračun cijene po kg ako imamo količinu
+                              const totalPrice = parseFloat(value);
+                              if (!isNaN(totalPrice) && formData.quantity_kg_received && formData.quantity_kg_received > 0) {
+                                const pricePerKg = parseFloat((totalPrice / formData.quantity_kg_received).toFixed(3));
+                                setFormData(prev => ({
+                                  ...prev,
+                                  price_per_kg: pricePerKg
+                                }));
+                              }
+                            }
+                          }}
+                          className="mt-1 pl-9 focus:ring-blue-500"
                         />
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 mt-1">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

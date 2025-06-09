@@ -118,6 +118,18 @@ const MRNBreakdownChart: React.FC<{
               `${value.toLocaleString()} L`, 
               `MRN: ${entry.payload.fullMrn || entry.payload.name}`
             ]}
+            position={{ x: 0, y: 0 }}
+            cursor={{ fill: 'transparent' }}
+            wrapperStyle={{ 
+              zIndex: 1000, 
+              position: 'fixed', 
+              backgroundColor: 'rgba(35, 35, 35, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              pointerEvents: 'none'
+            }}
           />
         </PieChart>
         <div className="text-xs text-gray-300 mt-1">

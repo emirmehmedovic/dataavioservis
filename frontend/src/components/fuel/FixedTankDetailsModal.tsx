@@ -19,10 +19,23 @@ interface FixedTankDetailsModalProps {
 }
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('bs-BA', { 
-    year: 'numeric', month: '2-digit', day: '2-digit', 
-    hour: '2-digit', minute: '2-digit' 
-  });
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'N/A';
+    
+    // Format as dd.mm.yyyy HH:MM
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
+  } catch (e) {
+    return 'N/A';
+  }
 };
 
 const getTransactionTypeBadgeClasses = (type: TankTransaction['type']): string => {
@@ -661,18 +674,18 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
                         <PieChart>
                           <Pie
                             data={customsBreakdown.map((item, index) => ({
-                              name: item.mrn ? (item.mrn.length > 10 ? item.mrn.substring(0, 10) + '...' : item.mrn) : 'Nepoznat MRN',
-                              fullMrn: item.mrn || 'Nepoznat MRN',
+                              name: item.mrn || 'Nepoznat MRN',
+                              displayName: `${Number(typeof item.quantity === 'number' ? item.quantity : parseFloat(item.quantity as string) || 0).toLocaleString('bs-BA')} L`,
                               value: typeof item.quantity === 'number' ? item.quantity : parseFloat(item.quantity as string) || 0,
                               datum: item.date_received ? formatDate(item.date_received) : 'Nepoznat datum',
                               fill: `hsl(${(index * 30) % 360}, 70%, 50%)`
                             }))}
                             dataKey="value"
-                            nameKey="name"
+                            nameKey="displayName"
                             cx="50%"
                             cy="50%"
                             outerRadius={80}
-                            label={(entry: { name: string; value: number }) => `${entry.name}: ${Number(entry.value).toLocaleString()} L`}
+                            label={(entry) => entry.displayName}
                             labelLine={false}
                           >
                             {customsBreakdown.map((entry, index) => (
@@ -680,13 +693,34 @@ export default function FixedTankDetailsModal({ tank, isOpen, onClose, onTankUpd
                             ))}
                           </Pie>
                           <Tooltip 
-                            formatter={(value) => [`${Number(value).toLocaleString()} L`, 'Količina']}
-                            labelFormatter={(name, entry) => {
-                              // Provjera da li entry postoji i ima elemente
-                              if (!entry || !entry.length || !entry[0] || !entry[0].payload) {
-                                return `MRN: ${name || 'Nepoznat'}`;
+                            wrapperStyle={{
+                              zIndex: 1000,
+                              backgroundColor: 'rgba(35, 35, 35, 0.95)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '8px',
+                              padding: '8px 12px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                              color: '#fff',
+                              fontSize: '14px',
+                              pointerEvents: 'none'
+                            }}
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length > 0) {
+                                return (
+                                  <div className="custom-tooltip" style={{ backgroundColor: 'rgba(35, 35, 35, 0.95)', padding: '10px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                    <p className="label" style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>
+                                      MRN: {payload[0].payload.name}
+                                    </p>
+                                    <p className="intro" style={{ margin: '0 0 5px 0' }}>
+                                      Količina: {Number(payload[0].value).toLocaleString('bs-BA')} L
+                                    </p>
+                                    <p className="desc" style={{ margin: '0' }}>
+                                      Datum prijema: {payload[0].payload.datum}
+                                    </p>
+                                  </div>
+                                );
                               }
-                              return `MRN: ${entry[0].payload.fullMrn || 'Nepoznat'}`;
+                              return null;
                             }}
                           />
                           <Legend />
